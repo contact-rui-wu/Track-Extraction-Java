@@ -242,7 +242,6 @@ public class PointExtractor {
 	void defaultThresh() {
 		
 		threshIm = new ImagePlus("Thresh im Frame "+currentFrameNum, currentIm.getProcessor().getBufferedImage());
-		threshIm.getProcessor().setThreshold((double) ep.globalThreshValue, (double) 255, ImageProcessor.NO_LUT_UPDATE);
 		threshIm.getProcessor().threshold((int) ep.globalThreshValue);
 
 	}
@@ -250,7 +249,6 @@ public class PointExtractor {
 	void rethresh(int thresh){
 		if (comm!=null) comm.message("Rethresholding to "+thresh, VerbLevel.verb_debug);
 		threshIm = new ImagePlus("Thresh im Frame "+currentFrameNum, currentIm.getProcessor().getBufferedImage());
-		threshIm.getProcessor().setThreshold((double) thresh, (double) 255, ImageProcessor.NO_LUT_UPDATE);
 		threshIm.getProcessor().threshold(thresh);
 	}
 	

@@ -27,17 +27,7 @@ public class Test {//extends JFrame
 
 	public static void main(String[] args) {
 		
-		/*
-		testBBFsubset();
-		*/
-			
-		/*
-		testNewBBFArchitecture();
-		*/
 		
-		/*
-		generateEnergyProfiles();
-		*/
 		
 		runDefaultFitting();
 		/*
@@ -186,79 +176,6 @@ public class Test {//extends JFrame
 		
 	}
 	
-	public static void testBBFsubset(){
-		
-		ImageJ ij = new ImageJ();
-		
-		String outputDir = "E:\\testing\\Java Backbone Fitting\\test bbf subset\\";
-		String inputFileName = outputDir+"Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
-			
-		Experiment ex = new Experiment(inputFileName);
-		Vector<Track> newTracks = new Vector<Track>();
-		BackboneFitter bbf = new BackboneFitter(ex.getTrackFromInd(51));
-		bbf.fitTrack();
-		if (bbf.getTrack()!=null) newTracks.add(bbf.getTrack());
-		
-		
-		BackboneFitter bbf2 = new BackboneFitter(ex.getTrackFromInd(51));
-		int startInd = 0;
-		int endInd = 500;
-		bbf2.fitTrackSubset(startInd, endInd);
-		if (bbf2.getTrack()!=null) newTracks.add(bbf2.getTrack());
-		
-
-		Experiment newExperiment = new Experiment(ex, newTracks);
-		newExperiment.showEx();
-		
-		
-		ij.quit();
-	}
-	
-	public static void testNewBBFArchitecture(){
-		
-		String outputDir = "E:\\testing\\Java Backbone Fitting\\test orientation fix\\";
-		String inputFileName = outputDir+"Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
-			
-		Experiment ex = new Experiment(inputFileName);
-		
-		
-		BackboneFitter bbf = new BackboneFitter(ex.getTrackFromInd(50));
-		bbf.fitTrack();
-		
-		BackboneFitter bbfOld = new BackboneFitter();
-		bbfOld.fitTrack(ex.getTrackFromInd(50));
-		
-		System.out.println("Done");
-	}
-	
-	
-	public static void generateEnergyProfiles(){
-		
-		ImageJ IJ = new ImageJ();
-		String baseDir = "E:\\testing\\Java Backbone Fitting\\testClusterEdits\\voronoi\\subset_runonshortenedexp\\";
-		
-		String[] args = new String[2];
-		args[0] = baseDir+"divergedTrackExp.prejav";		
-		args[1] = baseDir+"divergedOutput\\";
-		
-		
-		FittingParameters fP = new FittingParameters();
-		fP.clusterMethod=0;
-		fP.storeEnergies = true;
-		
-		ProcessingParameters prP = new ProcessingParameters();
-		prP.diagnosticIm = false;
-		
-		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
-		ep.prParams = prP;
-		ep.fitParams = fP;
-		
-		ep.run(args);
-		
-		
-		IJ.quit();
-	}
 	
 	public static void testNumPtsOnDiverged(){
 		String srcName = "E:\\testing\\Java Backbone Fitting\\Fitting Params\\fullExptWithAreaSplit_0.7-1.4_otherPtSplit\\divergedTrackExp.prejav";
@@ -498,61 +415,19 @@ public class Test {//extends JFrame
 	public static void runDefaultFitting(){
 		
 		ImageJ IJ = new ImageJ();
-//		String srcName = "E:\\testing\\Java Backbone Fitting\\Fitting Params\\fullExptWithAreaSplit_0.7-1.4_otherPtSplit\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
-//		String dstBaseDir = "E:\\testing\\Java Backbone Fitting\\";
+		String srcName = "E:\\testing\\Java Backbone Fitting\\Fitting Params\\fullExptWithAreaSplit_0.7-1.4_otherPtSplit\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
+		String dstBaseDir = "E:\\testing\\Java Backbone Fitting\\";
 		
 		String[] args = new String[2];
-//		args[0] = srcName;
-//		args[1] = dstBaseDir+"testClusterEdits\\voronoi\\subset\\";//gaussianMixture
-//		
-//		FittingParameters fP = new FittingParameters();
-//		fP.clusterMethod=0;
-//		fP.subset = true;
-//		fP.startInd=1;
-//		fP.endInd=2000;
-//		ExtractionParameters exP = new ExtractionParameters();
-//		
-//		ProcessingParameters prP = new ProcessingParameters();
-//		prP.diagnosticIm = false;
-//		
-//		Experiment_Processor ep = new Experiment_Processor();
-//		ep.runningFromMain = true;
-//		ep.prParams = prP;
-//		ep.extrParams = exP;
-//		ep.fitParams = fP;
-//		
-//		ep.run(args);
-//		
-//		args[1] = dstBaseDir+"testClusterEdits\\gaussianMixture\\subset\\";//
-//		
-//		fP = new FittingParameters();
-//		fP.clusterMethod=1;
-//		fP.subset = true;
-//		fP.startInd=1;
-//		fP.endInd=2000;
-//		exP = new ExtractionParameters();
-//		
-//		prP = new ProcessingParameters();
-//		prP.diagnosticIm = false;
-//		
-//		ep = new Experiment_Processor();
-//		ep.runningFromMain = true;
-//		ep.prParams = prP;
-//		ep.extrParams = exP;
-//		ep.fitParams = fP;
-//		
-//		ep.run(args);
+		args[0] = srcName;
+		args[1] = dstBaseDir+"testClusterEdits\\voronoi\\";//gaussianMixture
 		
-//		args[0] =  "E:\\data\\phototaxis2\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
-//		args[1] = dstBaseDir+"testClusterEdits\\voronoi\\subset_runonshortenedexp\\";//gaussianMixture
-//		
 //		FittingParameters fP = new FittingParameters();
 //		fP.clusterMethod=0;
 //		ExtractionParameters exP = new ExtractionParameters();
 //		exP.subset = true;
-//		exP.startFrame = 1;
-//		exP.endFrame = 2000;
-//		
+//		exP.startFrame=1;
+//		exP.endFrame=2000;
 //		ProcessingParameters prP = new ProcessingParameters();
 //		prP.diagnosticIm = false;
 //		
@@ -564,69 +439,16 @@ public class Test {//extends JFrame
 //		
 //		ep.run(args);
 		
-		
-		
-//		args[0] = dstBaseDir+"testClusterEdits\\voronoi\\subset_runonshortenedexp\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
-//		args[1] = dstBaseDir+"testClusterEdits\\gaussianMixture\\subset_runonshortenedexp\\";//gaussianMixture
-//		
-//		fP = new FittingParameters();
-//		fP.clusterMethod=1;
-//		exP = new ExtractionParameters();
-//		
-//		prP = new ProcessingParameters();
-//		prP.diagnosticIm = false;
-//		
-//		ep = new Experiment_Processor();
-//		ep.runningFromMain = true;
-//		ep.prParams = prP;
-//		ep.extrParams = exP;
-//		ep.fitParams = fP;
-//		
-//		ep.run(args);
-		
-//		args[0] = "E:\\data\\phototaxis2\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
-//		args[1] = "E:\\testing\\Java Backbone Fitting\\test contour fix\\full\\";
-//		
-//		FittingParameters fP = new FittingParameters();
-//		fP.clusterMethod=0;
-//		fP.storeEnergies = true;
-//		ExtractionParameters exP = new ExtractionParameters();
-//		exP.startFrame = 1;
-//		exP.endFrame = 2000;
-//		
-//		ProcessingParameters prP = new ProcessingParameters();
-//		prP.diagnosticIm = false;
-//		
-//		Experiment_Processor ep = new Experiment_Processor();
-//		ep.runningFromMain = true;
-//		ep.prParams = prP;
-//		ep.extrParams = exP;
-//		ep.fitParams = fP;
-//		
-//		ep.run(args);
-		
-		
-//		args[0] = "E:\\data\\phototaxis2\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
-		args[1] = "E:\\testing\\Java Backbone Fitting\\test interpolation fix\\";
-		args[0] = args[1]+"Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
-		
+		args[1] = dstBaseDir+"testClusterEdits\\gaussianMixture\\";//
 		
 		FittingParameters fP = new FittingParameters();
-		float[] timeLengthWeight = {.3f, 0.3f, 0.1f};
-		float[] timeSmoothWeight = {.3f, 0.3f, 0.1f}; 
-		fP.timeLengthWeight = timeLengthWeight;
-		fP.timeSmoothWeight = timeSmoothWeight;
-//		fP.imageWeight = 0.9f;
-		fP.clusterMethod=0;
-		fP.storeEnergies = true;
+		fP.clusterMethod=1;
 		ExtractionParameters exP = new ExtractionParameters();
 		exP.subset = true;
-		exP.startFrame = 1;
-		exP.endFrame = 2000;
-		
+		exP.startFrame=1;
+		exP.endFrame=2000;
 		ProcessingParameters prP = new ProcessingParameters();
 		prP.diagnosticIm = false;
-//		prP.showFitEx = true;
 		
 		Experiment_Processor ep = new Experiment_Processor();
 		ep.runningFromMain = true;
@@ -635,8 +457,6 @@ public class Test {//extends JFrame
 		ep.fitParams = fP;
 		
 		ep.run(args);
-		
-		
 		
 		IJ.quit();
 	}
@@ -1263,9 +1083,9 @@ public class Test {//extends JFrame
 		boolean dilateToEdges = true;
 		
 		sb.append("Before Dilation: ("+gaps.size()+")\n"+printGaps(gaps)+"\n");
-		BBFPointListGenerator.dilateGaps(gaps, 2, 10, startFrame, endFrame, dilateToEdges);
+		BackboneFitter.dilateGaps(gaps, 2, 10, startFrame, endFrame, dilateToEdges);
 		sb.append("After Dilation, before Merging: ("+gaps.size()+")\n"+printGaps(gaps)+"\n");
-		BBFPointListGenerator.mergeGaps(gaps, 10, null);
+		BackboneFitter.mergeGaps(gaps, 10, null);
 		sb.append("After Merging: ("+gaps.size()+")\n"+printGaps(gaps)+"\n");
 		
 		System.out.println(sb.toString());
