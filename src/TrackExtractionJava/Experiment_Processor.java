@@ -17,14 +17,10 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Scanner;
-import java.util.Stack;
 import java.util.Vector;
-
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
 
 import edu.nyu.physics.gershowlab.mmf.mmf_Reader;
 import ij.IJ;
@@ -48,6 +44,7 @@ public class Experiment_Processor implements PlugIn{
 	
 	protected String srcDir;
 	private String srcName;
+	private String exName;
 	private String dstDir;
 	private String dstName;
 	private PrintWriter processLog;
@@ -337,9 +334,10 @@ public class Experiment_Processor implements PlugIn{
 				
 			} else if (fileName.substring(fileName.length()-4).equalsIgnoreCase(".jav")){
 				success = openExp(dir, fileName);
-				
+				exName = new File(dir, fileName).getPath();
 			} else if (fileName.substring(fileName.length()-7).equalsIgnoreCase(".prejav")){
 				success = openExp(dir, fileName);
+				exName = new File(dir, fileName).getPath();
 				
 			} else if (fileName.equalsIgnoreCase("current")) {
 				success = useCurrentWindow();
@@ -570,10 +568,21 @@ public class Experiment_Processor implements PlugIn{
 			TicToc trTic = new TicToc();
 			trTic.tic();
 			IJ.showStatus("Fitting Track "+(i+1)+"/"+ex.getNumTracks());
-			tr = ex.getTrackFromInd(i);
+			tr = getTrackFromEx(i);//ex.getTrackFromInd(i);
+			if (tr==null) { 
+				System.out.println("Error loading track");
+				break;
+			}
 			String trStr = "Track "+tr.getTrackID();
 			if (tr.getNumPoints()>prParams.minTrackLen) {//Check track length
-				newTr = fitTrack(tr);
+				
+//				bbf = new BackboneFitter(bbf.params);
+//				newTr = fitTrack(tr);
+				
+				BackboneFitter bbf = new BackboneFitter(tr, fitParams);
+				bbf.fitTrack();
+				newTr = bbf.getTrack();
+				
 				long[] minSec = trTic.tocMinSec();
 				String timStr = "("+(int)minSec[0]+"m"+minSec[1]+"s)";
 				trStr+=" (#"+bbf.newTrID+")";
@@ -594,15 +603,33 @@ public class Experiment_Processor implements PlugIn{
 					toRemove.add(tr);
 //					errorsToSave.add(tr);
 				}
+				
+
+				if (fitParams.storeEnergies){
+					File f;
+					if (!bbf.diverged()){
+						f = new File(dstDir+"\\energyProfiles\\track"+i+"\\");
+					} else {
+						f = new File(dstDir+"\\energyProfiles\\diverged\\track"+i+"\\");
+					}
+					if (!f.exists()) f.mkdirs();
+					bbf.saveEnergyProfiles(f.getAbsolutePath());
+				}
+				
+				
 			} else {
+				toRemove.add(tr);
 				tr.setValid(false);
 				shortCount++;
 				System.out.println(trStr+": too short to fit");
 				toRemove.add(tr);
 			}
+			
+			
+//			bbf.saveCommOutput(dstDir);//bbf.showCommOutput();
 		}
 		
-		bbf.saveCommOutput(dstDir);//bbf.showCommOutput();
+		
 		
 		
 		
@@ -610,7 +637,7 @@ public class Experiment_Processor implements PlugIn{
 		System.out.println("Done fitting tracks: ");
 		System.out.println(shortCount+"/"+ex.getNumTracks()+" were too short (minlength="+prParams.minTrackLen+")");
 		System.out.println(divergedCount+"/"+(ex.getNumTracks()-shortCount)+" remaining diverged");
-		System.out.println((ex.getNumTracks()-toRemove.size())+"/"+(ex.getNumTracks()-shortCount-divergedCount)+" remaining were fit successfully");
+		System.out.println((ex.getNumTracks()-toRemove.size()+shortCount)+"/"+(ex.getNumTracks()-shortCount-divergedCount)+" remaining were fit successfully");
 		
 		//Remove the tracks that couldn't be fit
 //		for(Track t : toRemove){
@@ -647,6 +674,25 @@ public class Experiment_Processor implements PlugIn{
 		} 
 		indentLevel--;
 	}
+	
+	
+	private Track getTrackFromEx(int ind){
+		
+//		if (prParams.loadSingleTrackForFitting){
+//			if (exName==null || exName.length()==0){
+//				System.out.println("You told me to open one track at a time but there's no experiment file");
+//				return null;
+//			}
+//			
+//			return Experiment.getTrack(ind, exName);
+//		} else {
+			return ex.tracks.get(ind);
+//		}
+		
+		
+		
+	}
+	
 	/**
 	 * Fits backbones to a Track of MaggotTrackPoints
 	 * @param tr The track of MaggotTrackPoints to be fit
@@ -655,10 +701,10 @@ public class Experiment_Processor implements PlugIn{
 	private Track fitTrack(Track tr){
 		indentLevel++;
 		
-		
-		
+//		bbf = new BackboneFitter(tr, fitParams);
 		bbf.fitTrack(tr);
 		indentLevel--;
+		
 		return bbf.getTrack();
 		
 	}
@@ -678,6 +724,8 @@ public class Experiment_Processor implements PlugIn{
 			ex.toDisk(dos, processLog);
 			status=true;
 			dos.close();
+			exName = f.getPath();
+			
 		} catch(Exception e){
 			StringWriter sw = new StringWriter();
 			PrintWriter pw = new PrintWriter(sw);

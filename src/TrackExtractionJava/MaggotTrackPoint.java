@@ -110,16 +110,22 @@ public class MaggotTrackPoint extends ImTrackPoint {
 			bim = tempIm;
 		}
 		ByteProcessor thIm = new ByteProcessor(bim);
+		
+		double mint = thIm.getMinThreshold();
+		double maxt = thIm.getMaxThreshold();
+		thIm.setThreshold((double) thresh, (double) 255, ImageProcessor.NO_LUT_UPDATE);
 		thIm.threshold(thresh);
 		
+		
 		Wand wand = new Wand(thIm);
-		wand.autoOutline(getStart().x-rect.x, getStart().y-rect.y);//, 0, Wand.LEGACY_MODE);//);//
+		wand.autoOutline(getStart().x-rect.x, getStart().y-rect.y, (double)thresh, (double)255, Wand.EIGHT_CONNECTED);//, 0, Wand.LEGACY_MODE);//);//
 		
 		nConPts = wand.npoints;
 		if (comm!=null) comm.message("Wand arrays have "+wand.xpoints.length+" points, and report "+nConPts+" points", VerbLevel.verb_debug);
 		int[] contourX = wand.xpoints;//Arrays.copyOfRange(wand.xpoints, 0, wand.npoints);//
 		int[] contourY = wand.ypoints;//Arrays.copyOfRange(wand.ypoints, 0, wand.npoints);//
 		
+		thIm.setThreshold(mint, maxt, ImageProcessor.NO_LUT_UPDATE);
 		
 		
 		if (comm!=null) comm.message("Point coords were gathered", VerbLevel.verb_debug);
@@ -375,6 +381,8 @@ public class MaggotTrackPoint extends ImTrackPoint {
 				
 			} else {
 				midline=null; //TODO this causes an empty spine
+				head = null;
+				tail = null;
 				
 				//Assign the midpoint to be the avg of all contour points 
 				float midpointX=0;
@@ -628,7 +636,7 @@ public class MaggotTrackPoint extends ImTrackPoint {
 	/**
 	 * Calculates the dot product between the velocity and the body orientation of this maggot. 
 	 * @param prevPt The previous point in the track, used to calculate the velocity
-	 * @return Dot product between the velocity and the body orientation, or -1.0 if there is no midline/midpoint
+	 * @return Dot product between the velocity and the body orientation, or 0 if there is no midline/midpoint
 	 */
 	public double MaggotDotProduct(MaggotTrackPoint prevPt){
 		
