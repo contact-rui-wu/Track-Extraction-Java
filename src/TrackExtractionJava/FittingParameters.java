@@ -13,7 +13,15 @@ public class FittingParameters {
 	
 	public int numBBPts = 7;
 	
-	boolean storeEnergies = false;
+	int minTrackLen = 200;//NOTE: SHOULD BE SAME AS PROCESSINGPARAMS.MINTRACKLEN
+	boolean subset = false;
+	int startInd = 0;
+	int endInd = 1000;
+	
+	
+	boolean storeEnergies = true;
+	
+	boolean divFix = false;
 	
 	/*
 	 * 0= voronoi clusters 
