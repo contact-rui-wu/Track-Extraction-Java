@@ -2,8 +2,6 @@ package TrackExtractionJava;
 
 import java.util.Vector;
 
-import com.sun.xml.internal.ws.api.addressing.AddressingVersion.EPR;
-
 import ij.ImageStack;
 import ij.text.TextWindow;
 
@@ -40,18 +38,31 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		Communicator c = new Communicator();
 		c.setVerbosity(VerbLevel.verb_off);
 		for (int i=0; i<finishedTracks.size(); i++){
-			orientMaggotTrack(finishedTracks.get(i), ep.framesBtwnContSegs, c);  
+			orientMaggotTrack(finishedTracks.get(i), c);  
 		}
 		if (!c.outString.equals("")) new TextWindow("Orientation debugging output", c.outString, 500, 500);
 	}
 
+	/**
+	 * Orients the maggots in a track in the direction of their motion
+	 * @param track Track to be oriented
+	 */
+	protected static void orientMaggotTrack(Track track, Communicator c){
+		
+		omt(track, c);
+//		orientMaggotTrack(track.getPoints(), comm, track.getTrackID());
+	}
+		
 	
+	protected static void omt(Track track){
+		omt(track, null);
+	}
 	
-	protected static void orientMaggotTrack(Track track, int maxGap, Communicator c){
+	protected static void omt(Track track, Communicator c){
 		
 		if (c!=null) c.message("Track "+track.getTrackID(), VerbLevel.verb_debug);
 
-		boolean debug = false;
+		boolean debug = false; // (track.trackID<10 || track.points.size()<150);
 		
 		Vector<? extends TrackPoint> points = track.getPoints();
 		
@@ -77,11 +88,17 @@ public class MaggotTrackBuilder extends TrackBuilder {
 			alignSegment(points, seg);
 		}
 		for(Segment seg: segList){
+//			orientSegment(points, seg);
 			if (c!=null) c.message("Orienting segment #"+segList.indexOf(seg)+"/"+segList.indexOf(segList.lastElement())+",  ("+seg.length()+"pts)", VerbLevel.verb_debug);
 			orientSegment(points, seg, c);
 		}
 		
-		ensureContinuity(points, segList, maxGap);
+//		int i=0;
+//		while (i<segList.size()){
+//			orientSegment(points, segList.get(i));
+//			i++;
+//		}
+//		
 	}
 	
 	
@@ -196,30 +213,6 @@ public class MaggotTrackBuilder extends TrackBuilder {
 	
 	
 	
-	protected static void ensureContinuity(Vector<? extends TrackPoint> points, Vector<Segment> segList, int maxGap){
-		
-		//Check that the ends of the segments are aligned
-		for (Segment seg : segList){
-			boolean flipPrev = false;
-			boolean flipNext = false;
-			
-			if (seg.prevSeg!=null && (seg.start-seg.prevSeg.end)<maxGap){
-				MaggotTrackPoint pt = (MaggotTrackPoint) points.get(seg.start);
-				flipPrev = (pt.chooseOrientation((MaggotTrackPoint) points.get(seg.prevSeg.end), false))>0;
-			}
-			if (seg.nextSeg!=null && (seg.nextSeg.start-seg.end)<maxGap){
-				MaggotTrackPoint pt = (MaggotTrackPoint) points.get(seg.end);
-				flipNext = (pt.chooseOrientation((MaggotTrackPoint) points.get(seg.nextSeg.start), false))>0;
-				
-			}
-				
-			if (flipPrev && flipNext){
-				flipSeg(points, seg.start, seg.end);
-			}
-		}
-		
-	}
-	
 	
 	protected static void orientMaggotTrack(Vector<? extends TrackPoint> points, Communicator comm, int trackID){
 		
@@ -261,7 +254,7 @@ public class MaggotTrackBuilder extends TrackBuilder {
 					if (comm!=null) comm.message("Midline invalid, frame "+(i+points.firstElement().frameNum), VerbLevel.verb_message);
 					
 					//Analyze the direction of motion for the segment leading up to this frame, starting with lastEndFrameAnalyzed (or 0)
-					if ( AMDSegStart!=-1 && (AMDSegEnd-AMDSegStart)>1 ){
+					if ( AMDSegStart!=-1 && (AMDSegEnd-AMDSegStart)>1 ){ //TODO && (AMDSegEnd-AMDSegStart)<AMDSegEnd (?)
 						analyzeMaggotDirection(points, AMDSegStart, AMDSegEnd, comm, trackID);
 					}
 					
@@ -280,7 +273,7 @@ public class MaggotTrackBuilder extends TrackBuilder {
 			
 		} else {
 			if (comm!=null) comm.message("Track was not oriented", VerbLevel.verb_error);
-//			if (comm!=null && !(points.get(0) instanceof MaggotTrackPoint)) comm.message("TrackPoints not MTPs", VerbLevel.verb_error);
+			if (comm!=null && !(points.get(0) instanceof MaggotTrackPoint)) comm.message("TrackPoints not MTPs", VerbLevel.verb_error);
 		}
 		
 		

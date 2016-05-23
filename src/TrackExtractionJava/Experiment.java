@@ -2,7 +2,9 @@ package TrackExtractionJava;
 
 import ij.IJ;
 import ij.ImagePlus;
+import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
+import ij.process.ImageProcessor;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -634,11 +636,6 @@ public class Experiment implements Serializable{
 	
 	public void replaceTrack(Track newTrack, int ind){
 		tracks.setElementAt(newTrack, ind);
-	}
-	
-	public void showEx(){
-		ExperimentFrame ef = new ExperimentFrame(this);
-		ef.run(null);
 	}
 	
 }
