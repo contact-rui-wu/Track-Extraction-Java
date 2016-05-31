@@ -15,18 +15,12 @@ public class Test_Rui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		/**
-		test_pointGraber();
-		*/
+		//test_pointGraber();
 		
-		/**
-		 * prepare images for the test
 		test_ddt();
-		 */
 		
-		/**
-		test_scribe();
-		*/
+		//test_scribe();
+
 	}
 	
 	// write each test as a void method so that don't have to write a lot in main
@@ -59,20 +53,80 @@ public class Test_Rui {
 	 * @return ddt image, 8 bit gray scale
 	 */
 	public static void test_ddt() {
-		// placeholder
-		ByteProcessor point1;
-		ByteProcessor point2;
+		// assume 8-bit gray scale
+		// Q: do I still need to deal with threshold?	
+		
 		int dt=1; // change manually: 1 for forward/backward, 2 for central
 		
-		// assume 8-bit gray scale
-		// Q: do I still need to deal with threshold?
+		// 1) simple, generated binary points
+		/**
+		ByteProcessor point1 = new ByteProcessor(100,100);
+		ByteProcessor point2 = new ByteProcessor(100,100);
+		int width = point1.getWidth();
+		int height = point1.getHeight();
+		int xcenter = width/2;
+		int ycenter = height/2;
+		// fill point1
+		for(int i=0; i<width; i++) {
+			for(int j=0; j<height; j++) {
+				if(Math.abs(i-xcenter)<20 && Math.abs(j-ycenter)<20) {
+					point1.set(i,j,255);
+				} else {
+					point1.set(i,j,0);
+				}
+			}
+		}
+		// fill point2: move 10px to the right
+		for(int i=0; i<width; i++) {
+			for(int j=0; j<height; j++) {
+				if(Math.abs(i-xcenter-10)<20 && Math.abs(j-ycenter)<20) {
+					point2.set(i,j,255);
+				} else {
+					point2.set(i,j,0);
+				}
+			}
+		}		
+		*/
+		
+		// 2) generated gradient points
+		///**
+		ByteProcessor point1 = new ByteProcessor(100,100);
+		ByteProcessor point2 = new ByteProcessor(100,100);
+		int width = point1.getWidth();
+		int height = point1.getHeight();
+		int xcenter = width/2;
+		int ycenter = height/2;
+		// fill point1: center
+		for(int i=0; i<width; i++) {
+			for(int j=0; j<height; j++) {
+				if(Math.abs(i-xcenter)<20 && Math.abs(j-ycenter)<20) {
+					point1.set(i,j,255-(i*2+50));
+				} else {
+					point1.set(i,j,0);
+				}
+			}
+		}
+		// fill point2: move 10px to the right
+		for(int i=0; i<width; i++) {
+			for(int j=0; j<height; j++) {
+				if(Math.abs(i-xcenter-10)<20 && Math.abs(j-ycenter)<20) {
+					point2.set(i,j,255);
+				} else {
+					point2.set(i,j,0);
+				}
+			}
+		}		
+		//*/
+		
+		// 3) external test images
+		///**
+		// TODO see if can use FrameLoader or PointExtractor
+		//*/
 		
 		// TODO get correct roi
 		// check getCombinedBounds
 		// for now: assume they overlap, use point1 dimension
-		int width = point1.getWidth();
-		int height = point1.getHeight();
-		
+
 		// prepare empty result image
 		FloatProcessor ddtIm = new FloatProcessor(width, height);
 		
@@ -85,39 +139,11 @@ public class Test_Rui {
 			}
 		}
 		
-		/**
-		 * scratch: ddt actually doesn't need 3 images, so it dosen't need to know which method either
-		// fill ddtIm
-		switch(derivMethod) {
-			case 1 : // forward
-				for(int i=0; i<width; i++) {
-					for(int j=0; j<height; j++) {
-						int pixDiff = nextIm.getPixel(i,j)-thisIm.getPixel(i,j);
-						float ddt = pixDiff/dt;
-						// deal with -ve values (Natalie used color)
-						ddtIm.setf(i,j,ddt);
-					}
-				}
-			case 2 : // backward
-				for(int i=0; i<width; i++) {
-					for(int j=0; j<height; j++) {
-						int PixDiff = thisIm.getPixel(i,j)-prevIm.getPixel(i,j);
-						float ddt = PixDiff/dt;
-						ddtIm.setf(i,j,ddt);
-					}
-				}
-			case 3 : // central
-				for(int i=0; i<width; i++) {
-					for(int j=0; j<height; j++) {
-						int PixDiff = nextIm.getPixel(i,j)-prevIm.getPixel(i,j);
-						float ddt = PixDiff/(2*dt);
-						ddtIm.setf(i,j,ddt);
-					}
-				}
-		}
-		*/
-		
 		// for test purpose: visualization
+		ImagePlus point1Plus = new ImagePlus("point1", point1);
+		point1Plus.show();
+		ImagePlus point2Plus = new ImagePlus("point2", point2);
+		point2Plus.show();
 		ImagePlus ddtImPlus = new ImagePlus("ddt image", ddtIm);
 		ddtImPlus.show();
 		
