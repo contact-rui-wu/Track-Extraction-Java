@@ -7,7 +7,7 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/home/data/rw1679/Documents/Gershow lab/MMF-ImageJ-Plugin.jar"/>
 	<classpathentry kind="lib" path="/home/data/rw1679/Documents/Fiji.app/jars/ij-1.51b-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="/home/data/rw1679/Documents/Gershow lab local/MMF-ImageJ-Plugin.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

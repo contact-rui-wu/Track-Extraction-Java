@@ -9,7 +9,7 @@ import ij.process.FloatProcessor;
 import ij.ImageStack;
 import ij.ImagePlus;
 
-public class Test_Rui {
+public class TestRui {
 
 	public static void main(String[] args) {
 		// put the testing methods here
