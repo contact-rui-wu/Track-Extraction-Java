@@ -15,9 +15,9 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		//test_pointGraber();
+		//test_grabPoints();
 		
-		test_ddt();
+		test_calcTimeDeriv();
 		
 		//test_scribe();
 
@@ -29,6 +29,7 @@ public class TestRui {
 	 * Grabs the correct points at/near time t from a track depending on chosen deriv method
 	 * @param track track we're working on
 	 * @param t frame we're working on
+	 * @param increment time step between frames
 	 * @param derivMethod forward(1)/backward(2)/central(3)
 	 * @return 2 or 3 points depending on derivMethod
 	 */
@@ -36,6 +37,7 @@ public class TestRui {
 		// placeholder
 		ImageStack track;
 		int t;
+		int increment;
 		int derivMethod=1; // change manually: 1 for forward, 2 for backward, 3 for central
 		
 		// prepare empty result image stack
@@ -52,7 +54,7 @@ public class TestRui {
 	 * @param dt time increment between them
 	 * @return ddt image, 8 bit gray scale
 	 */
-	public static void test_ddt() {
+	public static void test_calcTimeDeriv() {
 		// assume 8-bit gray scale
 		// Q: do I still need to deal with threshold?	
 		
@@ -66,7 +68,7 @@ public class TestRui {
 		int height = point1.getHeight();
 		int xcenter = width/2;
 		int ycenter = height/2;
-		// fill point1
+		// fill point1: center
 		for(int i=0; i<width; i++) {
 			for(int j=0; j<height; j++) {
 				if(Math.abs(i-xcenter)<20 && Math.abs(j-ycenter)<20) {
@@ -88,7 +90,7 @@ public class TestRui {
 		}		
 		*/
 		
-		// 2) generated gradient points
+		// 2) simple, generated gradient points
 		///**
 		ByteProcessor point1 = new ByteProcessor(100,100);
 		ByteProcessor point2 = new ByteProcessor(100,100);
@@ -151,11 +153,11 @@ public class TestRui {
 	
 	/**
 	 * Adds ddt value to the corresponding point
-	 * @param thisPoint point to add to
+	 * @param t frame we're working on
 	 * @param ddtIm ddt value matrix computed by test_ddt
 	 */
 	public static void test_scribe() {
-		
+		// TODO think of better name
 	}
 
 }
