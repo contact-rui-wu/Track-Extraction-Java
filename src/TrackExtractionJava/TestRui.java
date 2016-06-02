@@ -8,6 +8,21 @@ import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
 import ij.ImageStack;
 import ij.ImagePlus;
+import ij.ImageJ;
+
+import java.awt.BorderLayout;
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.util.Scanner;
+import java.util.Vector;
+
+import javax.swing.JFrame;
+
+import edu.nyu.physics.gershowlab.mmf.mmf_Reader;
 
 public class TestRui {
 
@@ -17,14 +32,35 @@ public class TestRui {
 		
 		//test_grabPoints();
 		
-		test_calcTimeDeriv();
+		//test_calcTimeDeriv();
 		
-		//test_scribe();
+		test_cropMMF();
 
 	}
 	
 	// write each test as a void method so that don't have to write a lot in main
-
+	
+	//////////////////////////////
+	// Opening and cropping MMF
+	//////////////////////////////
+	
+	public static void test_cropMMF() {
+		ImageJ ij = new ImageJ();
+		//Experiment_Processor ep = new Experiment_Processor();
+		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sample_copy.mmf";
+		//String path = "";
+		//ep.run(path);
+		mmf_Reader mr = new mmf_Reader();
+		mr.loadStack(path);
+		ImagePlus mmfStack = new ImagePlus(path, mr.getMmfStack());
+		mmfStack.show();
+		// TODO nothing works!!!! 
+	}
+	
+	/////////////////////////////////
+	// Calculating time derivative
+	/////////////////////////////////
+	
 	/**
 	 * Grabs the correct points at/near time t from a track depending on chosen deriv method
 	 * @param track track we're working on
@@ -48,7 +84,9 @@ public class TestRui {
 	}
 	
 	/**
-	 * Given 2 points, compute ddt between them
+	 * Given 2 points, compute ddt image between them
+	 * <p>
+	 * (Different from ImTrackPoint.calcImDeriv which returns red/blue color ddt image)
 	 * @param point1 earlier point
 	 * @param point2 later point
 	 * @param dt time increment between them
@@ -58,7 +96,7 @@ public class TestRui {
 		// assume 8-bit gray scale
 		// Q: do I still need to deal with threshold?	
 		
-		int dt=1; // change manually: 1 for forward/backward, 2 for central
+		int dt=1; // default time step=1
 		
 		// 1) simple, generated binary points
 		/**
@@ -149,15 +187,6 @@ public class TestRui {
 		ImagePlus ddtImPlus = new ImagePlus("ddt image", ddtIm);
 		ddtImPlus.show();
 		
-	}
-	
-	/**
-	 * Adds ddt value to the corresponding point
-	 * @param t frame we're working on
-	 * @param ddtIm ddt value matrix computed by test_ddt
-	 */
-	public static void test_scribe() {
-		// TODO think of better name
 	}
 
 }
