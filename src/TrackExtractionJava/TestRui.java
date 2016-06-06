@@ -42,8 +42,7 @@ public class TestRui {
 		mr.loadStack(path);
 		ImagePlus mmfStack = new ImagePlus(path, mr.getMmfStack());
 		mmfStack.show();
-		// Worked! TODO now crop it
-		
+		// Worked!
 	}
 	
 	/////////////////////////////////
