@@ -9,18 +9,7 @@ import ij.process.FloatProcessor;
 import ij.ImageStack;
 import ij.ImagePlus;
 import ij.ImageJ;
-
-import java.awt.BorderLayout;
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
-import java.util.Scanner;
-import java.util.Vector;
-
-import javax.swing.JFrame;
+import ij.plugin.PlugIn;
 
 import edu.nyu.physics.gershowlab.mmf.mmf_Reader;
 
@@ -45,16 +34,16 @@ public class TestRui {
 	//////////////////////////////
 	
 	public static void test_cropMMF() {
-		ImageJ ij = new ImageJ();
 		//Experiment_Processor ep = new Experiment_Processor();
-		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sample_copy.mmf";
-		//String path = "";
-		//ep.run(path);
+		//ep.runningFromMain = true;
+		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleMMF_copy.mmf";
 		mmf_Reader mr = new mmf_Reader();
+		//String path = "";
 		mr.loadStack(path);
 		ImagePlus mmfStack = new ImagePlus(path, mr.getMmfStack());
 		mmfStack.show();
-		// TODO nothing works!!!! 
+		// Worked! TODO now crop it
+		
 	}
 	
 	/////////////////////////////////

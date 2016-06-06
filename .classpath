@@ -9,5 +9,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/home/data/rw1679/Documents/Fiji.app/jars/ij-1.51b-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="/home/data/rw1679/Documents/Gershow_lab_local/MMF-ImageJ-Plugin.jar"/>
+	<classpathentry kind="lib" path="/home/data/rw1679/Documents/Gershow_lab_local/unidataCommon-4.2.20.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
