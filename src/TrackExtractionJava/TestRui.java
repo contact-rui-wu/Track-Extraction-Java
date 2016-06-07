@@ -4,6 +4,8 @@
 
 package TrackExtractionJava;
 
+import java.awt.Color;
+
 import ij.process.ImageProcessor;
 import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
@@ -22,7 +24,7 @@ public class TestRui {
 		//test_grabPoints();
 		// works!
 		
-		//test_calcTimeDeriv();
+		test_calcTimeDeriv();
 		// works apart from the fact that the images grabbed are not raw
 		// if use ImTrackPoint.getRawIm, it's not automatically enlarged (why?)
 		// if use ImTrackPoint.getIm, returns 300x300 image but with the backbone points
@@ -83,7 +85,7 @@ public class TestRui {
 	 * @param derivMethod forward(1)/backward(2)/central(3)
 	 * @return 2 or 3 points depending on derivMethod
 	 */
-	public static ImageStack test_grabPoints() {
+	public static ImageStack test_grabPoints(int dM) {
 		// load sample track
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
 		Experiment ex = new Experiment(path);
@@ -92,7 +94,7 @@ public class TestRui {
 		// set parameters
 		int frame = 741; // change manually TODO write as loop index
 		int increment = 1;
-		int derivMethod = 3; // change manually: 1 for forward, 2 for backward, 3 for central
+		int derivMethod = dM;
 		
 		// prepare empty result image stack
 		ImagePlus im1 = new ImagePlus();
@@ -138,8 +140,8 @@ public class TestRui {
 		theseIm.addSlice(im2.getProcessor());
 		
 		// for test purpose: visualization
-		ImagePlus theseImP = new ImagePlus("grabbed points", theseIm);
-		theseImP.show();
+		//ImagePlus theseImP = new ImagePlus("grabbed points", theseIm);
+		//theseImP.show();
 		
 		return theseIm;
 	}
@@ -211,19 +213,42 @@ public class TestRui {
 		for(int i=0; i<width; i++) {
 			for(int j=0; j<height; j++) {
 				if(Math.abs(i-xcenter-10)<20 && Math.abs(j-ycenter)<20) {
-					point2.set(i,j,255);
+					point2.set(i,j,255-(i*2+50));
 				} else {
 					point2.set(i,j,0);
 				}
 			}
-		}		
+		}
+		// visualization
+		ImagePlus point1Plus = new ImagePlus("point1", point1);
+		point1Plus.show();
+		ImagePlus point2Plus = new ImagePlus("point2", point2);
+		point2Plus.show();
 		*/
 		
 		// 3) external test images
 		///**
-		ImageStack theseIm = test_grabPoints();
+		int derivMethod = 2; //change manually
+		String methodMsg = "";
+		switch(derivMethod) {
+		case 1:
+			methodMsg = "Forward";
+			break;
+		case 2:
+			methodMsg = "Backward";
+			break;
+		case 3:
+			methodMsg = "Central";
+			dt = 2;
+			break;
+		}
+		ImageStack theseIm = test_grabPoints(derivMethod);
 		ImageProcessor point1 = theseIm.getProcessor(1);
 		ImageProcessor point2 = theseIm.getProcessor(2);
+		// temp fix: hard set these points to be ByteProcessors
+		// shouldn't need to do this if I can get the true raw image
+		point1 = point1.convertToByteProcessor();
+		point2 = point2.convertToByteProcessor();
 		int width = theseIm.getWidth();
 		int height = theseIm.getHeight();
 		//*/
@@ -231,25 +256,29 @@ public class TestRui {
 		// TODO get correct roi
 		// check getCombinedBounds
 		// for now: use padded dimension
+		// probably should do this in grabPoints()
 
-		// TODO change to RGB mode
 		// prepare empty result image
-		FloatProcessor ddtIm = new FloatProcessor(width, height);
+		//FloatProcessor ddtIm = new FloatProcessor(width, height);
+		ColorProcessor ddtIm = new ColorProcessor(width, height);
 		// fill ddtIm
 		for(int i=0; i<width; i++) {
 			for(int j=0; j<height; j++) {
 				int pixDiff = point2.getPixel(i,j)-point1.getPixel(i,j);
-				float ddt = ((pixDiff+255)/2)/dt;
-				ddtIm.setf(i,j,ddt);
+				int ddt = pixDiff/dt;
+				//float ddt = ((pixDiff+255)/2)/dt;
+				//ddtIm.setf(i,j,ddt);
+				if (pixDiff>0) {
+					ddtIm.setColor(new Color(ddt,0,0));//move into: red
+				} else {
+					ddtIm.setColor(new Color(0,0,-ddt)); //move out of: blue
+				}
+				ddtIm.drawPixel(i,j);
 			}
 		}
 		
-		// for test purpose: visualization
-		//ImagePlus point1Plus = new ImagePlus("point1", point1);
-		//point1Plus.show();
-		//ImagePlus point2Plus = new ImagePlus("point2", point2);
-		//point2Plus.show();
-		ImagePlus ddtImPlus = new ImagePlus("ddt image", ddtIm);
+		// visualization
+		ImagePlus ddtImPlus = new ImagePlus(methodMsg, ddtIm);
 		ddtImPlus.show();
 		
 	}
