@@ -11,7 +11,7 @@ import java.awt.Graphics;
 
 import ij.process.ImageProcessor;
 import ij.process.ByteProcessor;
-import ij.process.FloatProcessor;
+//import ij.process.FloatProcessor;
 import ij.process.ColorProcessor;
 import ij.ImageStack;
 import ij.ImagePlus;
@@ -31,12 +31,14 @@ public class TestRui {
 		//test_grabPoints(741,100,1);
 		// now works with padding!
 		
-		//test_padImage();
-		
 		test_calcTimeDeriv();
 		// now works with padding and true raw image!
 		
 		//test_NB();
+		// problem: calcImDeriv needs ImTrackPoint
+		// possible fix: change its params to accept TrackPoint
+		// but needs to check actual point type
+		// need to ask Natalie about converting between point types
 	}
 	
 	// write each test as a void method so that don't have to write a lot in main
@@ -46,16 +48,17 @@ public class TestRui {
 	/////////////////////////////////////////
 	
 	public static void test_MMF() {
-		//Experiment_Processor ep = new Experiment_Processor();
-		//ep.runningFromMain = true;
+		// load full size MMF
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleMMF_copy.mmf";
 		mmf_Reader mr = new mmf_Reader();
-		//String path = "";
 		mr.loadStack(path);
-		ImagePlus mmfStack = new ImagePlus(path, mr.getMmfStack());
-		mmfStack.show();
-		// Worked!
+		ImageStack mmf = mr.getMmfStack();
+
 		// TODO crop a 2000 frame subset and track it to get different point types
+		ImageStack mmfCropped = mmf.crop(1, 1, 1, mmf.getWidth(), mmf.getHeight(), 2000);
+		ImagePlus mmfPlus = new ImagePlus("cropped", mmfCropped);
+		mmfPlus.show();
+		// problem: getMmfStack() actually returns our custom MmfVirtualStack, not ImageJ's ImageStack
 	}
 	
 	////////////////////////////////////////////
@@ -77,6 +80,11 @@ public class TestRui {
 		// good for testing
 	}
 	
+	/**
+	 * Grabs track #59 from sampleShortExp_copy.prejav
+	 * <p>
+	 * (Not a stand alone test; written for convenience)
+	 */
 	public static Track test_grabTestTrack() {
 		// load sample track
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
@@ -91,13 +99,13 @@ public class TestRui {
 	
 	/**
 	 * Grabs the correct points at/near time t from a track depending on chosen deriv method
-	 * @param trackID track we're working on
+	 * @param trackID track we're working on (not in there for now)
 	 * @param frame frame we're working on
 	 * @param increment time step between frames
 	 * @param derivMethod forward(1)/backward(2)/central(3)
 	 * @return a ImageStack of 2 points
 	 */
-	@SuppressWarnings("static-access") //to make getCombinedBounds happy
+	//@SuppressWarnings("static-access") //to make getCombinedBounds happy
 	public static ImageStack test_grabPoints(int frame, int increment, int derivMethod) {
 		/**
 		// load sample track
@@ -154,7 +162,7 @@ public class TestRui {
 		*/
 		
 		///**
-		// get ImTrackPoint image (true raw image) - not yet
+		// get ImTrackPoint image (true raw image) - works
 		
 		// grab points
 		TrackPoint pt1 = tr.getFramePoint(first);
@@ -172,15 +180,20 @@ public class TestRui {
 		theseIm.addSlice(im2);
 		//*/
 		
-		// for test purpose: visualization
-		//ImagePlus theseImP = new ImagePlus("grabbed points", theseIm);
-		//theseImP.show();
+		// visualization (10x zoom in)
+		ImageStack showThese = new ImageStack(newRect.width*10, newRect.height*10);
+		showThese.addSlice(im1.resize(newRect.width*10));
+		showThese.addSlice(im2.resize(newRect.width*10));
+		ImagePlus theseImP = new ImagePlus("grabbed points", showThese);
+		theseImP.show();
 		
 		return theseIm;
 	}
 	
 	/**
 	 * Pads a point to a new roi
+	 * <p>
+	 * (Not a standalone test; written for test_grabPoints())
 	 * @param pt
 	 * @param newRect
 	 * @return padded image
@@ -223,8 +236,6 @@ public class TestRui {
 	
 	/**
 	 * Given 2 points, compute ddt image between them
-	 * <p>
-	 * (Different from ImTrackPoint.calcImDeriv which returns red/blue color ddt image)
 	 * @param point1 earlier point
 	 * @param point2 later point
 	 * @param dt time increment between them
@@ -304,9 +315,9 @@ public class TestRui {
 		// 3) external test images
 		///**
 		// set parameters
-		int frame = 741; //change manually TODO write as loop index
+		int frame = 741; //change manually; eventually will become input
 		int increment = 1; //for now, always =1
-		int derivMethod = 1; //change manually
+		int derivMethod = 3; //change manually
 		// deal with derivMethod
 		String methodMsg = "";
 		switch(derivMethod) {
@@ -352,11 +363,12 @@ public class TestRui {
 			}
 		}
 		
-		// visualization: RGB
-		ddtIm.autoThreshold(); // if just want to see color binary
-		ImagePlus ddtImPlus = new ImagePlus(methodMsg, ddtIm);
+		// visualization: (10x zoom in)
+		// RGB mode
+		//ddtIm.autoThreshold(); // if just want to see color binary
+		ImagePlus ddtImPlus = new ImagePlus(methodMsg, ddtIm.resize(width*10));
 		ddtImPlus.show();
-		// TODO visualization: gray scale
+		// TODO gray scale mode
 		
 	}
 	
@@ -380,7 +392,7 @@ public class TestRui {
 		TrackPoint test = ex.getTrack(trID).getFramePoint(frame);
 		System.out.println(test.getTypeName());
 		System.out.println(test.pointType);
-		// ok it's a MaggotTrackPoint TODO make it work with all types?
+		// ok it's a MaggotTrackPoint
 		// need to turn off backbone display in MaggotDisplayParameters
 		ImagePlus testImPlus = new ImagePlus(null, test.getIm(mdp));
 		testImPlus.show();
@@ -388,7 +400,7 @@ public class TestRui {
 		 */
 		
 		///**
-		// load points TODO it's actually MaggotTrackPoint
+		// load points
 		// this point
 		TrackPoint thisTP = ex.getTrack(trID).getFramePoint(frame);
 		ImagePlus thisIm = new ImagePlus(null, ex.getTrack(trID).getFramePoint(frame).getRawIm());
