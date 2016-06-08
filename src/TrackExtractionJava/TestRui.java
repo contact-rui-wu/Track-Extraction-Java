@@ -21,17 +21,17 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
+		//test_MMF();
+		
+		//test_prejav();		
+		
 		//test_grabPoints();
 		// works!
 		
 		test_calcTimeDeriv();
-		// works apart from the fact that the images grabbed are not raw
-		// if use ImTrackPoint.getRawIm, it's not automatically enlarged (why?)
-		// if use ImTrackPoint.getIm, returns 300x300 image but with the backbone points
-		
-		//test_MMF();
-		
-		//test_prejav();
+		// works!
+		// but with MaggotTrackPoints only
+		// still need to pad correctly according to global coordinates
 		
 		//test_NB();
 	}
@@ -52,6 +52,7 @@ public class TestRui {
 		ImagePlus mmfStack = new ImagePlus(path, mr.getMmfStack());
 		mmfStack.show();
 		// Worked!
+		// TODO crop a 2000 frame subset and track it to get different point types
 	}
 	
 	////////////////////////////////////////////
@@ -79,26 +80,22 @@ public class TestRui {
 	
 	/**
 	 * Grabs the correct points at/near time t from a track depending on chosen deriv method
-	 * @param track track we're working on
-	 * @param t frame we're working on
+	 * @param trackID track we're working on
+	 * @param frame frame we're working on
 	 * @param increment time step between frames
 	 * @param derivMethod forward(1)/backward(2)/central(3)
-	 * @return 2 or 3 points depending on derivMethod
+	 * @return a ImageStack of 2 points
 	 */
-	public static ImageStack test_grabPoints(int dM) {
+	public static ImageStack test_grabPoints(int trackID, int frame, int increment, int derivMethod) {
 		// load sample track
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
 		Experiment ex = new Experiment(path);
-		Track tr = ex.getTrack(59);
+		Track tr = ex.getTrack(trackID);
 		
 		// set parameters
-		int frame = 741; // change manually TODO write as loop index
-		int increment = 1;
-		int derivMethod = dM;
+		MaggotDisplayParameters mdp = new MaggotDisplayParameters();
+		mdp.setAllFalse(); //do now draw backbone labels
 		
-		// prepare empty result image stack
-		ImagePlus im1 = new ImagePlus();
-		ImagePlus im2 = new ImagePlus();
 		int first = frame;
 		int second = frame;
 		
@@ -106,14 +103,14 @@ public class TestRui {
 		case 1: // forward
 			System.out.println("derivMethod: forward");
 			// grab t then t+1
-			first = frame;
+			//first = frame;
 			second = frame+increment;
 			break;
 		case 2: // backward
 			System.out.println("derivMethod: backward");
 			// grab t-1 then t
 			first = frame-increment;
-			second = frame;
+			//second = frame;
 			break;
 		case 3: // central
 			System.out.println("derivMethod: central");
@@ -126,22 +123,20 @@ public class TestRui {
 			break;
 		}
 		
-		im1.setProcessor(tr.getFramePoint(first).getIm());
-		im2.setProcessor(tr.getFramePoint(second).getIm());
-		// note: if use ImTrackPoint.getIm, will get backbone points as well
-		// see if getRawIm returns same dimension
-		// nope (but does get rid of backbone points)
-		//im1.show();
-		//im2.show();
+		ImageProcessor im1 = tr.getFramePoint(first).getIm(mdp);
+		ImageProcessor im2 = tr.getFramePoint(second).getIm(mdp);
+		// note: this is MaggotTrackPoint.getIm()
+		// it's already padded and centered, which is not what we want
+		// TODO get true raw image, pad with true global coordinates
 		
 		// prepare return stack
 		ImageStack theseIm = new ImageStack(im1.getWidth(),im1.getHeight());
-		theseIm.addSlice(im1.getProcessor());
-		theseIm.addSlice(im2.getProcessor());
+		theseIm.addSlice(im1);
+		theseIm.addSlice(im2);
 		
 		// for test purpose: visualization
-		//ImagePlus theseImP = new ImagePlus("grabbed points", theseIm);
-		//theseImP.show();
+		ImagePlus theseImP = new ImagePlus("grabbed points", theseIm);
+		theseImP.show();
 		
 		return theseIm;
 	}
@@ -153,7 +148,7 @@ public class TestRui {
 	 * @param point1 earlier point
 	 * @param point2 later point
 	 * @param dt time increment between them
-	 * @return ddt image, 8 bit gray scale
+	 * @return ddt image, color
 	 */
 	public static void test_calcTimeDeriv() { //using test_grabPoints
 		// assume 8-bit gray scale
@@ -228,7 +223,12 @@ public class TestRui {
 		
 		// 3) external test images
 		///**
-		int derivMethod = 2; //change manually
+		// set parameters
+		int trackID = 59;
+		int frame = 741; //change manually TODO write as loop index
+		int increment = 1; //for now, always =1
+		int derivMethod = 3; //change manually
+		// deal with derivMethod
 		String methodMsg = "";
 		switch(derivMethod) {
 		case 1:
@@ -242,21 +242,17 @@ public class TestRui {
 			dt = 2;
 			break;
 		}
-		ImageStack theseIm = test_grabPoints(derivMethod);
+		// load points
+		ImageStack theseIm = test_grabPoints(trackID, frame, increment, derivMethod);
 		ImageProcessor point1 = theseIm.getProcessor(1);
 		ImageProcessor point2 = theseIm.getProcessor(2);
 		// temp fix: hard set these points to be ByteProcessors
-		// shouldn't need to do this if I can get the true raw image
+		// problem is with ImageJ's ImageStack, not with our code
 		point1 = point1.convertToByteProcessor();
 		point2 = point2.convertToByteProcessor();
 		int width = theseIm.getWidth();
 		int height = theseIm.getHeight();
 		//*/
-		
-		// TODO get correct roi
-		// check getCombinedBounds
-		// for now: use padded dimension
-		// probably should do this in grabPoints()
 
 		// prepare empty result image
 		//FloatProcessor ddtIm = new FloatProcessor(width, height);
@@ -277,23 +273,43 @@ public class TestRui {
 			}
 		}
 		
-		// visualization
+		// visualization: RGB
+		ddtIm.autoThreshold(); // if just want to see color binary
 		ImagePlus ddtImPlus = new ImagePlus(methodMsg, ddtIm);
 		ddtImPlus.show();
+		// TODO visualization: gray scale
 		
 	}
 	
 	public static void test_NB() {
+		
 		// load experiment and track
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
 		Experiment ex = new Experiment(path);
 		//Track tr = ex.getTrack(trID);
+		
 		// set parameters
 		int trID = 59;
-		int frame = 741; // change manually TODO write as loop index
+		int frame = 741; // change manually
 		int increment = 1;
 		int derivMethod = 1; // change manually: 1 for forward, 2 for backward, 3 for central
-		// load points
+		MaggotDisplayParameters mdp = new MaggotDisplayParameters();
+		mdp.setAllFalse();
+		
+		/**
+		// check point type
+		TrackPoint test = ex.getTrack(trID).getFramePoint(frame);
+		System.out.println(test.getTypeName());
+		System.out.println(test.pointType);
+		// ok it's a MaggotTrackPoint TODO make it work with all types?
+		// need to turn off backbone display in MaggotDisplayParameters
+		ImagePlus testImPlus = new ImagePlus(null, test.getIm(mdp));
+		testImPlus.show();
+		// success
+		 */
+		
+		///**
+		// load points TODO it's actually MaggotTrackPoint
 		// this point
 		TrackPoint thisTP = ex.getTrack(trID).getFramePoint(frame);
 		ImagePlus thisIm = new ImagePlus(null, ex.getTrack(trID).getFramePoint(frame).getRawIm());
@@ -316,6 +332,7 @@ public class TestRui {
 		ImageProcessor display = CVUtils.padAndCenter(thisPlus, 300, 300, centerX, centerY);
 		ImagePlus displayPlus = new ImagePlus("imDerivDisplay", display);
 		displayPlus.show();
+		//*/
 	}
 
 }
