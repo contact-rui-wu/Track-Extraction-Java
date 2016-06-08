@@ -5,6 +5,9 @@
 package TrackExtractionJava;
 
 import java.awt.Color;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.awt.Graphics;
 
 import ij.process.ImageProcessor;
 import ij.process.ByteProcessor;
@@ -25,13 +28,13 @@ public class TestRui {
 		
 		//test_prejav();		
 		
-		//test_grabPoints();
-		// works!
+		//test_grabPoints(741,100,1);
+		// now works with padding!
+		
+		//test_padImage();
 		
 		test_calcTimeDeriv();
-		// works!
-		// but with MaggotTrackPoints only
-		// still need to pad correctly according to global coordinates
+		// now works with padding and true raw image!
 		
 		//test_NB();
 	}
@@ -74,6 +77,14 @@ public class TestRui {
 		// good for testing
 	}
 	
+	public static Track test_grabTestTrack() {
+		// load sample track
+		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
+		Experiment ex = new Experiment(path);
+		Track tr = ex.getTrack(59);
+		return tr;
+	}
+	
 	/////////////////////////////////
 	// Calculating time derivative
 	/////////////////////////////////
@@ -86,11 +97,15 @@ public class TestRui {
 	 * @param derivMethod forward(1)/backward(2)/central(3)
 	 * @return a ImageStack of 2 points
 	 */
-	public static ImageStack test_grabPoints(int trackID, int frame, int increment, int derivMethod) {
+	@SuppressWarnings("static-access") //to make getCombinedBounds happy
+	public static ImageStack test_grabPoints(int frame, int increment, int derivMethod) {
+		/**
 		// load sample track
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
 		Experiment ex = new Experiment(path);
 		Track tr = ex.getTrack(trackID);
+		*/
+		Track tr = test_grabTestTrack();
 		
 		// set parameters
 		MaggotDisplayParameters mdp = new MaggotDisplayParameters();
@@ -123,22 +138,87 @@ public class TestRui {
 			break;
 		}
 		
+		/**
+		// get MaggotTrackPoint image - works
+		
+		// grab points
 		ImageProcessor im1 = tr.getFramePoint(first).getIm(mdp);
 		ImageProcessor im2 = tr.getFramePoint(second).getIm(mdp);
 		// note: this is MaggotTrackPoint.getIm()
 		// it's already padded and centered, which is not what we want
-		// TODO get true raw image, pad with true global coordinates
 		
-		// prepare return stack
+		// grab images and put into return stack
 		ImageStack theseIm = new ImageStack(im1.getWidth(),im1.getHeight());
 		theseIm.addSlice(im1);
 		theseIm.addSlice(im2);
+		*/
+		
+		///**
+		// get ImTrackPoint image (true raw image) - not yet
+		
+		// grab points
+		TrackPoint pt1 = tr.getFramePoint(first);
+		TrackPoint pt2 = tr.getFramePoint(second);
+		
+		// pad with true global coordinates
+		Rectangle newRect = pt1.getCombinedBounds(pt1, pt2);
+		// (moved getCombinedBounds from ImTrackPoint to TrackPoint to make it happy)
+		ImageProcessor im1 = test_padImage(pt1, newRect);
+		ImageProcessor im2 = test_padImage(pt2, newRect);
+		
+		// put padded images into return stack
+		ImageStack theseIm = new ImageStack(newRect.width, newRect.height);
+		theseIm.addSlice(im1);
+		theseIm.addSlice(im2);
+		//*/
 		
 		// for test purpose: visualization
-		ImagePlus theseImP = new ImagePlus("grabbed points", theseIm);
-		theseImP.show();
+		//ImagePlus theseImP = new ImagePlus("grabbed points", theseIm);
+		//theseImP.show();
 		
 		return theseIm;
+	}
+	
+	/**
+	 * Pads a point to a new roi
+	 * @param pt
+	 * @param newRect
+	 * @return padded image
+	 */
+	public static ImageProcessor test_padImage(TrackPoint pt, Rectangle newRect) {
+		/**
+		// load specific test points; will remove later
+		Track tr = test_grabTestTrack();
+		int frame = 741;
+		int increment = 100;
+		TrackPoint pt1 = tr.getFramePoint(frame);
+		TrackPoint pt2 = tr.getFramePoint(frame+increment);
+		String info1 = "x: " + pt1.rect.x + " y: " + pt1.rect.y + " width: " + pt1.rect.width + " height: " + pt1.rect.height;
+		String info2 = "x: " + pt2.rect.x + " y: " + pt2.rect.y + " width: " + pt2.rect.width + " height: " + pt2.rect.height;		
+		System.out.println(info1);
+		System.out.println(info2);
+		
+		// get newRect
+		Rectangle newRect = pt1.getCombinedBounds(pt1, pt2);
+		String infoNewRect = "x: " + newRect.x + " y: " + newRect.y + " width: " + newRect.width + " height: " + newRect.height;
+		System.out.println(infoNewRect);
+		*/
+		
+		// following CVUtils.padAndCenter()
+		ImagePlus im = new ImagePlus("original", pt.getRawIm());
+		//im.show();
+		int type = im.getBufferedImage().getType();
+		BufferedImage newIm = new BufferedImage(newRect.width, newRect.height,type);
+		Graphics g = newIm.getGraphics();
+		g.setColor(Color.black);
+		g.fillRect(0, 0, newRect.width, newRect.height);
+		int offsetX = pt.rect.x - newRect.x;
+		int offsetY = pt.rect.y - newRect.y;
+		g.drawImage(im.getBufferedImage(), offsetX, offsetY, null);
+		
+		ImageProcessor retIm = new ByteProcessor(newIm);
+		//retIm.show();
+		return retIm;
 	}
 	
 	/**
@@ -224,10 +304,9 @@ public class TestRui {
 		// 3) external test images
 		///**
 		// set parameters
-		int trackID = 59;
 		int frame = 741; //change manually TODO write as loop index
 		int increment = 1; //for now, always =1
-		int derivMethod = 3; //change manually
+		int derivMethod = 1; //change manually
 		// deal with derivMethod
 		String methodMsg = "";
 		switch(derivMethod) {
@@ -243,7 +322,7 @@ public class TestRui {
 			break;
 		}
 		// load points
-		ImageStack theseIm = test_grabPoints(trackID, frame, increment, derivMethod);
+		ImageStack theseIm = test_grabPoints(frame, increment, derivMethod);
 		ImageProcessor point1 = theseIm.getProcessor(1);
 		ImageProcessor point2 = theseIm.getProcessor(2);
 		// temp fix: hard set these points to be ByteProcessors

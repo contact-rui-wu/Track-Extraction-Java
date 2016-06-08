@@ -444,6 +444,17 @@ public class TrackPoint implements Serializable {
 		return info;
 	}
 	
+	// 20160608: moved from ImTrackPoint, changed param type
+	public Rectangle getCombinedBounds(TrackPoint pt1, TrackPoint pt2){
+		
+		int x = (pt1.rect.x<pt2.rect.x)? pt1.rect.x : pt2.rect.x;
+		int y = (pt1.rect.y<pt2.rect.y)? pt1.rect.y : pt2.rect.y;
+		int w = ((pt2.rect.x+pt2.rect.width-pt1.rect.x)>(pt1.rect.x+pt1.rect.width-pt2.rect.x))? (pt2.rect.x+pt2.rect.width-pt1.rect.x) : (pt1.rect.x+pt1.rect.width-pt2.rect.x);
+		int h = ((pt2.rect.y+pt2.rect.height-pt1.rect.y)>(pt1.rect.y+pt1.rect.height-pt2.rect.y))? (pt2.rect.y+pt2.rect.height-pt1.rect.y) : (pt1.rect.y+pt1.rect.height-pt2.rect.y);
+		
+		return new Rectangle(x, y, w, h);
+	}
+	
 	public Track getTrack(){
 		return track;
 	}
