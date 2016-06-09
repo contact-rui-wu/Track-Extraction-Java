@@ -15,8 +15,10 @@ import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.ImageStack;
 import ij.ImagePlus;
+//import ij.ImageJ;
 
 import edu.nyu.physics.gershowlab.mmf.mmf_Reader;
+import edu.nyu.physics.gershowlab.mmf.MmfVirtualStack;
 
 public class TestRui {
 
@@ -24,7 +26,9 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		test_wholeProcedure(1);
+		ImageStack mmf = test_loadTestMMF();
+		
+		//test_wholeProcedure(1);
 		// now works with padding and true raw image!
 		
 		//test_NB();
@@ -37,13 +41,34 @@ public class TestRui {
 	// write each test as a void method so that don't have to write a lot in main
 	
 	public static ImageStack test_loadTestMMF() {
+		// loda full size MMF
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleMMF_copy.mmf";
 		mmf_Reader mr = new mmf_Reader();
 		mr.loadStack(path);
-		ImageStack mmf = mr.getMmfStack();
+		MmfVirtualStack mmf = mr.getMmfStack();
 		
-		return mmf;
-
+		// crop
+		int width = mmf.getProcessor(1).getWidth();
+		int height = mmf.getProcessor(1).getHeight();
+		System.out.println("Dimension: " + width + "x" + height);
+		System.out.println("Number of frames: " + mmf.getSize());
+		//mmf = mmf.crop(1,1,1,width,height,2000); //doesn't work
+		//mmf.deleteLastSlice(); //doesn't work
+		int start = 1;
+		int stop = 300;
+		ImageStack retStack = new ImageStack(width,height);
+		for(int i=start; i<stop+1; i++) {
+			ImageProcessor ip = mmf.getProcessor(i);
+			retStack.addSlice(ip);
+		}
+		// problem: brute force takes lot of memory, will crash for >300 frames
+		// TODO is there something in mmf_Reader that I can use?
+		
+		// visualization
+		ImagePlus retPlus = new ImagePlus("crop test", retStack);
+		retPlus.show();
+		
+		return retStack;
 	}
 	
 	/**
@@ -249,6 +274,7 @@ public class TestRui {
 		// prepare images for calculation
 		// temp fix: hard set these points to be ByteProcessors
 		// problem is with ImageJ's ImageStack, not with our code
+		// TODO use getBitDepth() and check processor type
 		im1 = im1.convertToByteProcessor();
 		im2 = im2.convertToByteProcessor();
 		int width = theseIm.getWidth();
@@ -326,6 +352,8 @@ public class TestRui {
 			int zoomFactor = (int)300/newRect.width;
 			ImagePlus ddtImCropped = new ImagePlus("cropped", newIm.resize(newRect.width*zoomFactor));
 			ddtImCropped.show();
+			// problem: cropped image always black
+			// STUPID: they're not the same experiment....
 		}
 	}
 	
