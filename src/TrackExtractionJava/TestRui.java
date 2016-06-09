@@ -24,14 +24,7 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		//test_MMF();
-		
-		//test_prejav();		
-		
-		//test_grabPoints(741,100,1);
-		// now works with padding!
-		
-		test_calcTimeDeriv();
+		test_wholeProcedure(1);
 		// now works with padding and true raw image!
 		
 		//test_NB();
@@ -43,41 +36,14 @@ public class TestRui {
 	
 	// write each test as a void method so that don't have to write a lot in main
 	
-	/////////////////////////////////////////
-	// Opening and playing with .MMF files
-	/////////////////////////////////////////
-	
-	public static void test_MMF() {
-		// load full size MMF
+	public static ImageStack test_loadTestMMF() {
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleMMF_copy.mmf";
 		mmf_Reader mr = new mmf_Reader();
 		mr.loadStack(path);
 		ImageStack mmf = mr.getMmfStack();
+		
+		return mmf;
 
-		// TODO crop a 2000 frame subset and track it to get different point types
-		ImageStack mmfCropped = mmf.crop(1, 1, 1, mmf.getWidth(), mmf.getHeight(), 2000);
-		ImagePlus mmfPlus = new ImagePlus("cropped", mmfCropped);
-		mmfPlus.show();
-		// problem: getMmfStack() actually returns our custom MmfVirtualStack, not ImageJ's ImageStack
-	}
-	
-	////////////////////////////////////////////
-	// Opening and playing with .prejav files
-	////////////////////////////////////////////
-	
-	public static void test_prejav() {
-		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
-		//Experiment_Viewer exv = new Experiment_Viewer();
-		//exv.run(path);
-		// above: opens a panel, can look at numbers in each track, can play track movie - success
-		Experiment ex = new Experiment(path);
-		//int x = ex.getNumFrames();
-		//System.out.println(x);
-		// above: loads tracked experiment and get # of frames - success
-		Track tr = ex.getTrack(59);
-		tr.playMovie();
-		// trackID=59: got significant disturbance at frame #739-755
-		// good for testing
 	}
 	
 	/**
@@ -85,17 +51,69 @@ public class TestRui {
 	 * <p>
 	 * (Not a stand alone test; written for convenience)
 	 */
-	public static Track test_grabTestTrack() {
-		// load sample track
+	public static Track test_loadTestTrack() {
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
 		Experiment ex = new Experiment(path);
 		Track tr = ex.getTrack(59);
 		return tr;
+		// trackID=59: got significant disturbance at frame #739-755
+		// good for test purposes
 	}
-	
-	/////////////////////////////////
-	// Calculating time derivative
-	/////////////////////////////////
+
+	/**
+	 * Grabs the correct frames at/near time t from a track depending on chosen deriv method
+	 * @param frame
+	 * @param increment
+	 * @param derivMethod
+	 * @return
+	 */
+	public static ImageStack test_grabFrames(int frame, int increment, int derivMethod) {
+		// load mmf
+		ImageStack mmf = test_loadTestMMF();
+		
+		// deal with derivMethod
+		int first = frame;
+		int second = frame;
+		
+		switch(derivMethod) {
+		case 1: // forward
+			System.out.println("derivMethod: forward");
+			// grab t then t+1
+			second = frame+increment;
+			break;
+		case 2: // backward
+			System.out.println("derivMethod: backward");
+			// grab t-1 then t
+			first = frame-increment;
+			break;
+		case 3: // central
+			System.out.println("derivMethod: central");
+			// grab t-1 then t+1
+			first = frame-increment;
+			second = frame+increment;
+			break;
+		default:
+			System.out.println("Invalid derivMethod");
+			break;
+		}
+		
+		// grab images
+		ImageProcessor im1 = mmf.getProcessor(first);
+		ImageProcessor im2 = mmf.getProcessor(second);
+		int width = im1.getWidth();
+		int height = im1.getHeight();
+		
+		// prepare return stack
+		ImageStack theseFrames = new ImageStack(width, height);
+		theseFrames.addSlice(im1);
+		theseFrames.addSlice(im2);
+		
+		// visualization
+		ImagePlus showThese = new ImagePlus("grabbed frames", theseFrames);
+		showThese.show();
+		
+		return theseFrames;
+	}
 	
 	/**
 	 * Grabs the correct points at/near time t from a track depending on chosen deriv method
@@ -107,17 +125,13 @@ public class TestRui {
 	 */
 	//@SuppressWarnings("static-access") //to make getCombinedBounds happy
 	public static ImageStack test_grabPoints(int frame, int increment, int derivMethod) {
-		/**
 		// load sample track
-		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
-		Experiment ex = new Experiment(path);
-		Track tr = ex.getTrack(trackID);
-		*/
-		Track tr = test_grabTestTrack();
+		Track tr = test_loadTestTrack();
 		
 		// set parameters
-		MaggotDisplayParameters mdp = new MaggotDisplayParameters();
-		mdp.setAllFalse(); //do now draw backbone labels
+		// obsolete: maggot images are not accurate
+		//MaggotDisplayParameters mdp = new MaggotDisplayParameters();
+		//mdp.setAllFalse(); //do now draw backbone labels
 		
 		int first = frame;
 		int second = frame;
@@ -170,6 +184,7 @@ public class TestRui {
 		
 		// pad with true global coordinates
 		Rectangle newRect = pt1.getCombinedBounds(pt1, pt2);
+		System.out.println("offset: (" + newRect.x + "," + newRect.y + "), dimension: " + newRect.width + "x" + newRect.height);
 		// (moved getCombinedBounds from ImTrackPoint to TrackPoint to make it happy)
 		ImageProcessor im1 = test_padImage(pt1, newRect);
 		ImageProcessor im2 = test_padImage(pt2, newRect);
@@ -180,10 +195,11 @@ public class TestRui {
 		theseIm.addSlice(im2);
 		//*/
 		
-		// visualization (10x zoom in)
-		ImageStack showThese = new ImageStack(newRect.width*10, newRect.height*10);
-		showThese.addSlice(im1.resize(newRect.width*10));
-		showThese.addSlice(im2.resize(newRect.width*10));
+		// visualization (zoom in to 300 px)
+		int zoomFactor = (int)300/newRect.width;
+		ImageStack showThese = new ImageStack(newRect.width*zoomFactor, newRect.height*zoomFactor);
+		showThese.addSlice(im1.resize(newRect.width*zoomFactor));
+		showThese.addSlice(im2.resize(newRect.width*zoomFactor));
 		ImagePlus theseImP = new ImagePlus("grabbed points", showThese);
 		theseImP.show();
 		
@@ -199,24 +215,6 @@ public class TestRui {
 	 * @return padded image
 	 */
 	public static ImageProcessor test_padImage(TrackPoint pt, Rectangle newRect) {
-		/**
-		// load specific test points; will remove later
-		Track tr = test_grabTestTrack();
-		int frame = 741;
-		int increment = 100;
-		TrackPoint pt1 = tr.getFramePoint(frame);
-		TrackPoint pt2 = tr.getFramePoint(frame+increment);
-		String info1 = "x: " + pt1.rect.x + " y: " + pt1.rect.y + " width: " + pt1.rect.width + " height: " + pt1.rect.height;
-		String info2 = "x: " + pt2.rect.x + " y: " + pt2.rect.y + " width: " + pt2.rect.width + " height: " + pt2.rect.height;		
-		System.out.println(info1);
-		System.out.println(info2);
-		
-		// get newRect
-		Rectangle newRect = pt1.getCombinedBounds(pt1, pt2);
-		String infoNewRect = "x: " + newRect.x + " y: " + newRect.y + " width: " + newRect.width + " height: " + newRect.height;
-		System.out.println(infoNewRect);
-		*/
-		
 		// following CVUtils.padAndCenter()
 		ImagePlus im = new ImagePlus("original", pt.getRawIm());
 		//im.show();
@@ -235,114 +233,26 @@ public class TestRui {
 	}
 	
 	/**
-	 * Given 2 points, compute ddt image between them
-	 * @param point1 earlier point
-	 * @param point2 later point
-	 * @param dt time increment between them
+	 * Given 2 images (same dimension), compute ddt image between them
+	 * @param theseIm 2-image stack
+	 * @param dt time increment setting
 	 * @return ddt image, color
 	 */
-	public static void test_calcTimeDeriv() { //using test_grabPoints
+	public static ImageProcessor test_calcTimeDeriv(ImageStack theseIm, int dt) { //using test_grabPoints
 		// assume 8-bit gray scale
 		// Q: do I still need to deal with threshold?	
 		
-		int dt=1; // default time step=1
+		// load images
+		ImageProcessor im1 = theseIm.getProcessor(1);
+		ImageProcessor im2 = theseIm.getProcessor(2);
 		
-		// 1) simple, generated binary points
-		/**
-		ByteProcessor point1 = new ByteProcessor(100,100);
-		ByteProcessor point2 = new ByteProcessor(100,100);
-		int width = point1.getWidth();
-		int height = point1.getHeight();
-		int xcenter = width/2;
-		int ycenter = height/2;
-		// fill point1: center
-		for(int i=0; i<width; i++) {
-			for(int j=0; j<height; j++) {
-				if(Math.abs(i-xcenter)<20 && Math.abs(j-ycenter)<20) {
-					point1.set(i,j,255);
-				} else {
-					point1.set(i,j,0);
-				}
-			}
-		}
-		// fill point2: move 10px to the right
-		for(int i=0; i<width; i++) {
-			for(int j=0; j<height; j++) {
-				if(Math.abs(i-xcenter-10)<20 && Math.abs(j-ycenter)<20) {
-					point2.set(i,j,255);
-				} else {
-					point2.set(i,j,0);
-				}
-			}
-		}		
-		*/
-		
-		// 2) simple, generated gradient points
-		/**
-		ByteProcessor point1 = new ByteProcessor(100,100);
-		ByteProcessor point2 = new ByteProcessor(100,100);
-		int width = point1.getWidth();
-		int height = point1.getHeight();
-		int xcenter = width/2;
-		int ycenter = height/2;
-		// fill point1: center
-		for(int i=0; i<width; i++) {
-			for(int j=0; j<height; j++) {
-				if(Math.abs(i-xcenter)<20 && Math.abs(j-ycenter)<20) {
-					point1.set(i,j,255-(i*2+50));
-				} else {
-					point1.set(i,j,0);
-				}
-			}
-		}
-		// fill point2: move 10px to the right
-		for(int i=0; i<width; i++) {
-			for(int j=0; j<height; j++) {
-				if(Math.abs(i-xcenter-10)<20 && Math.abs(j-ycenter)<20) {
-					point2.set(i,j,255-(i*2+50));
-				} else {
-					point2.set(i,j,0);
-				}
-			}
-		}
-		// visualization
-		ImagePlus point1Plus = new ImagePlus("point1", point1);
-		point1Plus.show();
-		ImagePlus point2Plus = new ImagePlus("point2", point2);
-		point2Plus.show();
-		*/
-		
-		// 3) external test images
-		///**
-		// set parameters
-		int frame = 741; //change manually; eventually will become input
-		int increment = 1; //for now, always =1
-		int derivMethod = 3; //change manually
-		// deal with derivMethod
-		String methodMsg = "";
-		switch(derivMethod) {
-		case 1:
-			methodMsg = "Forward";
-			break;
-		case 2:
-			methodMsg = "Backward";
-			break;
-		case 3:
-			methodMsg = "Central";
-			dt = 2;
-			break;
-		}
-		// load points
-		ImageStack theseIm = test_grabPoints(frame, increment, derivMethod);
-		ImageProcessor point1 = theseIm.getProcessor(1);
-		ImageProcessor point2 = theseIm.getProcessor(2);
+		// prepare images for calculation
 		// temp fix: hard set these points to be ByteProcessors
 		// problem is with ImageJ's ImageStack, not with our code
-		point1 = point1.convertToByteProcessor();
-		point2 = point2.convertToByteProcessor();
+		im1 = im1.convertToByteProcessor();
+		im2 = im2.convertToByteProcessor();
 		int width = theseIm.getWidth();
 		int height = theseIm.getHeight();
-		//*/
 
 		// prepare empty result image
 		//FloatProcessor ddtIm = new FloatProcessor(width, height);
@@ -350,7 +260,7 @@ public class TestRui {
 		// fill ddtIm
 		for(int i=0; i<width; i++) {
 			for(int j=0; j<height; j++) {
-				int pixDiff = point2.getPixel(i,j)-point1.getPixel(i,j);
+				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
 				int ddt = pixDiff/dt;
 				//float ddt = ((pixDiff+255)/2)/dt;
 				//ddtIm.setf(i,j,ddt);
@@ -363,13 +273,60 @@ public class TestRui {
 			}
 		}
 		
-		// visualization: (10x zoom in)
+		// visualization:
 		// RGB mode
-		//ddtIm.autoThreshold(); // if just want to see color binary
-		ImagePlus ddtImPlus = new ImagePlus(methodMsg, ddtIm.resize(width*10));
+		ddtIm.autoThreshold(); //if just want to see color binary
+		ImagePlus ddtImPlus = new ImagePlus();
+		if(width<300 || height<300) {
+			int zoomFactor = (int)300/width;
+			ddtImPlus.setProcessor(ddtIm.resize(width*zoomFactor));
+		} else {
+			ddtImPlus.setProcessor(ddtIm);
+		}
 		ddtImPlus.show();
 		// TODO gray scale mode
 		
+		return ddtIm;
+	}
+	
+	public static void test_wholeProcedure(int fop) {
+		// set param
+		int frame = 741;
+		int increment = 1;
+		int derivMethod = 1;
+		int dt = increment;
+		ImageStack theseIm = new ImageStack();
+		
+		// grab images
+		if(fop==1) {
+			theseIm = test_grabFrames(frame,increment,derivMethod);
+		} else if(fop==2) {
+			theseIm = test_grabPoints(frame,increment,derivMethod);
+		} else {
+			System.out.println("Choose 1 (frames) or 2 (points)");
+			return;
+		}
+		
+		// calculate and show
+		if(derivMethod==3) {
+			dt = increment*2;
+		}
+		ImageProcessor ddtIm = test_calcTimeDeriv(theseIm, dt);
+		
+		// for frames, crop for trackID 59 and show
+		if(fop==1) {
+			Track tr = test_loadTestTrack();
+			TrackPoint pt1 = tr.getFramePoint(frame);
+			TrackPoint pt2 = tr.getFramePoint(frame+increment);
+			// TODO repeated code in grabPoints() I think
+			Rectangle newRect = pt1.getCombinedBounds(pt1, pt2);
+			System.out.println("offset: (" + newRect.x + "," + newRect.y + "), dimension: " + newRect.width + "x" + newRect.height);
+			ddtIm.setRoi(newRect);
+			ImageProcessor newIm = ddtIm.crop();
+			int zoomFactor = (int)300/newRect.width;
+			ImagePlus ddtImCropped = new ImagePlus("cropped", newIm.resize(newRect.width*zoomFactor));
+			ddtImCropped.show();
+		}
 	}
 	
 	public static void test_NB() {
