@@ -24,6 +24,8 @@ public class ImTrackPoint extends TrackPoint{
 	private static final long serialVersionUID = 1L;
 	transient protected ImageProcessor im;
 	protected ImageProcessor imDeriv;
+	// Marc was here: see below setImage()
+	// protected vector of imageprocessors secondaryImages
 	protected byte[] serializableIm;
 	protected int imOriginX;
 	protected int imOriginY;
@@ -177,6 +179,25 @@ public class ImTrackPoint extends TrackPoint{
 		im = frameIm.getProcessor().crop();//Does not affect frameIm's image
 		frameIm.setRoi(oldRoi);
 	}
+	
+	/* Marc was here:
+	 * - store as many derivIm as you want
+	 * - can be different smoothing
+	 * below: pseudo code, don't uncomment
+	public void findAndStoreIm(ImagePlus frameIm, vectorOfImages secondaryImSources){
+		Roi oldRoi = frameIm.getRoi();
+		frameIm.setRoi(rect);
+		im = frameIm.getProcessor().crop();//Does not affect frameIm's image
+		frameIm.setRoi(oldRoi);
+		for (j = 0; j < secondaryImSource.length(); ++j) {
+			Roi oldRoi = secondaryImSource(j).getRoi();
+			secondaryImSource(j).setRoi(rect);
+			secondaryIms(j) = frameIm.getProcessor().crop();//Does not affect frameIm's image
+			frameIm.setRoi(oldRoi);
+		   secondaryIms(j) = 
+		}
+	}
+	*/
 	
 	protected void strip(){
 		super.strip();

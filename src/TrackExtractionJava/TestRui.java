@@ -95,7 +95,7 @@ public class TestRui {
 		// set parameters
 		int trackID = 59;
 		int increment = 1;
-		int derivMethod = 1;
+		int derivMethod = 2;
 		
 		// load mmf
 		String mmfPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
@@ -108,56 +108,61 @@ public class TestRui {
 		Experiment ex = new Experiment(prejavPath);
 		Track tr = ex.getTrack(trackID);
 		int start = tr.getStart().getFrameNum();
-		//int end = tr.getEnd().getFrameNum();
-		int end = 1000;
+		int end = tr.getEnd().getFrameNum();
+		//int end = 500;
 		int dt = increment;
 		
 		// prepare result stack
 		ImageStack ret = new ImageStack(30,30);
+		String derivMethodMsg = null;
 		
 		// deal with derivMethod
 		switch(derivMethod) {
 		case 1: //forward
-			System.out.println("Derive method: forward");
-			for(int i=start;i<end;i++) { //TODO deal with first/last/missing points, or maybe write the loop as a seperate method
-				if(i%100==0) {
-					System.out.println("Working on " + i + "th frame....");
-				}
-				// 1) grab frames
-				ImageStack frames = test_getFrames(mmf,i,i+dt);
-				// 2) calculate whole frame ddtIm
-				ImageProcessor ddtFrame = test_calcTimeDeriv(frames,dt);
-				// 3) grab points and crop accordingly
-				Rectangle newRect = test_getNewRect(tr,i,i+dt,2);
-				ddtFrame.setRoi(newRect);
-				ImageProcessor ddtPoint = ddtFrame.crop();
-				ddtPoint.autoThreshold(); //TODO autoThreshold() gives a different threshold value for each frame; need to do it after building the ddt stack with a global threshold value
-				// 4) padAndCenter
-				//    for now, set fixed size 30x30 (definitely larger than point)
-				int centerX = ddtPoint.getWidth()/2;
-				int centerY = ddtPoint.getHeight()/2;
-				ImageProcessor newIm = CVUtils.padAndCenter(new ImagePlus("",ddtPoint), 30, 30, centerX, centerY);
-				ret.addSlice(newIm);
-			}
+			derivMethodMsg = "Derive method: forward";
+			end = end-increment;
 			break;
 		case 2: //backward
-			System.out.println("Derive method: backward");
+			derivMethodMsg = "Derive method: backward";
+			start = start+increment;
 			break;
 		case 3: //central
-			System.out.println("Derive method: central");
+			derivMethodMsg = "Derive method: central";
+			start = start+increment;
+			end = end-increment;
 			dt = increment*2;
 			break;
+		}
+		
+		System.out.println(derivMethodMsg);
+		
+		// building ddtIm stack
+		for(int i=start;i<=end;i=i+increment) {
+			if(i%100==0) {
+				System.out.println("Working on " + i + "th frame....");
+			}
+			ImageStack frames = test_getFrames(mmf,i,increment,derivMethod);
+			ImageProcessor ddtFrame = test_calcTimeDeriv(frames,dt);
+			Rectangle newRect = test_getNewRect(tr,i,increment,derivMethod,2);
+			ddtFrame.setRoi(newRect);
+			ImageProcessor ddtPoint = ddtFrame.crop();
+			//ddtPoint.autoThreshold(); //TODO autoThreshold() gives a different threshold value for each frame; need to do it after building the ddt stack with a global threshold value
+			int centerX = ddtPoint.getWidth()/2;
+			int centerY = ddtPoint.getHeight()/2;
+			ImageProcessor newIm = CVUtils.padAndCenter(new ImagePlus("",ddtPoint), 30, 30, centerX, centerY);
+			ret.addSlice(newIm);
 		}
 		
 		System.out.println("Done!");
 		
 		// visualization
-		ImagePlus retPlus = test_zoom(new ImagePlus("",ret),10);
+		ImagePlus retPlus = test_zoom(new ImagePlus(null,ret),10);
+		retPlus.setTitle(derivMethodMsg);
 		retPlus.show();
 		
 		// compare with raw movie
 		// TODO current method doesn't use getCombinedBounds(), so not really comparable to ddtIm movie
-		tr.playBlankMovie();
+		//tr.playBlankMovie();
 	}
 	
 	/**
@@ -206,7 +211,9 @@ public class TestRui {
 		frames.addSlice(frameIm2);
 		*/
 		
-		ImageStack frames = test_getFrames(mmf,first,second);
+		int derivMethod = 1;
+		
+		ImageStack frames = test_getFrames(mmf,first,second-first,derivMethod);
 		
 		// generate whole frame ddtIm
 		int dt = second-first;
@@ -229,7 +236,7 @@ public class TestRui {
 		System.out.println("New dimension: " + newRect.width + "x" + newRect.height);
 		*/
 		
-		Rectangle newRect = test_getNewRect(tr,first,second,2);
+		Rectangle newRect = test_getNewRect(tr,first,second-first,derivMethod,2);
 		
 		// crop to get point size ddtIm
 		/**
@@ -333,8 +340,32 @@ public class TestRui {
 		return retIm;
 	}
 	
-	public static ImageStack test_getFrames(ImageStack mmf, int first, int second) {
+	/**
+	 * Grabs any two frame from an image stack
+	 * @param mmf Image stack to grab from
+	 * @param first First frame number to grab
+	 * @param second Second frame number to grab
+	 * @return A 2-frame image stack
+	 */
+	public static ImageStack test_getFrames(ImageStack mmf, int frame, int increment, int derivMethod) {
+		// handle derivMethod
+		int first = frame;
+		int second = frame;
+		switch(derivMethod) {
+		case 1:
+			second = frame+increment;
+			break;
+		case 2:
+			first = frame-increment;
+			break;
+		case 3:
+			first = frame-increment;
+			second = frame+increment;
+			break;
+		}
+		
 		///**
+		// using FrameLoader
 		Communicator comm = new Communicator();
 		FrameLoader fl = new FrameLoader(comm, mmf);
 		//int width = mmf.getWidth();
@@ -349,6 +380,7 @@ public class TestRui {
 		//*/
 		
 		/**
+		// using ImageJ methods
 		ImageProcessor frameIm1 = mmf.getProcessor(first);
 		ImageProcessor frameIm2 = mmf.getProcessor(second);
 		int width = frameIm1.getWidth();
@@ -406,7 +438,7 @@ public class TestRui {
 		for(int i=0; i<width; i++) {
 			for(int j=0; j<height; j++) {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
-				int ddt = pixDiff/dt;
+				int ddt = pixDiff/dt; //TODO potential round-off error
 				//float ddt = ((pixDiff+255)/2)/dt;
 				//ddtIm.setf(i,j,ddt);
 				if (pixDiff>0) {
@@ -421,7 +453,23 @@ public class TestRui {
 		return ddtIm;
 	}
 	
-	public static Rectangle test_getNewRect(Track tr, int first, int second, int edge) {
+	public static Rectangle test_getNewRect(Track tr, int frame, int increment, int derivMethod, int edge) {
+		// handle derivMethod
+		int first = frame;
+		int second = frame;
+		switch(derivMethod) {
+		case 1:
+			second = frame+increment;
+			break;
+		case 2:
+			first = frame-increment;
+			break;
+		case 3:
+			first = frame-increment;
+			second = frame+increment;
+			break;
+		}
+		
 		// grab points
 		TrackPoint pt1 = tr.getFramePoint(first);
 		TrackPoint pt2 = tr.getFramePoint(second);
