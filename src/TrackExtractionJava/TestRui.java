@@ -26,13 +26,56 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		//test_compare();
+		/*
+		String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
+		Experiment_Viewer ev = new Experiment_Viewer();
+		ev.run(prejavPath);
+		*/
 		
-		test_workOnTrack();
+		test_runTime();
 		
 	}
 	
 	// write each test as a void method so that don't have to write a lot in main
+	
+	public static void test_runTime() {
+		TicToc time = new TicToc();
+		
+		// load mmf
+		String mmfPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
+		mmf_Reader mr = new mmf_Reader();
+		mr.loadStack(mmfPath);
+		ImageStack mmf = mr.getMmfStack();
+		
+		// load prejav
+		String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
+		Experiment ex = new Experiment(prejavPath);
+		Track tr1 = ex.getTrack(59);
+		Track tr2 = ex.getTrack(61);
+		
+		// 1) one track with visualization
+		String msg = "One track with visualization: ";
+		boolean show = true;
+		time.tic();
+		test_workOnTrack(mmf,tr1,show);
+		System.out.println(msg + time.toc()/1000 + " sec");
+		
+		// 2) one track without visualization
+		msg = "One track without visualization: ";
+		show = false;
+		time.tic();
+		test_workOnTrack(mmf,tr1,show);
+		System.out.println(msg + time.toc()/1000 + " sec");
+		
+		// 3) two tracks without visualization
+		msg = "Two tracks without visualization: ";
+		show = false;
+		time.tic();
+		//test_workOnTrack(mmf,ex,59,show);
+		//test_workOnTrack(mmf,ex,60,show);
+		test_workOnTwoTracks(mmf,ex,59,61,show);
+		System.out.println(msg + time.toc()/1000 + " sec");
+	}
 	
 	/**
 	 * Test: compares ddt image calculated from the whole frame image (.mmf) and from the saved point-size image (.prejav)
@@ -91,12 +134,12 @@ public class TestRui {
 		*/
 	}
 	
-	public static void test_workOnTrack() {
+	public static void test_workOnTrack(ImageStack mmf, Track tr, boolean show) {
 		// set parameters
-		int trackID = 59;
 		int increment = 1;
 		int derivMethod = 2;
 		
+		/*
 		// load mmf
 		String mmfPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
 		mmf_Reader mr = new mmf_Reader();
@@ -107,6 +150,7 @@ public class TestRui {
 		String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
 		Experiment ex = new Experiment(prejavPath);
 		Track tr = ex.getTrack(trackID);
+		*/
 		int start = tr.getStart().getFrameNum();
 		int end = tr.getEnd().getFrameNum();
 		//int end = 500;
@@ -134,7 +178,7 @@ public class TestRui {
 			break;
 		}
 		
-		System.out.println(derivMethodMsg);
+		//System.out.println(derivMethodMsg);
 		
 		// building ddtIm stack
 		for(int i=start;i<=end;i=i+increment) {
@@ -150,19 +194,101 @@ public class TestRui {
 			int centerX = ddtPoint.getWidth()/2;
 			int centerY = ddtPoint.getHeight()/2;
 			ImageProcessor newIm = CVUtils.padAndCenter(new ImagePlus("",ddtPoint), 30, 30, centerX, centerY);
-			ret.addSlice(newIm);
+			ret.addSlice(newIm); //TODO this is only for visualization; shouldn't do padAndCenter() for actual image to attach to ImTrackPoint
 		}
 		
 		System.out.println("Done!");
 		
 		// visualization
-		ImagePlus retPlus = test_zoom(new ImagePlus(null,ret),10);
-		retPlus.setTitle(derivMethodMsg);
-		retPlus.show();
+		if(show) {
+			ImagePlus retPlus = test_zoom(new ImagePlus(null,ret),10);
+			retPlus.setTitle(derivMethodMsg);
+			retPlus.show();
+		}
 		
 		// compare with raw movie
 		// TODO current method doesn't use getCombinedBounds(), so not really comparable to ddtIm movie
 		//tr.playBlankMovie();
+	}
+	
+	public static void test_workOnTwoTracks(ImageStack mmf, Experiment ex, int trackID1, int trackID2, boolean show) {
+		// set parameters
+		int increment = 1;
+		int derivMethod = 2;
+
+		Track tr1 = ex.getTrack(trackID1);
+		int start = tr1.getStart().getFrameNum();
+		int end = tr1.getEnd().getFrameNum();
+		Track tr2 = ex.getTrack(trackID2);
+		// for now, we know tr1 and tr2 are of same length
+		int dt = increment;
+		
+		// prepare result stack
+		ImageStack ret1 = new ImageStack(30,30);
+		ImageStack ret2 = new ImageStack(30,30);
+		String derivMethodMsg = null;
+		
+		// deal with derivMethod
+		switch(derivMethod) {
+		case 1: //forward
+			derivMethodMsg = "Derive method: forward";
+			end = end-increment;
+			break;
+		case 2: //backward
+			derivMethodMsg = "Derive method: backward";
+			start = start+increment;
+			break;
+		case 3: //central
+			derivMethodMsg = "Derive method: central";
+			start = start+increment;
+			end = end-increment;
+			dt = increment*2;
+			break;
+		}
+		
+		//System.out.println(derivMethodMsg);
+		
+		// building ddtIm stack
+		for(int i=start;i<=end;i=i+increment) {
+			if(i%100==0) {
+				System.out.println("Working on " + i + "th frame....");
+			}
+			ImageStack frames = test_getFrames(mmf,i,increment,derivMethod);
+			ImageProcessor ddtFrame = test_calcTimeDeriv(frames,dt);
+			
+			// work on tr1
+			Rectangle newRect1 = test_getNewRect(tr1,i,increment,derivMethod,2);
+			ddtFrame.setRoi(newRect1);
+			ImageProcessor ddtPoint1 = ddtFrame.crop();
+			ddtPoint1.autoThreshold();
+			int centerX = ddtPoint1.getWidth()/2;
+			int centerY = ddtPoint1.getHeight()/2;
+			ImageProcessor newIm1 = CVUtils.padAndCenter(new ImagePlus("",ddtPoint1), 30, 30, centerX, centerY);
+			ret1.addSlice(newIm1);
+			
+			// work on tr2
+			Rectangle newRect2 = test_getNewRect(tr2,i,increment,derivMethod,2);
+			ddtFrame.setRoi(newRect2);
+			ImageProcessor ddtPoint2 = ddtFrame.crop();
+			ddtPoint2.autoThreshold();
+			centerX = ddtPoint2.getWidth()/2;
+			centerY = ddtPoint2.getHeight()/2;
+			ImageProcessor newIm2 = CVUtils.padAndCenter(new ImagePlus("",ddtPoint2), 30, 30, centerX, centerY);
+			ret2.addSlice(newIm2);
+		}
+		
+		System.out.println("Done!");
+		
+		// visualization
+		if(show) {
+			ImagePlus retPlus1 = test_zoom(new ImagePlus(null,ret1),10);
+			retPlus1.setTitle("Track " + trackID1);
+			retPlus1.show();
+			ImagePlus retPlus2 = test_zoom(new ImagePlus(null,ret2),10);
+			retPlus2.setTitle("Track " + trackID2);
+			retPlus2.show();
+		}
+		
 	}
 	
 	/**
@@ -453,6 +579,7 @@ public class TestRui {
 		return ddtIm;
 	}
 	
+	
 	public static Rectangle test_getNewRect(Track tr, int frame, int increment, int derivMethod, int edge) {
 		// handle derivMethod
 		int first = frame;
@@ -483,6 +610,12 @@ public class TestRui {
 		return newRect;
 	}
 
+	/**
+	 * Takes an ImagePlus object (can contain single image or stack) and re-scale by zoomFactor
+	 * @param original
+	 * @param zoomFactor
+	 * @return Scaled ImagePlus object
+	 */
 	public static ImagePlus test_zoom(ImagePlus original, double zoomFactor) {
 		// get original dimension
 		int width = original.getWidth();
