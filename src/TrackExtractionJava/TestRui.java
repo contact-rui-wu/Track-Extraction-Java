@@ -26,7 +26,9 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		test_compare();
+		//test_compare();
+		
+		test_workOnTrack();
 		
 	}
 	
@@ -74,18 +76,88 @@ public class TestRui {
 		System.out.println("Calculating derivative image from .mmf");
 		ImageStack mmf = test_getImsMmf(tr,first,second);
 		// visualization
-		ImagePlus mmfPlus = new ImagePlus("from MMF", test_zoom(mmf));
+		//ImagePlus mmfPlus = new ImagePlus("from MMF", test_zoom(mmf,300));
+		ImagePlus mmfPlus = test_zoom(new ImagePlus("from MMF",mmf), 15);
 		mmfPlus.getStack().getProcessor(3).autoThreshold(); //easier to see
 		mmfPlus.show();
 		
 		/**
-		// get point size Ims and ddtIm from prejav
+		// obsolete: get point size Ims and ddtIm from prejav
 		System.out.println("Calculating derivative image from .prejav");
 		ImageStack prejav = test_getImsPrejav(tr,first,second);
 		// visualization
 		ImagePlus prejavPlus = new ImagePlus("from prejav", test_zoom(prejav));
 		prejavPlus.show();
 		*/
+	}
+	
+	public static void test_workOnTrack() {
+		// set parameters
+		int trackID = 59;
+		int increment = 1;
+		int derivMethod = 1;
+		
+		// load mmf
+		String mmfPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
+		mmf_Reader mr = new mmf_Reader();
+		mr.loadStack(mmfPath);
+		ImageStack mmf = mr.getMmfStack();
+		
+		// load prejav
+		String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
+		Experiment ex = new Experiment(prejavPath);
+		Track tr = ex.getTrack(trackID);
+		int start = tr.getStart().getFrameNum();
+		//int end = tr.getEnd().getFrameNum();
+		int end = 1000;
+		int dt = increment;
+		
+		// prepare result stack
+		ImageStack ret = new ImageStack(30,30);
+		
+		// deal with derivMethod
+		switch(derivMethod) {
+		case 1: //forward
+			System.out.println("Derive method: forward");
+			for(int i=start;i<end;i++) { //TODO deal with first/last/missing points, or maybe write the loop as a seperate method
+				if(i%100==0) {
+					System.out.println("Working on " + i + "th frame....");
+				}
+				// 1) grab frames
+				ImageStack frames = test_getFrames(mmf,i,i+dt);
+				// 2) calculate whole frame ddtIm
+				ImageProcessor ddtFrame = test_calcTimeDeriv(frames,dt);
+				// 3) grab points and crop accordingly
+				Rectangle newRect = test_getNewRect(tr,i,i+dt,2);
+				ddtFrame.setRoi(newRect);
+				ImageProcessor ddtPoint = ddtFrame.crop();
+				ddtPoint.autoThreshold(); //TODO autoThreshold() gives a different threshold value for each frame; need to do it after building the ddt stack with a global threshold value
+				// 4) padAndCenter
+				//    for now, set fixed size 30x30 (definitely larger than point)
+				int centerX = ddtPoint.getWidth()/2;
+				int centerY = ddtPoint.getHeight()/2;
+				ImageProcessor newIm = CVUtils.padAndCenter(new ImagePlus("",ddtPoint), 30, 30, centerX, centerY);
+				ret.addSlice(newIm);
+			}
+			break;
+		case 2: //backward
+			System.out.println("Derive method: backward");
+			break;
+		case 3: //central
+			System.out.println("Derive method: central");
+			dt = increment*2;
+			break;
+		}
+		
+		System.out.println("Done!");
+		
+		// visualization
+		ImagePlus retPlus = test_zoom(new ImagePlus("",ret),10);
+		retPlus.show();
+		
+		// compare with raw movie
+		// TODO current method doesn't use getCombinedBounds(), so not really comparable to ddtIm movie
+		tr.playBlankMovie();
 	}
 	
 	/**
@@ -102,21 +174,46 @@ public class TestRui {
 		mr.loadStack(mmfPath);
 		ImageStack mmf = mr.getMmfStack();
 		
-		// grab frames and prepare stack for test_calcTimeDeriv()
+		/**
+		// below: replaced with test_getFrames()
+		// grab frames
 		// 1) using my own code
 		ImageProcessor frameIm1 = mmf.getProcessor(first);
 		ImageProcessor frameIm2 = mmf.getProcessor(second);
+		// 2) using FrameLoader
+		Communicator comm = new Communicator();
+		FrameLoader fl = new FrameLoader(comm, mmf);
+		int fl1 = fl.getFrame(first);
+		if(fl1==0) {
+			System.out.println("Loading first frame: success");
+		} else {
+			System.out.println("Error loading first frame");
+		}
+		ImageProcessor frameIm1 = fl.returnIm;
+		int fl2 = fl.getFrame(second);
+		if(fl2==0) {
+			System.out.println("Loading second frame: success");
+		} else {
+			System.out.println("Error loading second frame");
+		}
+		ImageProcessor frameIm2 = fl.returnIm;
+				
+		// prepare stack for test_calcTimeDeriv()
 		int width = frameIm1.getWidth();
 		int height = frameIm1.getHeight();
 		ImageStack frames = new ImageStack(width,height);
 		frames.addSlice(frameIm1);
 		frames.addSlice(frameIm2);
-		// 2) TODO using FrameLoader
+		*/
+		
+		ImageStack frames = test_getFrames(mmf,first,second);
 		
 		// generate whole frame ddtIm
 		int dt = second-first;
 		ImageProcessor ddtIm = test_calcTimeDeriv(frames,dt);
 		
+		/**
+		// below: replaced with getNewRect()
 		// grab points
 		TrackPoint pt1 = tr.getFramePoint(first);
 		TrackPoint pt2 = tr.getFramePoint(second);
@@ -130,19 +227,43 @@ public class TestRui {
 		newRect.grow(3,3);
 		System.out.println("New offset: (" + newRect.x + "," + newRect.y + ")");
 		System.out.println("New dimension: " + newRect.width + "x" + newRect.height);
+		*/
+		
+		Rectangle newRect = test_getNewRect(tr,first,second,2);
 		
 		// crop to get point size ddtIm
+		/**
 		frameIm1.setRoi(newRect);
 		ImageProcessor ret1 = frameIm1.crop();
 		frameIm2.setRoi(newRect);
 		ImageProcessor ret2 = frameIm2.crop();
+		*/
+		ImageProcessor tmp1 = frames.getProcessor(1);
+		tmp1.setRoi(newRect);
+		ImageProcessor ret1 = tmp1.crop();
+		ImageProcessor tmp2 = frames.getProcessor(2);
+		tmp2.setRoi(newRect);
+		ImageProcessor ret2 = tmp2.crop();
 		ddtIm.setRoi(newRect);
 		ImageProcessor ret3 = ddtIm.crop();
+		
+		/**
+		// test: visualization
+		ImagePlus plus1 = new ImagePlus("first point",ret1);
+		plus1.show();
+		ImagePlus plus2 = new ImagePlus("second point",ret2);
+		plus2.show();
+		ImagePlus plus3 = new ImagePlus("ddt image",ret3);
+		plus3.show();
+		// ok now
+		*/
 		
 		// prepare return stack
 		ImageStack ret = new ImageStack(newRect.width, newRect.height);
 		ret.addSlice(ret1.convertToColorProcessor());
+		//ret.addSlice(ret1);
 		ret.addSlice(ret2.convertToColorProcessor());
+		//ret.addSlice(ret2);
 		ret.addSlice(ret3);
 		return ret;
 	}
@@ -211,6 +332,43 @@ public class TestRui {
 		//System.out.println("pointIm (after padding) bit depth: " + retIm.getBitDepth());
 		return retIm;
 	}
+	
+	public static ImageStack test_getFrames(ImageStack mmf, int first, int second) {
+		///**
+		Communicator comm = new Communicator();
+		FrameLoader fl = new FrameLoader(comm, mmf);
+		//int width = mmf.getWidth();
+		//int height = mmf.getHeight();
+		
+		int fl1 = fl.getFrame(first);
+		ImageProcessor frameIm1 = fl.returnIm;
+		int fl2 = fl.getFrame(second);
+		ImageProcessor frameIm2 = fl.returnIm;
+		int width = frameIm1.getWidth();
+		int height = frameIm1.getHeight();
+		//*/
+		
+		/**
+		ImageProcessor frameIm1 = mmf.getProcessor(first);
+		ImageProcessor frameIm2 = mmf.getProcessor(second);
+		int width = frameIm1.getWidth();
+		int height = frameIm1.getHeight();
+		*/
+		
+		/**
+		//test: visualization
+		ImagePlus plus1 = new ImagePlus("first frame", frameIm1);
+		plus1.show();
+		ImagePlus plus2 = new ImagePlus("second frame", frameIm2);
+		plus2.show();
+		*/
+		
+		ImageStack ret = new ImageStack(width,height);
+		ret.addSlice(frameIm1);
+		ret.addSlice(frameIm2);
+		
+		return ret;
+	}
 
 	/**
 	 * Given 2 gray scale images of the same dimension, compute the time derivative (ddt) image between them
@@ -262,25 +420,44 @@ public class TestRui {
 		
 		return ddtIm;
 	}
+	
+	public static Rectangle test_getNewRect(Track tr, int first, int second, int edge) {
+		// grab points
+		TrackPoint pt1 = tr.getFramePoint(first);
+		TrackPoint pt2 = tr.getFramePoint(second);
+			
+		// get new roi from points
+		Rectangle newRect = pt1.getCombinedBounds(pt1, pt2);
 
-	public static ImageStack test_zoom(ImageStack these) {
-		// get original size images
-		ImageProcessor im1 = these.getProcessor(1);
-		ImageProcessor im2 = these.getProcessor(2);
-		ImageProcessor im3 = these.getProcessor(3);
-		int width = im1.getWidth();
-		int height = im1.getHeight();
+		// expand newRect a little bit to include more edge info
+		newRect.grow(edge,edge);
 		
-		// decide if need to zoom in
-		int zoom = 1;
-		if(width<300) {
-			zoom = 300/width;
+		return newRect;
+	}
+
+	public static ImagePlus test_zoom(ImagePlus original, double zoomFactor) {
+		// get original dimension
+		int width = original.getWidth();
+		int height = original.getHeight();
+		int newWidth = (int)(width*zoomFactor);
+		int newHeight = (int)(height*zoomFactor);
+		
+		// prepare return image(s)
+		ImagePlus ret = new ImagePlus();
+		
+		// determine whether it's one image or stack
+		int size = original.getImageStackSize();
+		if(size==1) { //single image
+			ImageProcessor im = original.getProcessor();
+			ret.setProcessor(im.resize(newWidth));
+		} else {
+			ImageStack ims = original.getStack();
+			ImageStack retStack = new ImageStack(newWidth,newHeight);
+			for(int i=1;i<=size;i++) {
+				retStack.addSlice(ims.getProcessor(i).resize(newWidth));
+			}
+			ret.setStack(retStack);
 		}
-		
-		ImageStack ret = new ImageStack(width*zoom,height*zoom);
-		ret.addSlice(im1.resize(width*zoom));
-		ret.addSlice(im2.resize(width*zoom));
-		ret.addSlice(im3.resize(width*zoom));
 		
 		return ret;
 	}
