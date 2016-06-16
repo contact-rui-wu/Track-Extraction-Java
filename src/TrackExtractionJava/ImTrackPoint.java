@@ -24,7 +24,7 @@ public class ImTrackPoint extends TrackPoint{
 	private static final long serialVersionUID = 1L;
 	transient protected ImageProcessor im;
 	protected ImageProcessor imDeriv;
-	// Marc was here: see below setImage()
+	// Marc was here: see below findAndStoreIm()
 	// protected vector of imageprocessors secondaryImages
 	protected byte[] serializableIm;
 	protected int imOriginX;
@@ -124,6 +124,7 @@ public class ImTrackPoint extends TrackPoint{
 		
 	}
 	
+	// 20160608: moved to TrackPoint
 	/**
 	public static Rectangle getCombinedBounds(ImTrackPoint im1, ImTrackPoint im2){
 		
@@ -182,7 +183,7 @@ public class ImTrackPoint extends TrackPoint{
 	
 	/* Marc was here:
 	 * - store as many derivIm as you want
-	 * - can be different smoothing
+	 * - can be different smoothing, different method (?)
 	 * below: pseudo code, don't uncomment
 	public void findAndStoreIm(ImagePlus frameIm, vectorOfImages secondaryImSources){
 		Roi oldRoi = frameIm.getRoi();

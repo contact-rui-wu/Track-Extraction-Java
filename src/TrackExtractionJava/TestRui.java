@@ -15,10 +15,10 @@ import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.ImageStack;
 import ij.ImagePlus;
-//import ij.ImageJ;
+import ij.ImageJ;
 
 import edu.nyu.physics.gershowlab.mmf.mmf_Reader;
-import edu.nyu.physics.gershowlab.mmf.MmfVirtualStack;
+//import edu.nyu.physics.gershowlab.mmf.MmfVirtualStack;
 
 public class TestRui {
 
@@ -26,11 +26,7 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		/*
-		String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
-		Experiment_Viewer ev = new Experiment_Viewer();
-		ev.run(prejavPath);
-		*/
+		//test_viewSampleExp();
 		
 		test_runTime();
 		
@@ -42,39 +38,54 @@ public class TestRui {
 		TicToc time = new TicToc();
 		
 		// load mmf
+		System.out.println("Loading MMF video....");
 		String mmfPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
 		mmf_Reader mr = new mmf_Reader();
 		mr.loadStack(mmfPath);
 		ImageStack mmf = mr.getMmfStack();
+		System.out.println("MMF loaded!");
 		
 		// load prejav
+		System.out.println("Loading experiment from .prejav....");
 		String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
 		Experiment ex = new Experiment(prejavPath);
-		Track tr1 = ex.getTrack(59);
-		Track tr2 = ex.getTrack(61);
+		System.out.println("Experiment loaded!");
+		
+		// choose tracks to work on
+		int trackID1 = 59;
+		int trackID2 = 61;
+		Track tr = ex.getTrack(trackID1);
+		
+		ImageJ ij = new ImageJ(); //for manipulation in ImageJ
 		
 		// 1) one track with visualization
-		String msg = "One track with visualization: ";
+		String msg = "one track with visualization: ";
+		System.out.println("Current test: " + msg);
 		boolean show = true;
 		time.tic();
-		test_workOnTrack(mmf,tr1,show);
-		System.out.println(msg + time.toc()/1000 + " sec");
+		test_workOnTrack(mmf,tr,show);
+		System.out.println("Run time for " + msg + time.toc()/1000 + " sec");
 		
+		/*
 		// 2) one track without visualization
-		msg = "One track without visualization: ";
+		msg = "one track without visualization: ";
+		System.out.println("Current test: " + msg);
 		show = false;
 		time.tic();
-		test_workOnTrack(mmf,tr1,show);
-		System.out.println(msg + time.toc()/1000 + " sec");
+		test_workOnTrack(mmf,tr,show);
+		System.out.println("Run time for " + msg + time.toc()/1000 + " sec");
+		*/
 		
+		/*
 		// 3) two tracks without visualization
-		msg = "Two tracks without visualization: ";
+		msg = "two tracks without visualization: ";
+		System.out.println("Current test: " + msg);
 		show = false;
 		time.tic();
-		//test_workOnTrack(mmf,ex,59,show);
-		//test_workOnTrack(mmf,ex,60,show);
-		test_workOnTwoTracks(mmf,ex,59,61,show);
-		System.out.println(msg + time.toc()/1000 + " sec");
+		test_workOnTwoTracks(mmf,ex,trackID1,trackID2,show);
+		System.out.println("Run time for " + msg + time.toc()/1000 + " sec");
+		*/
+		
 	}
 	
 	/**
@@ -120,7 +131,7 @@ public class TestRui {
 		ImageStack mmf = test_getImsMmf(tr,first,second);
 		// visualization
 		//ImagePlus mmfPlus = new ImagePlus("from MMF", test_zoom(mmf,300));
-		ImagePlus mmfPlus = test_zoom(new ImagePlus("from MMF",mmf), 15);
+		ImagePlus mmfPlus = draft_zoom(new ImagePlus("from MMF",mmf), 15);
 		mmfPlus.getStack().getProcessor(3).autoThreshold(); //easier to see
 		mmfPlus.show();
 		
@@ -185,9 +196,9 @@ public class TestRui {
 			if(i%100==0) {
 				System.out.println("Working on " + i + "th frame....");
 			}
-			ImageStack frames = test_getFrames(mmf,i,increment,derivMethod);
-			ImageProcessor ddtFrame = test_calcTimeDeriv(frames,dt);
-			Rectangle newRect = test_getNewRect(tr,i,increment,derivMethod,2);
+			ImageStack frames = draft_fetchFrames(mmf,i,increment,derivMethod);
+			ImageProcessor ddtFrame = draft_calcDdtIm(frames,dt);
+			Rectangle newRect = draft_calcNewRoi(tr,i,increment,derivMethod,2);
 			ddtFrame.setRoi(newRect);
 			ImageProcessor ddtPoint = ddtFrame.crop();
 			//ddtPoint.autoThreshold(); //TODO autoThreshold() gives a different threshold value for each frame; need to do it after building the ddt stack with a global threshold value
@@ -201,7 +212,7 @@ public class TestRui {
 		
 		// visualization
 		if(show) {
-			ImagePlus retPlus = test_zoom(new ImagePlus(null,ret),10);
+			ImagePlus retPlus = draft_zoom(new ImagePlus(null,ret),10);
 			retPlus.setTitle(derivMethodMsg);
 			retPlus.show();
 		}
@@ -253,11 +264,11 @@ public class TestRui {
 			if(i%100==0) {
 				System.out.println("Working on " + i + "th frame....");
 			}
-			ImageStack frames = test_getFrames(mmf,i,increment,derivMethod);
-			ImageProcessor ddtFrame = test_calcTimeDeriv(frames,dt);
+			ImageStack frames = draft_fetchFrames(mmf,i,increment,derivMethod);
+			ImageProcessor ddtFrame = draft_calcDdtIm(frames,dt);
 			
 			// work on tr1
-			Rectangle newRect1 = test_getNewRect(tr1,i,increment,derivMethod,2);
+			Rectangle newRect1 = draft_calcNewRoi(tr1,i,increment,derivMethod,2);
 			ddtFrame.setRoi(newRect1);
 			ImageProcessor ddtPoint1 = ddtFrame.crop();
 			ddtPoint1.autoThreshold();
@@ -267,7 +278,7 @@ public class TestRui {
 			ret1.addSlice(newIm1);
 			
 			// work on tr2
-			Rectangle newRect2 = test_getNewRect(tr2,i,increment,derivMethod,2);
+			Rectangle newRect2 = draft_calcNewRoi(tr2,i,increment,derivMethod,2);
 			ddtFrame.setRoi(newRect2);
 			ImageProcessor ddtPoint2 = ddtFrame.crop();
 			ddtPoint2.autoThreshold();
@@ -281,10 +292,10 @@ public class TestRui {
 		
 		// visualization
 		if(show) {
-			ImagePlus retPlus1 = test_zoom(new ImagePlus(null,ret1),10);
+			ImagePlus retPlus1 = draft_zoom(new ImagePlus(null,ret1),10);
 			retPlus1.setTitle("Track " + trackID1);
 			retPlus1.show();
-			ImagePlus retPlus2 = test_zoom(new ImagePlus(null,ret2),10);
+			ImagePlus retPlus2 = draft_zoom(new ImagePlus(null,ret2),10);
 			retPlus2.setTitle("Track " + trackID2);
 			retPlus2.show();
 		}
@@ -339,11 +350,11 @@ public class TestRui {
 		
 		int derivMethod = 1;
 		
-		ImageStack frames = test_getFrames(mmf,first,second-first,derivMethod);
+		ImageStack frames = draft_fetchFrames(mmf,first,second-first,derivMethod);
 		
 		// generate whole frame ddtIm
 		int dt = second-first;
-		ImageProcessor ddtIm = test_calcTimeDeriv(frames,dt);
+		ImageProcessor ddtIm = draft_calcDdtIm(frames,dt);
 		
 		/**
 		// below: replaced with getNewRect()
@@ -362,7 +373,7 @@ public class TestRui {
 		System.out.println("New dimension: " + newRect.width + "x" + newRect.height);
 		*/
 		
-		Rectangle newRect = test_getNewRect(tr,first,second-first,derivMethod,2);
+		Rectangle newRect = draft_calcNewRoi(tr,first,second-first,derivMethod,2);
 		
 		// crop to get point size ddtIm
 		/**
@@ -420,15 +431,15 @@ public class TestRui {
 		Rectangle newRect = pt1.getCombinedBounds(pt1, pt2);
 		
 		// pad point images
-		ImageProcessor padded1 = test_padImage(pt1,newRect);
-		ImageProcessor padded2 = test_padImage(pt2,newRect);
+		ImageProcessor padded1 = draft_padImage(pt1,newRect);
+		ImageProcessor padded2 = draft_padImage(pt2,newRect);
 		ImageStack points = new ImageStack(newRect.width,newRect.height);
 		points.addSlice(padded1);
 		points.addSlice(padded2);
 		
 		// generate point size ddtIm
 		int dt = second-first;
-		ImageProcessor ret3 = test_calcTimeDeriv(points,dt);
+		ImageProcessor ret3 = draft_calcDdtIm(points,dt);
 		
 		// prepare return stack
 		ImageStack ret = new ImageStack(newRect.width, newRect.height);
@@ -436,6 +447,12 @@ public class TestRui {
 		ret.addSlice(padded2.convertToColorProcessor());
 		ret.addSlice(ret3);
 		return ret;
+	}
+	
+	public static void test_viewSampleExp() {
+		String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
+		Experiment_Viewer ev = new Experiment_Viewer();
+		ev.run(prejavPath);
 	}
 	
 	/**
@@ -446,7 +463,7 @@ public class TestRui {
 	 * @param newRect
 	 * @return padded image
 	 */
-	public static ImageProcessor test_padImage(TrackPoint pt, Rectangle newRect) {
+	public static ImageProcessor draft_padImage(TrackPoint pt, Rectangle newRect) {
 		// following CVUtils.padAndCenter()
 		ImagePlus im = new ImagePlus("original", pt.getRawIm());
 		//System.out.println("pointIm (before padding) bit depth: " + im.getBitDepth());
@@ -473,7 +490,8 @@ public class TestRui {
 	 * @param second Second frame number to grab
 	 * @return A 2-frame image stack
 	 */
-	public static ImageStack test_getFrames(ImageStack mmf, int frame, int increment, int derivMethod) {
+	//@SuppressWarnings("unused")
+	public static ImageStack draft_fetchFrames(ImageStack mmf, int frame, int increment, int derivMethod) {
 		// handle derivMethod
 		int first = frame;
 		int second = frame;
@@ -505,6 +523,8 @@ public class TestRui {
 		int height = frameIm1.getHeight();
 		//*/
 		
+		// TODO handle different thresholds
+		
 		/**
 		// using ImageJ methods
 		ImageProcessor frameIm1 = mmf.getProcessor(first);
@@ -529,16 +549,15 @@ public class TestRui {
 	}
 
 	/**
-	 * Given 2 gray scale images of the same dimension, compute the time derivative (ddt) image between them
+	 * Calculates the time derivative (ddt) image between two gray scale images of the same dimension
 	 * <p>
 	 * This method always return the ddt image in RGB mode; any tweaking of visualization is done outside this method.
 	 * @param theseIm 2-image stack
 	 * @param dt time difference between the two images
 	 * @return ddt image where positive diff is represented in red, negative in blue
 	 */
-	public static ImageProcessor test_calcTimeDeriv(ImageStack theseIm, int dt) {
-		// assume 8-bit gray scale
-		// Q: do I still need to deal with threshold?	
+	public static ImageProcessor draft_calcDdtIm(ImageStack theseIm, int dt) {
+		// assume 8-bit gray scale, same threshold info
 		
 		// load images
 		ImageProcessor im1 = theseIm.getProcessor(1);
@@ -580,7 +599,7 @@ public class TestRui {
 	}
 	
 	
-	public static Rectangle test_getNewRect(Track tr, int frame, int increment, int derivMethod, int edge) {
+	public static Rectangle draft_calcNewRoi(Track tr, int frame, int increment, int derivMethod, int edge) {
 		// handle derivMethod
 		int first = frame;
 		int second = frame;
@@ -616,7 +635,7 @@ public class TestRui {
 	 * @param zoomFactor
 	 * @return Scaled ImagePlus object
 	 */
-	public static ImagePlus test_zoom(ImagePlus original, double zoomFactor) {
+	public static ImagePlus draft_zoom(ImagePlus original, double zoomFactor) {
 		// get original dimension
 		int width = original.getWidth();
 		int height = original.getHeight();
