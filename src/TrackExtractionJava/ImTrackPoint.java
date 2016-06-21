@@ -31,7 +31,6 @@ public class ImTrackPoint extends TrackPoint{
 	
 	// for now: stores ddt images
 	// maybe better to call it that?
-	// also, don't need the rectangles, just the originX/Ys
 	protected Vector<ImageProcessor> secondaryIms;
 	protected Vector<Rectangle> secondaryRects;
 	

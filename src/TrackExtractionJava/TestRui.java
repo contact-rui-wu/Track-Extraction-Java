@@ -26,7 +26,7 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		//test_viewSampleExp();
+		test_viewSampleExp();
 		
 		//test_runTime();
 		

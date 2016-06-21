@@ -4,8 +4,10 @@ import ij.*;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.process.ImageProcessor;
+import ij.process.ColorProcessor;
 
 import java.awt.Rectangle;
+import java.awt.Color;
 import java.util.Vector;
 
 
@@ -96,6 +98,11 @@ public class PointExtractor {
 	 * Thresholded image
 	 */
 	ImagePlus threshIm;
+	
+	// Handling ddt calculation
+	ImagePlus prevIm;
+	ImagePlus nextIm;
+	ImagePlus ddtIm; //always corresponds to currentIm
 	
 	/**
 	 * The resultsTable made by finding particles in the currentIm
@@ -368,11 +375,14 @@ public class PointExtractor {
 //							if (currentFrameNum!=frameNum){
 //								loadFrame(frameNum);
 //							}
+							// add image
 							Roi oldRoi = currentIm.getRoi();
 							currentIm.setRoi(crRect);
 							ImageProcessor im = currentIm.getProcessor().crop(); //does not affect currentIm
 							currentIm.setRoi(oldRoi);
 							iTPt.setImage(im, ep.trackWindowWidth, ep.trackWindowHeight);
+							// TODO add secondary image (for now only one ddt)
+							//iTPt.findAndStore2ndIm(0, ddtIm);
 							tp.add(iTPt);
 							break;
 						case 2: //MaggotTrackPoint
@@ -499,6 +509,64 @@ public class PointExtractor {
 		return analysisRect;
 	}
 	
+	///////////////////////
+	// ddt frame methods
+	///////////////////////
+	
+	// ignoring analysisRect for now TODO
+	
+	/**
+	 * Calculates ddtIm of current frame using central derivation
+	 */
+	public void calcAndSetDdtIm() {
+		// default: central method
+		calcAndSetDdtIm(3);
+	}
+	
+	/**
+	 * Calculates ddtIm of current frame using specified derivation method
+	 */
+	public void calcAndSetDdtIm(int derivMethod) {
+		// handle derivMethod
+		int dt = increment;
+		switch(derivMethod) {
+		case 1: //forward
+			calcAndSetDdtIm(currentIm, nextIm, dt);
+			break;
+		case 2: //backward
+			calcAndSetDdtIm(prevIm, currentIm, dt);
+			break;
+		case 3: //central
+			dt = increment*2;
+			calcAndSetDdtIm(prevIm, nextIm, dt);
+			break;
+		}
+	}
+	
+	/**
+	 * Calculates ddtIm of current frame given two images and dt
+	 */
+	public void calcAndSetDdtIm(ImagePlus imp1, ImagePlus imp2, int dt) {
+		ImageProcessor im1 = imp1.getProcessor();
+		ImageProcessor im2 = imp2.getProcessor();
+		
+		ColorProcessor newIm = new ColorProcessor(im1.getWidth(), im1.getHeight());
+		
+		for(int i=0; i<im1.getWidth(); i++) {
+			for(int j=0; j<im1.getHeight(); j++) {
+				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
+				int ddt = pixDiff/dt;
+				if (pixDiff>0) {
+					newIm.setColor(new Color(ddt,0,0));//move into: red
+				} else {
+					newIm.setColor(new Color(0,0,-ddt)); //move out of: blue
+				}
+				newIm.drawPixel(i,j);
+			}
+		}
+		
+		ddtIm.setProcessor(newIm);
+	}
 	
 }
 
