@@ -34,6 +34,8 @@ public class ProcessingParameters {
 	
 	public boolean saveSingleTracksFromFitting = false;
 	
+	//public boolean doTimeDeriv = true;
+	
 	
 	
 	/**

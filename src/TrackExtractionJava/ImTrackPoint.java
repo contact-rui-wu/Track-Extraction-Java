@@ -14,6 +14,7 @@ import java.awt.Rectangle;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.PrintWriter;
+import java.util.Vector;
 
 
 public class ImTrackPoint extends TrackPoint{
@@ -23,12 +24,16 @@ public class ImTrackPoint extends TrackPoint{
 	 */
 	private static final long serialVersionUID = 1L;
 	transient protected ImageProcessor im;
-	protected ImageProcessor imDeriv;
-	// Marc was here: see below findAndStoreIm()
-	// protected vector of imageprocessors secondaryImages
+	protected ImageProcessor imDeriv; //TODO will replace with secondaryIms
 	protected byte[] serializableIm;
 	protected int imOriginX;
 	protected int imOriginY;
+	
+	// for now: stores ddt images
+	// maybe better to call it that?
+	// also, don't need the rectangles, just the originX/Ys
+	protected Vector<ImageProcessor> secondaryIms;
+	protected Vector<Rectangle> secondaryRects;
 	
 	protected int trackWindowWidth;
 	protected int trackWindowHeight;
@@ -59,6 +64,10 @@ public class ImTrackPoint extends TrackPoint{
 		trackWindowHeight = dispHeight;
 	}
 	
+	// TODO Q: do we need a constructor with secondary images?
+	
+	// 20160620: obsolete (better to calculate ddtFrame elsewhere)
+	///*
 	public void calcImDeriv(ImTrackPoint prevITP, ImTrackPoint nextITP, int derivMethod){
 		
 		Rectangle newRect;
@@ -123,9 +132,10 @@ public class ImTrackPoint extends TrackPoint{
 		
 		
 	}
+	//*/
 	
 	// 20160608: moved to TrackPoint
-	/**
+	/*
 	public static Rectangle getCombinedBounds(ImTrackPoint im1, ImTrackPoint im2){
 		
 		int x = (im1.rect.x<im2.rect.x)? im1.rect.x : im2.rect.x;
@@ -153,12 +163,29 @@ public class ImTrackPoint extends TrackPoint{
 		return im;
 	}
 	
+	// TODO test getRaw2ndIm()
+	public ImageProcessor getRaw2ndIm(int imInd) {
+		return secondaryIms.get(imInd);
+	}
+	
 	public ImageProcessor getIm(){
 		//pad the image so be the same dimensions as the rest in the stack
 		imOriginX = (int)x-(trackWindowWidth/2)-1;
 		imOriginY = (int)y-(trackWindowHeight/2)-1;
 		return CVUtils.padAndCenter(new ImagePlus("Point "+pointID, im), trackWindowWidth, trackWindowHeight, (int)x-rect.x, (int)y-rect.y);
-		 
+	}
+	
+	// TODO test get2ndIm()
+	public ImageProcessor get2ndIm(int imInd) {
+		// get raw secondary image
+		ImageProcessor raw2ndIm = getRaw2ndIm(imInd);
+		
+		// TODO deal with different types of secondary image
+		
+		// pad to same size for visualization
+		int centerX = raw2ndIm.getWidth()/2;
+		int centerY = raw2ndIm.getHeight()/2;
+		return CVUtils.padAndCenter(new ImagePlus("Point "+pointID+" (secondary)", raw2ndIm), trackWindowWidth, trackWindowHeight, centerX, centerY);
 	}
 	
 	public void drawPoint(ColorProcessor backIm, Color c){
@@ -181,24 +208,36 @@ public class ImTrackPoint extends TrackPoint{
 		frameIm.setRoi(oldRoi);
 	}
 	
-	/* Marc was here:
-	 * - store as many derivIm as you want
-	 * - can be different smoothing, different method (?)
-	 * below: pseudo code, don't uncomment
-	public void findAndStoreIm(ImagePlus frameIm, vectorOfImages secondaryImSources){
-		Roi oldRoi = frameIm.getRoi();
-		frameIm.setRoi(rect);
-		im = frameIm.getProcessor().crop();//Does not affect frameIm's image
-		frameIm.setRoi(oldRoi);
-		for (j = 0; j < secondaryImSource.length(); ++j) {
-			Roi oldRoi = secondaryImSource(j).getRoi();
-			secondaryImSource(j).setRoi(rect);
-			secondaryIms(j) = frameIm.getProcessor().crop();//Does not affect frameIm's image
-			frameIm.setRoi(oldRoi);
-		   secondaryIms(j) = 
-		}
+	// TODO test all findAndStore2ndIm()
+	// note: do we need one with a single secFrameIm and a bunch of rects?
+	
+	/**
+	 * Set secondary image using track point's own original rect
+	 */
+	public void findAndStore2ndIm(int imInd, ImagePlus secondaryFrameIm) {
+		findAndStore2ndIm(imInd, secondaryFrameIm, rect);
 	}
-	*/
+	
+	/**
+	 * Set secondary image using rect padded by pixelPad on all 4 sides
+	 *  (TODO preset in extrParam?)
+	 */
+	public void findAndStore2ndIm(int imInd, ImagePlus secondaryFrameIm, int pixelPad) {
+		Rectangle newRect = (Rectangle)rect.clone();
+		newRect.grow(pixelPad,pixelPad);
+		findAndStore2ndIm(imInd, secondaryFrameIm, newRect);
+	}
+	
+	/**
+	 * Set secondary image using a new rect
+	 */
+	public void findAndStore2ndIm(int imInd, ImagePlus secondaryFrameIm, Rectangle rect) {
+		Roi oldRoi = secondaryFrameIm.getRoi();
+		secondaryFrameIm.setRoi(rect);
+		secondaryIms.set(imInd, secondaryFrameIm.getProcessor().crop());
+		secondaryRects.set(imInd, (Rectangle)rect.clone());
+		secondaryFrameIm.setRoi(oldRoi);
+	}
 	
 	protected void strip(){
 		super.strip();
@@ -263,13 +302,51 @@ public class ImTrackPoint extends TrackPoint{
 			return 1;
 		}
 		
+		// write secondary images
+		try {
+			// write number of secondary images stored
+			if (secondaryIms==null || secondaryRects==null || secondaryIms.size()!=secondaryRects.size()) {
+				dos.writeByte(0);
+			} else {
+				dos.writeByte(secondaryIms.size());
+				for (int i=0; i<secondaryIms.size(); i++) {
+					ColorProcessor tmpIm = (ColorProcessor)secondaryIms.get(i);
+					Rectangle tmpRect = secondaryRects.get(i);
+					// write each secondary rectangle
+					dos.writeInt(tmpRect.x);
+					dos.writeInt(tmpRect.y);
+					dos.writeInt(tmpRect.width);
+					dos.writeInt(tmpRect.height);
+					// write each secondary image
+					for (int j=0; j<tmpIm.getWidth(); j++) {
+						for (int k=0; k<tmpIm.getHeight(); k++) {
+							dos.writeByte(tmpIm.getColor(j,k).getRed()-128);
+							dos.writeByte(tmpIm.getColor(j,k).getBlue()-128);
+							// for now, green is empty
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			if (pw!=null) pw.println("Error writing ImTrackPoint secondary images for point "+pointID+"; aborting save");
+			return 1;
+		}
+		
 		return 0;
 	}
 	
 	public int sizeOnDisk(){
 		
 		int size = super.sizeOnDisk();
+		// image
 		size += (2+im.getWidth()*im.getHeight());//Size of byte=1
+		// secondary images
+		size += 1; //stores number of secondary images
+		if (secondaryIms.size()>0) {
+			for (int i=0; i<secondaryIms.size(); i++) {
+				size += (4+secondaryRects.get(i).width+secondaryRects.get(i).height);
+			} //size of each secondary image
+		}
 		return size;
 	}
 
@@ -331,7 +408,32 @@ public class ImTrackPoint extends TrackPoint{
 //				}
 //			}
 			
-			
+			// get secondary images data
+			// get number of images
+			int numOf2nds = dis.readByte();
+			if (numOf2nds!=0) {
+				for (int i=0; i<numOf2nds; i++) {
+					// load rectangle
+					int secX = dis.readByte();
+					int secY = dis.readByte();
+					int secW = dis.readByte();
+					int secH = dis.readByte();
+					Rectangle rect = new Rectangle(secX,secY,secW,secH);
+					secondaryRects.set(i, rect);
+					// load image
+					ColorProcessor secIm = new ColorProcessor(secW,secH);
+					for (int j=0; j<secW; j++) {
+						for (int k=0; k<secH; k++) {
+							int[] colors = new int[2];
+							colors[0]=(int)dis.readByte()+128; //red
+							colors[1]=(int)dis.readByte()+128; //blue
+							secIm.setColor(new Color(colors[0],0,colors[1]));
+							secIm.drawPixel(j,k);
+						}
+					}
+					secondaryIms.set(i, secIm);
+				}
+			}
 			
 		} catch (Exception e) {
 			e.printStackTrace(pw);

@@ -181,6 +181,10 @@ public class TrackBuilder implements Serializable{
 			trackMessage.message(activeTracks.get(i).infoString(), VerbLevel.verb_message);
 		}
 		
+		/*
+		 * TODO calculate newRoi for ddtPoints
+		 */
+		
 		//Move all active tracks to finished
 		finishedTracks.addAll(activeTracks);
 		activeTracks.removeAll(activeTracks);

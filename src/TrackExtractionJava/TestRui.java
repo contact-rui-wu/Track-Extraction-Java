@@ -28,11 +28,35 @@ public class TestRui {
 		
 		//test_viewSampleExp();
 		
-		test_runTime();
+		//test_runTime();
+		
+		//test_extraction();
 		
 	}
 	
 	// write each test as a void method so that don't have to write a lot in main
+	
+	public static void test_extraction() {
+		ImageJ ij = new ImageJ();
+		
+		// set parameters
+		ProcessingParameters prParams = new ProcessingParameters();
+		prParams.doFitting = false;
+		ExtractionParameters extrParams = new ExtractionParameters();
+		extrParams.subset = true;
+		extrParams.startFrame = 1;
+		extrParams.endFrame = 2000;
+		
+		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
+		Experiment_Processor ep = new Experiment_Processor();
+		
+		ep.runningFromMain = true;
+		
+		ep.prParams = prParams;
+		ep.extrParams = extrParams;
+		
+		ep.run(path);
+	}
 	
 	public static void test_runTime() {
 		TicToc time = new TicToc();
@@ -56,7 +80,7 @@ public class TestRui {
 		int trackID2 = 61;
 		Track tr = ex.getTrack(trackID1);
 		
-		ImageJ ij = new ImageJ(); //for manipulation in ImageJ
+		new ImageJ(); //for manipulation in ImageJ
 		
 		// 1) one track with visualization
 		String msg = "one track with visualization: ";
