@@ -26,11 +26,11 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		test_viewSampleExp();
+		//test_extraction();
+		
+		test_viewSampleExp(1);
 		
 		//test_runTime();
-		
-		//test_extraction();
 		
 	}
 	
@@ -473,10 +473,20 @@ public class TestRui {
 		return ret;
 	}
 	
-	public static void test_viewSampleExp() {
-		String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
+	public static void test_viewSampleExp(int whose) {
+		//String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
+		String dir = "/home/data/rw1679/Documents/Gershow_lab_local";
+		String fnameN = "Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
+		String fnameR = "sampleShortExp_copy.prejav";
 		Experiment_Viewer ev = new Experiment_Viewer();
-		ev.run(prejavPath);
+		switch(whose) {
+		case 0: //Natalie's
+			ev.run(dir + "/" + fnameN);
+			break;
+		case 1: //mine
+			ev.run(dir + "/" + fnameR);
+			break;
+		}
 	}
 	
 	/**

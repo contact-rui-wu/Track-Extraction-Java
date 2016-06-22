@@ -301,6 +301,7 @@ public class ImTrackPoint extends TrackPoint{
 			return 1;
 		}
 		
+		///*
 		// write secondary images
 		try {
 			// write number of secondary images stored
@@ -330,6 +331,7 @@ public class ImTrackPoint extends TrackPoint{
 			if (pw!=null) pw.println("Error writing ImTrackPoint secondary images for point "+pointID+"; aborting save");
 			return 1;
 		}
+		//*/
 		
 		return 0;
 	}
@@ -339,13 +341,18 @@ public class ImTrackPoint extends TrackPoint{
 		int size = super.sizeOnDisk();
 		// image
 		size += (2+im.getWidth()*im.getHeight());//Size of byte=1
+		///*
 		// secondary images
 		size += 1; //stores number of secondary images
-		if (secondaryIms.size()>0) {
-			for (int i=0; i<secondaryIms.size(); i++) {
-				size += (4+secondaryRects.get(i).width+secondaryRects.get(i).height);
-			} //size of each secondary image
+		if (secondaryIms != null && secondaryRects != null) {
+			if (secondaryIms.size()==secondaryRects.size()) {
+				for (int i=0; i<secondaryIms.size(); i++) {
+					size += (4+secondaryRects.get(i).width+secondaryRects.get(i).height);
+				} //size of each secondary image
+			}
+
 		}
+		//*/
 		return size;
 	}
 
@@ -407,6 +414,7 @@ public class ImTrackPoint extends TrackPoint{
 //				}
 //			}
 			
+			///*
 			// get secondary images data
 			// get number of images
 			int numOf2nds = dis.readByte();
@@ -433,6 +441,7 @@ public class ImTrackPoint extends TrackPoint{
 					secondaryIms.set(i, secIm);
 				}
 			}
+			//*/
 			
 		} catch (Exception e) {
 			e.printStackTrace(pw);
