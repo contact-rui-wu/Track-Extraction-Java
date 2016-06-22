@@ -25,10 +25,12 @@ public class ExtractionParameters implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	
 	static final int DERIV_FORWARD = 1;
 	static final int DERIV_BACKWARD = 2;
 	static final int DERIV_SYMMETRIC = 3;
-	
+	// TODO above will be replaced with below
+	public int derivMethod = 3; //default: central method (use enum?)
 
 	public boolean subset = false;
 	public int startFrame = 1;

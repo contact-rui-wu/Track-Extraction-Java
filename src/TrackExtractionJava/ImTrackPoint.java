@@ -63,6 +63,11 @@ public class ImTrackPoint extends TrackPoint{
 		trackWindowHeight = dispHeight;
 	}
 	
+	public void setDdtImage(ImagePlus ddtFrameIm, int pixelPad) {
+		this.findAndStore2ndIm(0, ddtFrameIm, pixelPad);
+		//this.secondaryIms.set(0, ddtPointIm);
+	}
+	
 	// TODO Q: do we need a constructor with secondary images?
 	
 	// 20160620: obsolete (better to calculate ddtFrame elsewhere)
@@ -174,12 +179,14 @@ public class ImTrackPoint extends TrackPoint{
 		return CVUtils.padAndCenter(new ImagePlus("Point "+pointID, im), trackWindowWidth, trackWindowHeight, (int)x-rect.x, (int)y-rect.y);
 	}
 	
+	// TODO write wrapper get2ndIm(2ndImType) methods
+	//      - possible types: ddt, lowPasDdt, etc.
+	//      - use enum
+	
 	// TODO test get2ndIm()
 	public ImageProcessor get2ndIm(int imInd) {
 		// get raw secondary image
 		ImageProcessor raw2ndIm = getRaw2ndIm(imInd);
-		
-		// TODO deal with different types of secondary image
 		
 		// pad to same size for visualization
 		int centerX = raw2ndIm.getWidth()/2;
@@ -209,7 +216,7 @@ public class ImTrackPoint extends TrackPoint{
 	
 	// TODO test all findAndStore2ndIm()
 	// note: do we need one with a single secFrameIm and a bunch of rects?
-	
+		
 	/**
 	 * Set secondary image using track point's own original rect
 	 */

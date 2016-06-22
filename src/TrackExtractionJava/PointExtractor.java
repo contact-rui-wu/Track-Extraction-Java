@@ -182,6 +182,27 @@ public class PointExtractor {
 		}
 	}
 
+	// TODO organize this better (can we move some of it to loadFrameNew()?)
+	public int extractFramePointsNew(int frameNum) {
+		switch(ep.derivMethod) {
+		case 1: //forward
+			// handle last frame
+			// check currentIm != null
+			// load nextIm
+			// calculate and set ddtIm
+			// extract points (which include ddtPointIms)
+			// move nextIm to currentIm
+			// update frameNum fields
+		case 2: //backward
+			// handle first frame
+			// (then same)
+		case 3: //central
+			// handle first and last frame
+			// (then same)
+		}
+		
+		return 0;
+	}
 	
 	/**
 	 * 
@@ -189,20 +210,32 @@ public class PointExtractor {
 	 * @return
 	 */
 	public int extractFramePoints(int frameNum) {
-		
 		if(loadFrame(frameNum)>0){
 			comm.message("Frame "+frameNum+" was NOT successfully loaded in Point Extractor", VerbLevel.verb_debug);
 			return 1; 
 		}
-		comm.message("Frame "+frameNum+" successfully loaded in Point Extractor", VerbLevel.verb_debug);
+		comm.message("Frame "+frameNum+" successfully loaded in Point Extractor", VerbLevel.verb_debug);		
 		extractPoints(frameNum);
 		lastFrameExtracted = frameNum;
 		return 0;
 	}
 	
+	public int loadFrameNew(int frameNum) {
+		switch(ep.derivMethod) {
+		case 1: //forward
+			// handle last frame
+			// check currentIm != null
+			// load nextIm
+			// calculate and set ddtIm
+		case 2: //backward
+			
+		case 3: //central
+		}
+		return 0;
+	}
 	
 	/**
-	 * Loads the frame into the currentIm, backSubIm, ForegroundIm, and threshIm images, and loads the proper backgroundIm 
+	 * Loads the frame into the currentIm, backSubIm, ForegroundIm, and threshIm images, and loads the proper backgroundIm
 	 * @param frameNum Index of the frame to be loaded
 	 * @return status, 0 means all is good, otherwise error
 	 */
@@ -233,7 +266,24 @@ public class PointExtractor {
 		}
 		assert (currentIm!=null);
 //		analysisRect = fl.ar;
-				
+		
+		/*
+		// load prevIm, nextIm and set ddt image
+		if (fl.getFrame(frameNum-increment,fnm,normFactor)!=0) {
+			// no prevIm; we're at first frame
+			// can only do forward deriv
+			calcAndSetDdtFrameIm(ep.DERIV_FORWARD);
+		} else if (fl.getFrame(frameNum+increment,fnm,normFactor)!=0) {
+			// no nextIm; we're at last frame
+			// can only do backward deriv
+			calcAndSetDdtFrameIm(ep.DERIV_BACKWARD);
+		} else {
+			calcAndSetDdtFrameIm(ep.DERIV_METHOD);
+		}
+		assert (ddtIm!=null);
+		// TODO can optimize: now always loading both prevIm and nextIm, not necessary
+		*/
+		
 		if (comm!=null) comm.message("Thresholding image to zero...", VerbLevel.verb_debug);
 		defaultThresh();
 		if (comm!=null) comm.message("...finished thresholding image to zero", VerbLevel.verb_debug);
@@ -381,8 +431,8 @@ public class PointExtractor {
 							ImageProcessor im = currentIm.getProcessor().crop(); //does not affect currentIm
 							currentIm.setRoi(oldRoi);
 							iTPt.setImage(im, ep.trackWindowWidth, ep.trackWindowHeight);
-							// TODO add secondary image (for now only one ddt)
-							//iTPt.findAndStore2ndIm(0, ddtIm);
+							// add secondary image (for now only one ddt)
+							// problem: rt2TrackPoints is called in findPtsInIm, which causes dependency problems elsewhere
 							tp.add(iTPt);
 							break;
 						case 2: //MaggotTrackPoint
@@ -513,32 +563,34 @@ public class PointExtractor {
 	// ddt frame methods
 	///////////////////////
 	
-	// ignoring analysisRect for now TODO
+	// ignoring analysisRect for now TODO deal with analysisRect
 	
 	/**
 	 * Calculates ddtIm of current frame using central derivation
 	 */
-	public void calcAndSetDdtIm() {
+	/*
+	// no need; presetted in ExtractionParameters
+	public void calcAndSetDdtFrameIm() {
 		// default: central method
-		calcAndSetDdtIm(3);
+		calcAndSetDdtFrameIm(3);
 	}
+	*/
 	
 	/**
 	 * Calculates ddtIm of current frame using specified derivation method
 	 */
-	public void calcAndSetDdtIm(int derivMethod) {
-		// handle derivMethod
+	public void calcAndSetDdtFrameIm(int derivMethod) {
 		int dt = increment;
 		switch(derivMethod) {
 		case 1: //forward
-			calcAndSetDdtIm(currentIm, nextIm, dt);
+			calcAndSetDdtFrameIm(currentIm,nextIm,dt);
 			break;
 		case 2: //backward
-			calcAndSetDdtIm(prevIm, currentIm, dt);
+			calcAndSetDdtFrameIm(prevIm,currentIm,dt);
 			break;
 		case 3: //central
 			dt = increment*2;
-			calcAndSetDdtIm(prevIm, nextIm, dt);
+			calcAndSetDdtFrameIm(prevIm,nextIm,dt);
 			break;
 		}
 	}
@@ -546,7 +598,7 @@ public class PointExtractor {
 	/**
 	 * Calculates ddtIm of current frame given two images and dt
 	 */
-	public void calcAndSetDdtIm(ImagePlus imp1, ImagePlus imp2, int dt) {
+	public void calcAndSetDdtFrameIm(ImagePlus imp1, ImagePlus imp2, int dt) {
 		ImageProcessor im1 = imp1.getProcessor();
 		ImageProcessor im2 = imp2.getProcessor();
 		
@@ -566,6 +618,16 @@ public class PointExtractor {
 		}
 		
 		ddtIm.setProcessor(newIm);
+	}
+	
+	///////////////////////
+	// ddt point methods
+	///////////////////////
+	
+	public void addDdtPointIms() {
+		for (int i=0;i<extractedPoints.size();i++) {
+			
+		}
 	}
 	
 }
