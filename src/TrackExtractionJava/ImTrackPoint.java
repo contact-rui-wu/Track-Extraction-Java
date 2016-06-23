@@ -63,11 +63,14 @@ public class ImTrackPoint extends TrackPoint{
 		trackWindowHeight = dispHeight;
 	}
 	
+	/**
+	 * Default: set ddt point image using this track point's own rect (padded)
+	 */
 	public void setDdtImage(ImagePlus ddtFrameIm, int pixelPad) {
-		this.findAndStore2ndIm(0, ddtFrameIm, pixelPad);
-		//this.secondaryIms.set(0, ddtPointIm);
+		findAndStore2ndIm(0, ddtFrameIm, pixelPad);
+		
 	}
-	
+		
 	// TODO Q: do we need a constructor with secondary images?
 	
 	// 20160620: obsolete (better to calculate ddtFrame elsewhere)
@@ -218,15 +221,17 @@ public class ImTrackPoint extends TrackPoint{
 	// note: do we need one with a single secFrameIm and a bunch of rects?
 		
 	/**
-	 * Set secondary image using track point's own original rect
+	 * Set secondary image using track point's own rectangle without padding
 	 */
+	// unnecessary; can just set ExtractionParameter.ddtPixelPad=0
+	/*
 	public void findAndStore2ndIm(int imInd, ImagePlus secondaryFrameIm) {
 		findAndStore2ndIm(imInd, secondaryFrameIm, rect);
 	}
+	*/
 	
 	/**
-	 * Set secondary image using rect padded by pixelPad on all 4 sides
-	 *  (TODO preset in extrParam?)
+	 * Set secondary image using the point's own rectangle padded by pixelPad on all 4 sides
 	 */
 	public void findAndStore2ndIm(int imInd, ImagePlus secondaryFrameIm, int pixelPad) {
 		Rectangle newRect = (Rectangle)rect.clone();
@@ -235,7 +240,9 @@ public class ImTrackPoint extends TrackPoint{
 	}
 	
 	/**
-	 * Set secondary image using a new rect
+	 * Crop secondary point image from the source frame image using the 
+	 * given rectangle, stores the image in secondaryIms and the rectangle
+	 * in secondaryRects
 	 */
 	public void findAndStore2ndIm(int imInd, ImagePlus secondaryFrameIm, Rectangle rect) {
 		Roi oldRoi = secondaryFrameIm.getRoi();

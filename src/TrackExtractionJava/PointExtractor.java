@@ -342,6 +342,10 @@ public class PointExtractor {
 	}
 	
 	protected static Vector<TrackPoint> findPtsInIm(int frameNum, ImagePlus currentIm, ImagePlus threshIm, int thresh, int[] frameSize, Rectangle analysisRect, ExtractionParameters ep, boolean showResults,  Communicator comm){
+		return findPtsInIm(frameNum, currentIm, threshIm, null, thresh, frameSize, analysisRect, ep, showResults, comm);
+	}
+	
+	protected static Vector<TrackPoint> findPtsInIm(int frameNum, ImagePlus currentIm, ImagePlus threshIm, ImagePlus ddtIm, int thresh, int[] frameSize, Rectangle analysisRect, ExtractionParameters ep, boolean showResults,  Communicator comm){
 		
 //		boolean excl = ep.excludeEdges;
 //		ep.excludeEdges = false;
@@ -354,7 +358,7 @@ public class PointExtractor {
 //	    }
 
 			//ResultsTable rt, int frameNum, Rectangle analysisRect, int[] frameSize, ImagePlus currentIm, ImagePlus threshIm, ExtractionParameters ep, int thresh, Communicator comm
-		Vector<TrackPoint> pts = rt2TrackPoints(pointTable, frameNum, analysisRect, frameSize, currentIm, threshIm, ep, thresh, comm);
+		Vector<TrackPoint> pts = rt2TrackPoints(pointTable, frameNum, analysisRect, frameSize, currentIm, threshIm, ddtIm, ep, thresh, comm);
 		return pts;
 	}
 	
@@ -375,10 +379,19 @@ public class PointExtractor {
 	
 	
 	public Vector<TrackPoint> rt2TrackPoints (ResultsTable rt, int frameNum, Rectangle analysisRect, ExtractionParameters ep, int thresh, Communicator comm) {
-		return rt2TrackPoints (rt, frameNum, analysisRect, fl.getStackDims(), currentIm, threshIm, ep, thresh, comm);
+		return rt2TrackPoints (rt, frameNum, analysisRect, fl.getStackDims(), currentIm, threshIm, ddtIm, ep, thresh, comm);
 	}
 	
-	public static Vector<TrackPoint> rt2TrackPoints (ResultsTable rt, int frameNum, Rectangle analysisRect, int[] frameSize, ImagePlus currentIm, ImagePlus threshIm, ExtractionParameters ep, int thresh, Communicator comm) {
+	/**
+	 * Proceeds without ddt frame image; handles dependency problem in {@link DistanceMapSplitting}
+	 */
+	/*
+	public Vector<TrackPoint> rt2TrackPoints (ResultsTable rt, int frameNum, Rectangle analysisRect, int[] frameSize, ImagePlus currentIm, ImagePlus threshIm, ExtractionParameters ep, int thresh, Communicator comm) {
+		return rt2TrackPoints (rt, frameNum, analysisRect, frameSize, currentIm, threshIm, null, ep, thresh, comm);
+	}
+	*/
+	
+	public static Vector<TrackPoint> rt2TrackPoints (ResultsTable rt, int frameNum, Rectangle analysisRect, int[] frameSize, ImagePlus currentIm, ImagePlus threshIm, ImagePlus ddtIm, ExtractionParameters ep, int thresh, Communicator comm) {
 		
 		int arX=0;
 		int arY=0;
@@ -431,8 +444,10 @@ public class PointExtractor {
 							ImageProcessor im = currentIm.getProcessor().crop(); //does not affect currentIm
 							currentIm.setRoi(oldRoi);
 							iTPt.setImage(im, ep.trackWindowWidth, ep.trackWindowHeight);
-							// add secondary image (for now only one ddt)
-							// problem: rt2TrackPoints is called in findPtsInIm, which causes dependency problems elsewhere
+							// add ddt point image
+							if(ddtIm!=null) {
+								iTPt.setDdtImage(ddtIm,ep.derivPixelPad);
+							}
 							tp.add(iTPt);
 							break;
 						case 2: //MaggotTrackPoint
@@ -460,6 +475,10 @@ public class PointExtractor {
 							*/
 							
 							mtPt.setImage(im2, ep.trackWindowWidth, ep.trackWindowHeight);
+							// add ddt point image
+							if(ddtIm!=null) {
+								mtPt.setDdtImage(ddtIm,ep.derivPixelPad);
+							}
 							mtPt.extractFeatures();
 							tp.add(mtPt);
 							break;
