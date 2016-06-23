@@ -182,28 +182,6 @@ public class PointExtractor {
 		}
 	}
 
-	// TODO organize this better (can we move some of it to loadFrameNew()?)
-	public int extractFramePointsNew(int frameNum) {
-		switch(ep.derivMethod) {
-		case 1: //forward
-			// handle last frame
-			// check currentIm != null
-			// load nextIm
-			// calculate and set ddtIm
-			// extract points (which include ddtPointIms)
-			// move nextIm to currentIm
-			// update frameNum fields
-		case 2: //backward
-			// handle first frame
-			// (then same)
-		case 3: //central
-			// handle first and last frame
-			// (then same)
-		}
-		
-		return 0;
-	}
-	
 	/**
 	 * 
 	 * @param frameNum Index of the stack slice to load
@@ -220,17 +198,110 @@ public class PointExtractor {
 		return 0;
 	}
 	
+	/**
+	 * Load currentIm, prevIm and/or nextIm depending on derivMethod; calculate and set ddtIm
+	 * <p>
+	 * TODO add communicator messages
+	 */
 	public int loadFrameNew(int frameNum) {
+		// TODO address out-of-range error
+		// Q: Natalie only did current>end, is it because we can have frameNum = -1?
+		if (frameNum<startFrameNum || frameNum>endFrameNum) {
+			return 1;
+		}
+		
+		currentFrameNum = frameNum;
+		int nextFrameNum = frameNum+increment;
+		
+		///*
 		switch(ep.derivMethod) {
 		case 1: //forward
-			// handle last frame
-			// check currentIm != null
-			// load nextIm
-			// calculate and set ddtIm
+			if (currentFrameNum==startFrameNum) {
+				// start of stack: currentIm=first frame, nextIm=second frame
+				// load first frame as currentIm
+				if(fl.getFrame(frameNum,fnm,normFactor)!=0) {
+					return 2;
+				} else {
+					currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
+				}
+				// load second frame as nextIm (necessary?)
+				if(fl.getFrame(nextFrameNum,fnm,normFactor)!=0) {
+					return 2;
+				} else {
+					nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
+				}
+			} else if (currentFrameNum==endFrameNum) {
+				// end of stack: currentIm already loaded from previous iteration, no nextIm
+				nextIm = null;
+			} else {
+				// middle of stack: move old nextIm to currentIm, load new nextIm
+				currentIm = nextIm;
+				if(fl.getFrame(nextFrameNum,fnm,normFactor)!=0) {
+					return 2;
+				} else {
+					nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
+				}
+			}
+			break;
 		case 2: //backward
-			
+			//int prevFrameNum = frameNum-increment;
+			if (currentFrameNum==startFrameNum) {
+				// start of stack: load currentIm, set prevIm as null
+				prevIm = null;
+				if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
+					return 2;
+				} else {
+					currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
+				}
+			} else if (currentFrameNum==endFrameNum) {
+				// end of stack: prevIm already loaded from previous iteration, load currentIm
+				if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
+					return 2;
+				} else {
+					currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
+				}
+			} else {
+				// middle of stack: move old currentIm to prevIm, load new currentIm
+				prevIm = currentIm;
+				if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
+					return 2;
+				} else {
+					currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
+				}
+			}
+			break;
 		case 3: //central
+			if (currentFrameNum==startFrameNum) {
+				// start of stack: same as backward
+				prevIm = null;
+				if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
+					return 2;
+				} else {
+					currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
+				}
+			} else if (currentFrameNum==endFrameNum) {
+				// end of stack: same as forward
+				nextIm = null;
+			} else {
+				// middle of stack: move old currentIm to prevIm, move old nextIm to currentIm, load nextIm
+				prevIm = currentIm;
+				currentIm = nextIm;
+				if(fl.getFrame(nextFrameNum,fnm,normFactor)!=0) {
+					return 2;
+				} else {
+					nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
+				}
+			}
 		}
+		//*/
+		// TODO actually, if ep.subset=true, even for start/endFrameNum we can get ddtFrameIm
+		// use the return value of fl.getFrame() to identify end of stack
+		// should we write separate loadCurrentFrame() and loadNextFrame()?
+		
+		calcAndSetDdtFrameIm(ep.derivMethod);
+		
+		defaultThresh();
+		
 		return 0;
 	}
 	
@@ -602,14 +673,34 @@ public class PointExtractor {
 		int dt = increment;
 		switch(derivMethod) {
 		case 1: //forward
-			calcAndSetDdtFrameIm(currentIm,nextIm,dt);
+			// handle last frame
+			if(nextIm == null) {
+				ddtIm = null;
+				System.out.println("Cannot calculate ddt frame image: nextIm doesn't exist");
+			} else {
+				calcAndSetDdtFrameIm(currentIm,nextIm,dt);
+			}
 			break;
 		case 2: //backward
-			calcAndSetDdtFrameIm(prevIm,currentIm,dt);
+			// handle first frame
+			if(prevIm == null) {
+				ddtIm = null;
+				System.out.println("Cannot calculate ddt frame image: prevIm doesn't exist");
+			} else {
+				calcAndSetDdtFrameIm(prevIm,currentIm,dt);
+			}
 			break;
 		case 3: //central
 			dt = increment*2;
-			calcAndSetDdtFrameIm(prevIm,nextIm,dt);
+			if(prevIm == null) {
+				ddtIm = null;
+				System.out.println("Cannot calculate ddt frame image: prevIm doesn't exist");
+			} else if(nextIm == null) {
+				ddtIm = null;
+				System.out.println("Cannot calculate ddt frame image: nextIm doesn't exist");
+			} else {
+				calcAndSetDdtFrameIm(prevIm,nextIm,dt);
+			}
 			break;
 		}
 	}
@@ -637,16 +728,6 @@ public class PointExtractor {
 		}
 		
 		ddtIm.setProcessor(newIm);
-	}
-	
-	///////////////////////
-	// ddt point methods
-	///////////////////////
-	
-	public void addDdtPointIms() {
-		for (int i=0;i<extractedPoints.size();i++) {
-			
-		}
 	}
 	
 }
