@@ -317,6 +317,16 @@ class TrackPanel extends JPanel {
 			}
 		});
 		
+		// build and add the play ddt movie button
+		JButton playDdtButton = new JButton("Play ddt Movie");
+		playDdtButton.setSize(100, 40);
+		playDdtButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				playCurrentTrackDdt();
+			}
+		});
+		
 //		JButton plotButton = new JButton("Plot Track Energies");
 //		plotButton.setSize(150, 40);
 //		plotButton.addActionListener(new ActionListener() {
@@ -328,6 +338,7 @@ class TrackPanel extends JPanel {
 		//Build and add the play button 
 		buttonPanel = new JPanel();
 		buttonPanel.add(playButton);
+		buttonPanel.add(playDdtButton);
 //		buttonPanel.add(plotButton);
 		
 		
@@ -357,6 +368,19 @@ class TrackPanel extends JPanel {
 			PrintWriter prw = new PrintWriter(sw);
 			e.printStackTrace(prw);
 			new TextWindow("PlayMovie Error", "Could not play track "+track.getTrackID()+" movie\n"+sw.toString()+"\n", 500, 500);
+		}
+	}
+	
+	public void playCurrentTrackDdt(){
+		try{
+			if (track!=null){
+				track.playDdtMovie();
+			}
+		} catch(Exception e){
+			StringWriter sw = new StringWriter();
+			PrintWriter prw = new PrintWriter(sw);
+			e.printStackTrace(prw);
+			new TextWindow("PlayDdtMovie Error", "Could not play track "+track.getTrackID()+" movie\n"+sw.toString()+"\n", 500, 500);
 		}
 	}
 	

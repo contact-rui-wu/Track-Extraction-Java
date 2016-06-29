@@ -393,6 +393,48 @@ public class Track implements Serializable{
 		}
 	}
 	
+	public void playDdtMovie() {
+		play2ndMovie(trackID, 0);
+		// TODO let the ImagePlus title tell which type of 2nd movie this is
+	}
+	
+	public void play2ndMovie(int labelInd, int ImInd) {
+		if (tb!=null){
+			tb.comm.message("This track has "+points.size()+"points", VerbLevel.verb_message);
+		}
+		ListIterator<TrackPoint> tpIt = points.listIterator();
+		if (tpIt.hasNext()) {
+		
+			MaggotTrackPoint point = (MaggotTrackPoint)tpIt.next();
+			// TODO deal with type conflict
+			// but how? cannot insert get2ndIm() to TrackPoint
+			point.setTrack(this);
+			
+			//Get the first image
+			ImageProcessor firstIm = point.get2ndIm(ImInd);
+			
+			ImageStack trackStack = new ImageStack(firstIm.getWidth(), firstIm.getHeight());
+			
+			trackStack.addSlice(firstIm);
+			
+			//Add the rest of the images to the movie
+			while(tpIt.hasNext()){
+				point = (MaggotTrackPoint)tpIt.next();
+				point.setTrack(this);
+				
+				//Get the next image
+				ImageProcessor img = point.get2ndIm(ImInd);
+				trackStack.addSlice(img);
+			}
+				
+			//Show the stack
+			ImagePlus trackPlus = new ImagePlus("Track "+trackID+" (2nd): frames "+points.firstElement().frameNum+"-"+points.lastElement().frameNum ,trackStack);
+			
+			trackPlus.show();
+			
+		}
+	}
+	
 	public void drawTrack(ColorProcessor im){
 		
 		if (points==null){

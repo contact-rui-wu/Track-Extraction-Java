@@ -67,6 +67,10 @@ public class ImTrackPoint extends TrackPoint{
 	 * Default: set ddt point image using this track point's own rect (padded)
 	 */
 	public void setDdtImage(ImagePlus ddtFrameIm, int pixelPad) {
+		if (secondaryIms==null || secondaryRects==null) {
+			secondaryIms = new Vector<ImageProcessor>(1,1);
+			secondaryRects = new Vector<Rectangle>(1,1);
+		}
 		findAndStore2ndIm(0, ddtFrameIm, pixelPad);
 		
 	}
@@ -182,11 +186,14 @@ public class ImTrackPoint extends TrackPoint{
 		return CVUtils.padAndCenter(new ImagePlus("Point "+pointID, im), trackWindowWidth, trackWindowHeight, (int)x-rect.x, (int)y-rect.y);
 	}
 	
+	public ImageProcessor getDdtIm() {
+		return get2ndIm(0);
+	}
+	
 	// TODO write wrapper get2ndIm(2ndImType) methods
 	//      - possible types: ddt, lowPasDdt, etc.
 	//      - use enum
 	
-	// TODO test get2ndIm()
 	public ImageProcessor get2ndIm(int imInd) {
 		// get raw secondary image
 		ImageProcessor raw2ndIm = getRaw2ndIm(imInd);
@@ -247,8 +254,10 @@ public class ImTrackPoint extends TrackPoint{
 	public void findAndStore2ndIm(int imInd, ImagePlus secondaryFrameIm, Rectangle rect) {
 		Roi oldRoi = secondaryFrameIm.getRoi();
 		secondaryFrameIm.setRoi(rect);
-		secondaryIms.set(imInd, secondaryFrameIm.getProcessor().crop());
-		secondaryRects.set(imInd, (Rectangle)rect.clone());
+		//ImageProcessor tmp = secondaryFrameIm.getProcessor();
+		//tmp.setRoi(rect);
+		secondaryIms.add(imInd, secondaryFrameIm.getProcessor().crop());
+		secondaryRects.add(imInd, (Rectangle)rect.clone());
 		secondaryFrameIm.setRoi(oldRoi);
 	}
 	

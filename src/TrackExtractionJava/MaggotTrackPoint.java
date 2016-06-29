@@ -776,6 +776,18 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		
 	}
 	
+	public ImageProcessor get2ndIm(int imInd) {
+		return get2ndIm(imInd,null);
+	}
+	
+	public ImageProcessor get2ndIm(int imInd, MaggotDisplayParameters mdp) {
+		if (mdp==null){
+			mdp = new MaggotDisplayParameters();
+		}
+		ImageProcessor im = super.get2ndIm(imInd);
+		return im.resize(im.getWidth()*mdp.expandFac);
+	}
+	
 	/**
 	 * Returns an imageProcessor of trackPoint features drawn in color over a gray image
 	 * @param grayIm A grayscale image to be displayed

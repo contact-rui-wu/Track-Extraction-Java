@@ -8,6 +8,7 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.Graphics;
+import java.util.Vector;
 
 import ij.process.ImageProcessor;
 import ij.process.ByteProcessor;
@@ -26,9 +27,11 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		//test_extraction();
+		//test_PointExtractor();
 		
-		test_viewSampleExp(1);
+		test_extraction();
+		
+		//test_viewSampleExp(1);
 		
 		//test_runTime();
 		
@@ -36,16 +39,96 @@ public class TestRui {
 	
 	// write each test as a void method so that don't have to write a lot in main
 	
+	public static void test_PointExtractor() {
+		ImageJ ij = new ImageJ();
+		// load mmf and get ready for point extractor
+		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
+		mmf_Reader mr = new mmf_Reader();
+		mr.loadStack(path);
+		ImageStack mmf = mr.getMmfStack();
+		Communicator comm = new Communicator();
+		ExtractionParameters ep = new ExtractionParameters();
+		
+		PointExtractor pe = new PointExtractor(mmf,comm,ep);
+		
+		// 1) one frame: success
+		///*
+		ep.trackPointType = 1;
+		int frameNum = 2;
+		if (pe.loadFrameNew(frameNum)!=0) {
+			System.out.println("Something is wrong!");
+		} else {
+			if (pe.ddtIm != null) {
+				ImagePlus ddtPlus = new ImagePlus(null,pe.ddtIm.getProcessor());
+				//ddtPlus.show();
+				pe.extractPoints(frameNum);
+				Vector<TrackPoint> extracted = pe.getPoints();
+				// look at one point
+				//ImTrackPoint itp = (ImTrackPoint)extracted.get(10);
+				//System.out.println(itp.getTypeName());
+				//ImagePlus itpPlus = new ImagePlus("image",itp.getIm());
+				//itpPlus.show();
+				//ImagePlus ddtPtPlus = new ImagePlus("ddt image", itp.getDdtIm());
+				//ddtPtPlus.show();
+				// check if all points have ddtIm - all valid, good
+				int ddtValid = 0;
+				int total = extracted.size();
+				for (int i=0;i<total;i++) {
+					ImTrackPoint itp = (ImTrackPoint)extracted.get(i);
+					if (itp.getDdtIm()!=null) {
+						ddtValid++;
+					}
+				}
+				int ddtInvalid = total-ddtValid;
+				System.out.println("Total points extracted: "+total);
+				System.out.println("ddtIm valid: "+ddtValid);
+				System.out.println("ddtIm invalid: "+ddtInvalid);
+			}
+		}		
+		//*/
+		
+		// 2) subset of 200 frames: out-of-memory problem
+		/*
+		ep.subset=true;
+		ep.endFrame=80;
+		ep.derivMethod = 3;
+		int width = mmf.getProcessor(1).getWidth();
+		int height = mmf.getProcessor(1).getHeight();
+		ImageStack ddtStack = new ImageStack(width,height);
+		for (int i=1;i<=ep.endFrame;i++) {
+			if (i%10==0) {
+				System.out.println("Working on "+i+"th frame");
+			}
+			if (pe.loadFrameNew(i)!=0) {
+				System.out.println("Failed to load frame "+i);
+				break;
+			} else {
+				if (pe.ddtIm!=null) {
+					//ImageProcessor newIP = pe.ddtIm.getProcessor();
+					//newIP.autoThreshold();
+					//ddtStack.addSlice(newIP);
+					ddtStack.addSlice(pe.ddtIm.getProcessor());
+				} else continue; // skip bad ddtIm
+			}
+		}
+		ImagePlus ddtPlus = new ImagePlus(null,ddtStack);
+		ddtPlus.show();
+		*/
+	}
+	
 	public static void test_extraction() {
 		ImageJ ij = new ImageJ();
 		
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.doFitting = false;
+		prParams.showMagEx = true;
+		prParams.saveMagEx = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true;
 		extrParams.startFrame = 1;
-		extrParams.endFrame = 2000;
+		extrParams.endFrame = 1000;
+		//extrParams.trackPointType = 1;
 		
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
 		Experiment_Processor ep = new Experiment_Processor();
@@ -56,6 +139,11 @@ public class TestRui {
 		ep.extrParams = extrParams;
 		
 		ep.run(path);
+		
+		// play one movie and one ddt movie
+		//Track tr = ep.ex.getTrack(10);
+		//tr.playMovie();
+		//tr.playDdtMovie();
 	}
 	
 	public static void test_runTime() {
@@ -225,11 +313,13 @@ public class TestRui {
 			Rectangle newRect = draft_calcNewRoi(tr,i,increment,derivMethod,2);
 			ddtFrame.setRoi(newRect);
 			ImageProcessor ddtPoint = ddtFrame.crop();
-			//ddtPoint.autoThreshold(); //TODO autoThreshold() gives a different threshold value for each frame; need to do it after building the ddt stack with a global threshold value
+			//ddtPoint.autoThreshold();
+			// autoThreshold() gives a different threshold value for each frame; need to do it after building the ddt stack with a global threshold value
+			// note: just open up an ImageJ instance at the beginning and adjust in ImageJ
 			int centerX = ddtPoint.getWidth()/2;
 			int centerY = ddtPoint.getHeight()/2;
 			ImageProcessor newIm = CVUtils.padAndCenter(new ImagePlus("",ddtPoint), 30, 30, centerX, centerY);
-			ret.addSlice(newIm); //TODO this is only for visualization; shouldn't do padAndCenter() for actual image to attach to ImTrackPoint
+			ret.addSlice(newIm); //this is only for visualization; shouldn't do padAndCenter() for actual image to attach to ImTrackPoint
 		}
 		
 		System.out.println("Done!");
@@ -242,7 +332,7 @@ public class TestRui {
 		}
 		
 		// compare with raw movie
-		// TODO current method doesn't use getCombinedBounds(), so not really comparable to ddtIm movie
+		// current method doesn't use getCombinedBounds(), so not really comparable to ddtIm movie
 		//tr.playBlankMovie();
 	}
 	
@@ -557,7 +647,7 @@ public class TestRui {
 		int height = frameIm1.getHeight();
 		//*/
 		
-		// TODO handle different thresholds
+		// handle different thresholds
 		
 		/**
 		// using ImageJ methods
@@ -617,7 +707,7 @@ public class TestRui {
 		for(int i=0; i<width; i++) {
 			for(int j=0; j<height; j++) {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
-				int ddt = pixDiff/dt; //TODO potential round-off error
+				int ddt = pixDiff/dt;
 				//float ddt = ((pixDiff+255)/2)/dt;
 				//ddtIm.setf(i,j,ddt);
 				if (pixDiff>0) {

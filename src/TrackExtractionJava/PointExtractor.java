@@ -201,106 +201,80 @@ public class PointExtractor {
 	/**
 	 * Load currentIm, prevIm and/or nextIm depending on derivMethod; calculate and set ddtIm
 	 * <p>
-	 * TODO add communicator messages
+	 * TODO handle error codes and communicator messages
 	 */
 	public int loadFrameNew(int frameNum) {
-		// TODO address out-of-range error
+		// address out-of-range error
 		// Q: Natalie only did current>end, is it because we can have frameNum = -1?
 		if (frameNum<startFrameNum || frameNum>endFrameNum) {
-			return 1;
+			System.out.println("Out of processing range!");
+			return 1; //out-of-range error
 		}
 		
 		currentFrameNum = frameNum;
+		int prevFrameNum = frameNum-increment;
 		int nextFrameNum = frameNum+increment;
 		
-		///*
-		switch(ep.derivMethod) {
-		case 1: //forward
-			if (currentFrameNum==startFrameNum) {
-				// start of stack: currentIm=first frame, nextIm=second frame
-				// load first frame as currentIm
-				if(fl.getFrame(frameNum,fnm,normFactor)!=0) {
-					return 2;
-				} else {
-					currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
-				}
-				// load second frame as nextIm (necessary?)
-				if(fl.getFrame(nextFrameNum,fnm,normFactor)!=0) {
-					return 2;
-				} else {
-					nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
-				}
-			} else if (currentFrameNum==endFrameNum) {
-				// end of stack: currentIm already loaded from previous iteration, no nextIm
-				nextIm = null;
+		// 1) if currentIm has not been passed from prevIm, load currentIm
+		if (currentIm==null) {
+			if(fl.getFrame(frameNum,fnm,normFactor)!=0) {
+				System.out.println("Failed to load frame "+frameNum);
+				return 2;
 			} else {
-				// middle of stack: move old nextIm to currentIm, load new nextIm
-				currentIm = nextIm;
-				if(fl.getFrame(nextFrameNum,fnm,normFactor)!=0) {
-					return 2;
-				} else {
-					nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
-				}
-			}
-			break;
-		case 2: //backward
-			//int prevFrameNum = frameNum-increment;
-			if (currentFrameNum==startFrameNum) {
-				// start of stack: load currentIm, set prevIm as null
-				prevIm = null;
-				if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
-					return 2;
-				} else {
-					currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
-				}
-			} else if (currentFrameNum==endFrameNum) {
-				// end of stack: prevIm already loaded from previous iteration, load currentIm
-				if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
-					return 2;
-				} else {
-					currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
-				}
-			} else {
-				// middle of stack: move old currentIm to prevIm, load new currentIm
-				prevIm = currentIm;
-				if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
-					return 2;
-				} else {
-					currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
-				}
-			}
-			break;
-		case 3: //central
-			if (currentFrameNum==startFrameNum) {
-				// start of stack: same as backward
-				prevIm = null;
-				if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
-					return 2;
-				} else {
-					currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
-				}
-			} else if (currentFrameNum==endFrameNum) {
-				// end of stack: same as forward
-				nextIm = null;
-			} else {
-				// middle of stack: move old currentIm to prevIm, move old nextIm to currentIm, load nextIm
-				prevIm = currentIm;
-				currentIm = nextIm;
-				if(fl.getFrame(nextFrameNum,fnm,normFactor)!=0) {
-					return 2;
-				} else {
-					nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
-				}
+				currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
 			}
 		}
-		//*/
-		// TODO actually, if ep.subset=true, even for start/endFrameNum we can get ddtFrameIm
-		// use the return value of fl.getFrame() to identify end of stack
-		// should we write separate loadCurrentFrame() and loadNextFrame()?
+		// 2) handle other frameIm(s) based on derivMethod
+		switch(ep.derivMethod) {
+		case 1: //forward
+			// pass old nextIm to currentIm
+			if (nextIm!=null) {
+				currentIm = nextIm;
+			}
+			// load new nextIm
+			if (fl.getFrame(nextFrameNum,fnm,normFactor)!=0) {
+				nextIm = null;
+			} else {
+				nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
+			}
+		case 2: //backward
+			// pass old currentIm to prevIm
+			if (currentIm!=null) {
+				prevIm = currentIm;
+			}
+			// load new currentIm
+			if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
+				System.out.println("Failed to load frame "+frameNum);
+				return 2; 
+			} else {
+				currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
+			}
+		case 3: //central
+			// pass old currentIm to prevIm
+			if (currentIm!=null) {
+				prevIm = currentIm;
+			}
+			// pass old nextIm to currentIm
+			if (nextIm!=null) {
+				currentIm = nextIm;
+			}
+			// load new nextIm
+			if (fl.getFrame(nextFrameNum,fnm,normFactor)!=0) {
+				nextIm = null;
+			} else {
+				nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
+			}
+		}
 		
+		ddtIm = new ImagePlus();
 		calcAndSetDdtFrameIm(ep.derivMethod);
+		if (ddtIm==null) {
+			System.out.println("No ddtIm for frame "+frameNum);
+		}
 		
+		if (comm!=null) comm.message("Thresholding image to zero...", VerbLevel.verb_debug);
 		defaultThresh();
+		if (comm!=null) comm.message("...finished thresholding image to zero", VerbLevel.verb_debug);
 		
 		return 0;
 	}
@@ -338,23 +312,6 @@ public class PointExtractor {
 		assert (currentIm!=null);
 //		analysisRect = fl.ar;
 		
-		/*
-		// load prevIm, nextIm and set ddt image
-		if (fl.getFrame(frameNum-increment,fnm,normFactor)!=0) {
-			// no prevIm; we're at first frame
-			// can only do forward deriv
-			calcAndSetDdtFrameIm(ep.DERIV_FORWARD);
-		} else if (fl.getFrame(frameNum+increment,fnm,normFactor)!=0) {
-			// no nextIm; we're at last frame
-			// can only do backward deriv
-			calcAndSetDdtFrameIm(ep.DERIV_BACKWARD);
-		} else {
-			calcAndSetDdtFrameIm(ep.DERIV_METHOD);
-		}
-		assert (ddtIm!=null);
-		// TODO can optimize: now always loading both prevIm and nextIm, not necessary
-		*/
-		
 		if (comm!=null) comm.message("Thresholding image to zero...", VerbLevel.verb_debug);
 		defaultThresh();
 		if (comm!=null) comm.message("...finished thresholding image to zero", VerbLevel.verb_debug);
@@ -391,7 +348,7 @@ public class PointExtractor {
 	public void extractPoints(int frameNum, int thresh) {
 		
 //		if (currentFrameNum!= frameNum){
-			loadFrame(frameNum);
+			loadFrameNew(frameNum);
 //		}
 		if (thresh!=ep.globalThreshValue){
 			if (comm!=null) comm.message("Rethresholding to "+thresh, VerbLevel.verb_message);
@@ -405,7 +362,7 @@ public class PointExtractor {
 	    	threshIm.show();
 	    }
 
-	    extractedPoints = findPtsInIm(currentFrameNum, currentIm, threshIm, thresh, fl.getStackDims(), analysisRect, ep, showResults, comm);
+	    extractedPoints = findPtsInIm(currentFrameNum, currentIm, threshIm, ddtIm, thresh, fl.getStackDims(), analysisRect, ep, showResults, comm);
 	    
 	    String s = "Frame "+currentFrameNum+": Extracted "+extractedPoints.size()+" new points";
 	    if (comm!=null) comm.message(s, VerbLevel.verb_message);
@@ -709,25 +666,32 @@ public class PointExtractor {
 	 * Calculates ddtIm of current frame given two images and dt
 	 */
 	public void calcAndSetDdtFrameIm(ImagePlus imp1, ImagePlus imp2, int dt) {
+		//System.out.println("Calculating ddt frame image for frame "+currentFrameNum);
+		
 		ImageProcessor im1 = imp1.getProcessor();
 		ImageProcessor im2 = imp2.getProcessor();
 		
-		ColorProcessor newIm = new ColorProcessor(im1.getWidth(), im1.getHeight());
+		//ColorProcessor newIm = new ColorProcessor(im1.getWidth(), im1.getHeight());
+		ddtIm.setProcessor(new ColorProcessor(im1.getWidth(), im1.getHeight()));
 		
 		for(int i=0; i<im1.getWidth(); i++) {
 			for(int j=0; j<im1.getHeight(); j++) {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
-				int ddt = pixDiff/dt;
+				int ddt = pixDiff/dt; //TODO potential round-off error
 				if (pixDiff>0) {
-					newIm.setColor(new Color(ddt,0,0));//move into: red
+					//newIm.setColor(new Color(ddt,0,0));//move into: red
+					ddtIm.getProcessor().setColor(new Color(ddt,0,0));
 				} else {
-					newIm.setColor(new Color(0,0,-ddt)); //move out of: blue
+					//newIm.setColor(new Color(0,0,-ddt)); //move out of: blue
+					ddtIm.getProcessor().setColor(new Color(0,0,-ddt));
 				}
-				newIm.drawPixel(i,j);
+				//newIm.drawPixel(i,j);
+				ddtIm.getProcessor().drawPixel(i,j);
 			}
 		}
 		
-		ddtIm.setProcessor(newIm);
+		//ddtIm.setProcessor(newIm);
+		//ddtIm = new ImagePlus("Frame "+currentFrameNum+" (ddt)",newIm);
 	}
 	
 }
