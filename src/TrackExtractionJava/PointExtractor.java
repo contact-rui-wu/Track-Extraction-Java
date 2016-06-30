@@ -237,6 +237,7 @@ public class PointExtractor {
 			} else {
 				nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
 			}
+			break;
 		case 2: //backward
 			// pass old currentIm to prevIm
 			if (currentIm!=null) {
@@ -249,6 +250,7 @@ public class PointExtractor {
 			} else {
 				currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
 			}
+			break;
 		case 3: //central
 			// pass old currentIm to prevIm
 			if (currentIm!=null) {
@@ -264,6 +266,7 @@ public class PointExtractor {
 			} else {
 				nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
 			}
+			break;
 		}
 		
 		ddtIm = new ImagePlus();

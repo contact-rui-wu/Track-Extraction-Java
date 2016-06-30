@@ -118,6 +118,7 @@ public class TestRui {
 	
 	public static void test_extraction() {
 		ImageJ ij = new ImageJ();
+		TicToc timer = new TicToc();
 		
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
@@ -128,6 +129,7 @@ public class TestRui {
 		extrParams.subset = true;
 		extrParams.startFrame = 1;
 		extrParams.endFrame = 1000;
+		extrParams.derivMethod = 1;
 		//extrParams.trackPointType = 1;
 		
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
@@ -138,7 +140,9 @@ public class TestRui {
 		ep.prParams = prParams;
 		ep.extrParams = extrParams;
 		
+		timer.tic();
 		ep.run(path);
+		System.out.println("Runtime: "+timer.toc()/1000+" seconds");
 		
 		// play one movie and one ddt movie
 		//Track tr = ep.ex.getTrack(10);
