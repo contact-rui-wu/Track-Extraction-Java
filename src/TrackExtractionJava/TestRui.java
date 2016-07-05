@@ -59,7 +59,7 @@ public class TestRui {
 			System.out.println("Something is wrong!");
 		} else {
 			if (pe.ddtIm != null) {
-				ImagePlus ddtPlus = new ImagePlus(null,pe.ddtIm.getProcessor());
+				//ImagePlus ddtPlus = new ImagePlus(null,pe.ddtIm.getProcessor());
 				//ddtPlus.show();
 				pe.extractPoints(frameNum);
 				Vector<TrackPoint> extracted = pe.getPoints();
@@ -124,9 +124,9 @@ public class TestRui {
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.doFitting = true;
 		prParams.showFitEx = true;
-		prParams.saveMagEx = false;
-		prParams.saveFitEx = false;
-		prParams.saveErrors = false;
+		//prParams.saveMagEx = false;
+		//prParams.saveFitEx = false;
+		//prParams.saveErrors = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true;
 		extrParams.startFrame = 1;
@@ -166,7 +166,7 @@ public class TestRui {
 		
 		// choose tracks to work on
 		int trackID1 = 59;
-		int trackID2 = 61;
+		//int trackID2 = 61;
 		Track tr = ex.getTrack(trackID1);
 		
 		new ImageJ(); //for manipulation in ImageJ
@@ -568,7 +568,7 @@ public class TestRui {
 		//String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
 		String dir = "/home/data/rw1679/Documents/Gershow_lab_local";
 		String fnameN = "Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
-		String fnameR = "sampleShortExp_copy.prejav";
+		String fnameR = "sampleShortExp_copy.jav";
 		Experiment_Viewer ev = new Experiment_Viewer();
 		switch(whose) {
 		case 0: //Natalie's

@@ -616,17 +616,6 @@ public class PointExtractor {
 	// ignoring analysisRect for now TODO deal with analysisRect
 	
 	/**
-	 * Calculates ddtIm of current frame using central derivation
-	 */
-	/*
-	// no need; presetted in ExtractionParameters
-	public void calcAndSetDdtFrameIm() {
-		// default: central method
-		calcAndSetDdtFrameIm(3);
-	}
-	*/
-	
-	/**
 	 * Calculates ddtIm of current frame using specified derivation method
 	 */
 	public void calcAndSetDdtFrameIm(int derivMethod) {

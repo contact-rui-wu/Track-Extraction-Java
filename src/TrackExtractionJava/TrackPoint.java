@@ -452,8 +452,7 @@ public class TrackPoint implements Serializable {
 	}
 	
 	// 20160608: moved from ImTrackPoint, changed param type
-	// TODO actually maybe better to re-write as
-	// pt1.getCombinedBounds(pt2)
+	// TODO actually maybe better to re-write as pt1.getCombinedBounds(pt2)
 	public Rectangle getCombinedBounds(TrackPoint pt1, TrackPoint pt2){
 		
 		int x = (pt1.rect.x<pt2.rect.x)? pt1.rect.x : pt2.rect.x;

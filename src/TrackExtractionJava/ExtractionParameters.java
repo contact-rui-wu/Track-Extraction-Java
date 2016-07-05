@@ -31,7 +31,7 @@ public class ExtractionParameters implements Serializable{
 	static final int DERIV_BACKWARD = 2;
 	static final int DERIV_SYMMETRIC = 3;
 	// TODO above will be replaced with below
-	public int derivMethod = 3; //default: central method (use enum?)
+	public int derivMethod = 3; //default: central method
 	public int derivPixelPad = 3;
 
 	public boolean subset = false;

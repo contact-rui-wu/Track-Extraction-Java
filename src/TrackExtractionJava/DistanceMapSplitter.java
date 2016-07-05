@@ -109,10 +109,12 @@ public class DistanceMapSplitter {
 			threshIm.getProcessor().threshold(ep.globalThreshValue);
 			if (debug>1) threshIms.add(threshIm.getProcessor().duplicate());			
 			
+			// TODO get maskedDdtIm from the collision point
 			
 			//Get the new point
 			try{
 				Vector<TrackPoint> newPt = PointExtractor.findPtsInIm(itp.frameNum, maskedIm, threshIm, ep.globalThreshValue, frameSize, itp.rect, ep, false, null);
+				// TODO passed the collision point maskedDdtIm as frame-size ddtIm here
 				
 				//Add point to return list
 				if (newPt.size()==1){

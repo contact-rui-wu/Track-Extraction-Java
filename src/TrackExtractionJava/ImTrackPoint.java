@@ -9,7 +9,7 @@ import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 
 import java.awt.Color;
-import java.awt.Dimension;
+//import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -30,7 +30,10 @@ public class ImTrackPoint extends TrackPoint{
 	protected int imOriginY;
 	
 	// for now: stores ddt images
-	// maybe better to call it that?
+	protected enum SecondaryTypes {
+		DDT
+	}
+	SecondaryTypes secondaryTypes;
 	protected Vector<ImageProcessor> secondaryIms;
 	protected Vector<Rectangle> secondaryRects;
 	
@@ -65,6 +68,8 @@ public class ImTrackPoint extends TrackPoint{
 	
 	/**
 	 * Default: set ddt point image using this track point's own rect (padded)
+	 * <p>
+	 * TODO setDdtImage() and setImage() works differently. Do we want a setDdtImage() method that simply takes any image and set it as ddtIm?
 	 */
 	public void setDdtImage(ImagePlus ddtFrameIm, int pixelPad) {
 		if (secondaryIms==null || secondaryRects==null) {
@@ -72,13 +77,11 @@ public class ImTrackPoint extends TrackPoint{
 			secondaryRects = new Vector<Rectangle>(1,1);
 		}
 		findAndStore2ndIm(0, ddtFrameIm, pixelPad);
-		
 	}
 		
-	// TODO Q: do we need a constructor that include secondary images?
-	
-	// 20160620: obsolete (better to calculate ddtFrame elsewhere)
-	///*
+	/**
+	 * This method is obsolete; ddt calculation is now done elsewhere. Retained only to avoid dependency problems.
+	 */
 	public void calcImDeriv(ImTrackPoint prevITP, ImTrackPoint nextITP, int derivMethod){
 		
 		Rectangle newRect;
@@ -174,7 +177,6 @@ public class ImTrackPoint extends TrackPoint{
 		return im;
 	}
 	
-	// TODO test getRaw2ndIm()
 	public ImageProcessor getRaw2ndIm(int imInd) {
 		return secondaryIms.get(imInd);
 	}
@@ -189,10 +191,6 @@ public class ImTrackPoint extends TrackPoint{
 	public ImageProcessor getDdtIm() {
 		return get2ndIm(0);
 	}
-	
-	// TODO write wrapper get2ndIm(2ndImType) methods
-	//      - possible types: ddt, lowPasDdt, etc.
-	//      - use enum
 	
 	public ImageProcessor get2ndIm(int imInd) {
 		// get raw secondary image
@@ -223,10 +221,7 @@ public class ImTrackPoint extends TrackPoint{
 		im = frameIm.getProcessor().crop();//Does not affect frameIm's image
 		frameIm.setRoi(oldRoi);
 	}
-	
-	// TODO test all findAndStore2ndIm()
-	// note: do we need one with a single secFrameIm and a bunch of rects?
-		
+			
 	/**
 	 * Set secondary image using track point's own rectangle without padding
 	 */

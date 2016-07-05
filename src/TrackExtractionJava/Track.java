@@ -394,11 +394,10 @@ public class Track implements Serializable{
 	}
 	
 	public void playDdtMovie() {
-		play2ndMovie(trackID, 0);
-		// TODO let the ImagePlus title tell which type of 2nd movie this is
+		play2ndMovie(trackID, 0, "ddt");
 	}
 	
-	public void play2ndMovie(int labelInd, int imInd) {
+	public void play2ndMovie(int labelInd, int imInd, String secTypeMsg) {
 		if (tb!=null){
 			tb.comm.message("This track has "+points.size()+"points", VerbLevel.verb_message);
 		}
@@ -406,22 +405,22 @@ public class Track implements Serializable{
 		if (tpIt.hasNext()) {
 		
 			TrackPoint point = tpIt.next();
-			// TODO deal with type conflict
-			// but how? cannot insert get2ndIm() to TrackPoint
-			// actually that's exactly what we're gonna do
 			point.setTrack(this);
 			
+			int width = exp.getEP().trackWindowWidth*exp.getEP().trackZoomFac;
+			int height = exp.getEP().trackWindowHeight*exp.getEP().trackZoomFac;
+			// TODO caution: in Experiment_Processor we use MaggotDisplayParameters.expandFac instead of ExtractionParameters.trackZoomFac
+			
 			//Get the first image
-			//ImageProcessor firstIm = point.get2ndIm(ImInd);
 			ImageProcessor firstIm;
 			try {
 				firstIm = point.get2ndIm(imInd);
 			} catch (NullPointerException e) {
 				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
-				firstIm = new ColorProcessor(300,300);
+				//firstIm = new ColorProcessor(300,300);
+				firstIm = new ColorProcessor(width,height);
 				firstIm.setColor(new Color(0,0,0));
 				firstIm.fill();
-				// TODO need to replace with smarter sizing method
 			}
 			
 			ImageStack trackStack = new ImageStack(firstIm.getWidth(), firstIm.getHeight());
@@ -434,13 +433,13 @@ public class Track implements Serializable{
 				point.setTrack(this);
 				
 				//Get the next image
-				//ImageProcessor img = point.get2ndIm(ImInd);
 				ImageProcessor img;
 				try {
 					img = point.get2ndIm(imInd);
 				} catch (NullPointerException e) {
 					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
-					img = new ColorProcessor(300,300);
+					//img = new ColorProcessor(300,300);
+					img = new ColorProcessor(width,height);
 					img.setColor(new Color(0,0,0));
 					img.fill();
 				}
@@ -449,7 +448,7 @@ public class Track implements Serializable{
 			}
 				
 			//Show the stack
-			ImagePlus trackPlus = new ImagePlus("Track "+trackID+" (2nd): frames "+points.firstElement().frameNum+"-"+points.lastElement().frameNum ,trackStack);
+			ImagePlus trackPlus = new ImagePlus("Track "+trackID+" ("+secTypeMsg+"): frames "+points.firstElement().frameNum+"-"+points.lastElement().frameNum ,trackStack);
 			
 			trackPlus.show();
 			
