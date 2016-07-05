@@ -75,7 +75,7 @@ public class ImTrackPoint extends TrackPoint{
 		
 	}
 		
-	// TODO Q: do we need a constructor with secondary images?
+	// TODO Q: do we need a constructor that include secondary images?
 	
 	// 20160620: obsolete (better to calculate ddtFrame elsewhere)
 	///*

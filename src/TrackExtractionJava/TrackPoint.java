@@ -1,6 +1,7 @@
 package TrackExtractionJava;
 
 import ij.process.ImageProcessor;
+import ij.process.ColorProcessor;
 
 import java.awt.Color;
 import java.awt.Rectangle;
@@ -225,6 +226,12 @@ public class TrackPoint implements Serializable {
 	
 	public ImageProcessor getIm(MaggotDisplayParameters mdp){
 		return getIm();
+	}
+	
+	public ImageProcessor get2ndIm(int imInd) {
+		// does nothing; overridden in MaggotTrackPoint
+		ImageProcessor im = new ColorProcessor(300,300);
+		return im;
 	}
 	
 	protected void setNumMatches(int num){

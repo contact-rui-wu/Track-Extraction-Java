@@ -398,20 +398,31 @@ public class Track implements Serializable{
 		// TODO let the ImagePlus title tell which type of 2nd movie this is
 	}
 	
-	public void play2ndMovie(int labelInd, int ImInd) {
+	public void play2ndMovie(int labelInd, int imInd) {
 		if (tb!=null){
 			tb.comm.message("This track has "+points.size()+"points", VerbLevel.verb_message);
 		}
 		ListIterator<TrackPoint> tpIt = points.listIterator();
 		if (tpIt.hasNext()) {
 		
-			MaggotTrackPoint point = (MaggotTrackPoint)tpIt.next();
+			TrackPoint point = tpIt.next();
 			// TODO deal with type conflict
 			// but how? cannot insert get2ndIm() to TrackPoint
+			// actually that's exactly what we're gonna do
 			point.setTrack(this);
 			
 			//Get the first image
-			ImageProcessor firstIm = point.get2ndIm(ImInd);
+			//ImageProcessor firstIm = point.get2ndIm(ImInd);
+			ImageProcessor firstIm;
+			try {
+				firstIm = point.get2ndIm(imInd);
+			} catch (NullPointerException e) {
+				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
+				firstIm = new ColorProcessor(300,300);
+				firstIm.setColor(new Color(0,0,0));
+				firstIm.fill();
+				// TODO need to replace with smarter sizing method
+			}
 			
 			ImageStack trackStack = new ImageStack(firstIm.getWidth(), firstIm.getHeight());
 			
@@ -419,11 +430,21 @@ public class Track implements Serializable{
 			
 			//Add the rest of the images to the movie
 			while(tpIt.hasNext()){
-				point = (MaggotTrackPoint)tpIt.next();
+				point = tpIt.next();
 				point.setTrack(this);
 				
 				//Get the next image
-				ImageProcessor img = point.get2ndIm(ImInd);
+				//ImageProcessor img = point.get2ndIm(ImInd);
+				ImageProcessor img;
+				try {
+					img = point.get2ndIm(imInd);
+				} catch (NullPointerException e) {
+					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
+					img = new ColorProcessor(300,300);
+					img.setColor(new Color(0,0,0));
+					img.fill();
+				}
+				
 				trackStack.addSlice(img);
 			}
 				

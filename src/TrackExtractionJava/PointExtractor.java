@@ -188,10 +188,10 @@ public class PointExtractor {
 	 * @return
 	 */
 	public int extractFramePoints(int frameNum) {
-		if(loadFrame(frameNum)>0){
-			comm.message("Frame "+frameNum+" was NOT successfully loaded in Point Extractor", VerbLevel.verb_debug);
-			return 1; 
-		}
+		//if(loadFrame(frameNum)>0){
+		//	comm.message("Frame "+frameNum+" was NOT successfully loaded in Point Extractor", VerbLevel.verb_debug);
+		//	return 1; 
+		//}
 		comm.message("Frame "+frameNum+" successfully loaded in Point Extractor", VerbLevel.verb_debug);		
 		extractPoints(frameNum);
 		lastFrameExtracted = frameNum;
@@ -212,7 +212,7 @@ public class PointExtractor {
 		}
 		
 		currentFrameNum = frameNum;
-		int prevFrameNum = frameNum-increment;
+		//int prevFrameNum = frameNum-increment;
 		int nextFrameNum = frameNum+increment;
 		
 		// 1) if currentIm has not been passed from prevIm, load currentIm

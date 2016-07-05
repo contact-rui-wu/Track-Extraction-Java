@@ -932,6 +932,8 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		btp.imOriginY = imOriginY;
 		btp.trackWindowHeight = trackWindowHeight;
 		btp.trackWindowWidth = trackWindowWidth;
+		btp.secondaryIms = secondaryIms;
+		btp.secondaryRects = secondaryRects;
 		} catch(Exception e){
 			if(comm!=null){
 				comm.message(e.getMessage(), VerbLevel.verb_error);
@@ -941,6 +943,8 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		
 		//TrackPoint fields
 		//Set in constructor (x, y, rect, area, frame, thresh, etc)
+		btp.rect = rect;
+		
 		if(comm!=null){
 			comm.message("Copy successful", VerbLevel.verb_debug);
 		}

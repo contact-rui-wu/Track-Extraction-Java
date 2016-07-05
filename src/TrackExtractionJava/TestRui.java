@@ -122,9 +122,11 @@ public class TestRui {
 		
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
-		prParams.doFitting = false;
-		prParams.showMagEx = true;
+		prParams.doFitting = true;
+		prParams.showFitEx = true;
 		prParams.saveMagEx = false;
+		prParams.saveFitEx = false;
+		prParams.saveErrors = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true;
 		extrParams.startFrame = 1;
@@ -143,11 +145,6 @@ public class TestRui {
 		timer.tic();
 		ep.run(path);
 		System.out.println("Runtime: "+timer.toc()/1000+" seconds");
-		
-		// play one movie and one ddt movie
-		//Track tr = ep.ex.getTrack(10);
-		//tr.playMovie();
-		//tr.playDdtMovie();
 	}
 	
 	public static void test_runTime() {
