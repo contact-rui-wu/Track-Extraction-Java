@@ -124,14 +124,14 @@ public class TestRui {
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.doFitting = true;
 		prParams.showFitEx = true;
-		//prParams.saveMagEx = false;
-		//prParams.saveFitEx = false;
-		//prParams.saveErrors = false;
+		prParams.saveMagEx = false;
+		prParams.saveFitEx = false;
+		prParams.saveErrors = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true;
 		extrParams.startFrame = 1;
 		extrParams.endFrame = 1000;
-		extrParams.derivMethod = 1;
+		extrParams.derivMethod = 3;
 		//extrParams.trackPointType = 1;
 		
 		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";

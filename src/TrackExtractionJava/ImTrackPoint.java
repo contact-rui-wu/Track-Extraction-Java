@@ -67,9 +67,25 @@ public class ImTrackPoint extends TrackPoint{
 	}
 	
 	/**
-	 * Default: set ddt point image using this track point's own rect (padded)
+	 * Manually set ddtIm and ddtRect to any im and rect pair given
+	 */
+	public void setDdtImage(ImageProcessor ddtIm, Rectangle ddtRect) {
+		if (secondaryIms==null || secondaryRects==null) {
+			secondaryIms = new Vector<ImageProcessor>(1,1);
+			secondaryRects = new Vector<Rectangle>(1,1);
+		}
+		if (secondaryIms.isEmpty() || secondaryRects.isEmpty()) {
+			secondaryIms.add(0,ddtIm);
+			secondaryRects.add(0,ddtRect);
+		} else {
+			secondaryIms.set(0,ddtIm);
+			secondaryRects.set(0,ddtRect);
+		}
+	}
+	
+	/**
+	 * Default: find and store ddt point image using this track point's own rect (padded)
 	 * <p>
-	 * TODO setDdtImage() and setImage() works differently. Do we want a setDdtImage() method that simply takes any image and set it as ddtIm?
 	 */
 	public void setDdtImage(ImagePlus ddtFrameIm, int pixelPad) {
 		if (secondaryIms==null || secondaryRects==null) {

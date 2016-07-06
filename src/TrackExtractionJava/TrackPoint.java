@@ -234,6 +234,10 @@ public class TrackPoint implements Serializable {
 		return im;
 	}
 	
+	public void setDdtImage(ImageProcessor ddtIm, Rectangle ddtRect) {
+		// does nothing; overridden in ImTrackPoint
+	}
+	
 	protected void setNumMatches(int num){
 		numMatches = num;
 	}

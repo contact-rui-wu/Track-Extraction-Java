@@ -13,6 +13,7 @@ import ij.process.ImageProcessor;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Vector;
+import java.awt.Rectangle;
 
 public class DistanceMapSplitter {
 	
@@ -109,15 +110,17 @@ public class DistanceMapSplitter {
 			threshIm.getProcessor().threshold(ep.globalThreshValue);
 			if (debug>1) threshIms.add(threshIm.getProcessor().duplicate());			
 			
-			// TODO get maskedDdtIm from the collision point
-			
 			//Get the new point
 			try{
 				Vector<TrackPoint> newPt = PointExtractor.findPtsInIm(itp.frameNum, maskedIm, threshIm, ep.globalThreshValue, frameSize, itp.rect, ep, false, null);
-				// TODO passed the collision point maskedDdtIm as frame-size ddtIm here
-				
-				//Add point to return list
+				// if single point is found (splitting successful), add it to return list
 				if (newPt.size()==1){
+					// temp fix: manually attach the same ddtIm to points involved in collision
+					// TODO handle ddtIm in collisions correctly
+					Rectangle ddtRect = (Rectangle)itp.rect.clone();
+					ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
+					newPt.firstElement().setDdtImage(itp.getRaw2ndIm(0),ddtRect);
+					// add point to return list
 					spPts.add(newPt.firstElement());
 				} else {
 					if (debug>1) System.out.println("Error splitting point "+itp.pointID+": masked im has multiple points ");
