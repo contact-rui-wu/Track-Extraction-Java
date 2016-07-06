@@ -10,13 +10,13 @@ import java.awt.image.BufferedImage;
 import java.awt.Graphics;
 import java.util.Vector;
 
-import ij.process.ImageProcessor;
-import ij.process.ByteProcessor;
-//import ij.process.FloatProcessor;
-import ij.process.ColorProcessor;
-import ij.ImageStack;
-import ij.ImagePlus;
+import ij.gui.Roi;
 import ij.ImageJ;
+import ij.ImagePlus;
+import ij.ImageStack;
+import ij.process.ByteProcessor;
+import ij.process.ColorProcessor;
+import ij.process.ImageProcessor;
 
 import edu.nyu.physics.gershowlab.mmf.mmf_Reader;
 //import edu.nyu.physics.gershowlab.mmf.MmfVirtualStack;
@@ -39,6 +39,141 @@ public class TestRui {
 	
 	// write each test as a void method so that don't have to write a lot in main
 	
+	///////////////////////////////////////
+	// Below: secondaryIm related method
+	///////////////////////////////////////
+	
+	////////// ImTrackPoint fields //////////
+	
+	protected Vector<ImagePlus> secondaryIms;
+	protected Vector<Rectangle> secondaryRects;
+	protected Vector<Boolean> secondaryValidity; //is this necessary?
+	
+	// do we need a vector to store each secondary parameters?
+	
+	public enum SecondaryType {
+		DDT, SMOOTHED_DDT
+		// can add more secondary types later as needed
+	}
+	
+	public ImagePlus view2ndIm(SecondaryType type) {
+		return view2ndIm(type,null);
+	}
+	// In TrackPoint:
+	/*
+	public ImagePlus view2ndIm(SecondaryType type) {
+		return null; //overridden in ImTrackPoint
+	}
+	*/
+	
+	public ImagePlus view2ndIm(SecondaryType type, ExtractionParameters ep) {
+		ImagePlus ip = get2ndIm(type);
+		if (ep==null) {
+			ep = new ExtractionParameters(); //use default
+		}
+		ImageProcessor newIm =  CVUtils.padAndCenter(ip, ep.trackWindowWidth*ep.trackZoomFac, ep.trackWindowHeight*ep.trackZoomFac, ip.getWidth()/2, ip.getHeight()/2);
+		return new ImagePlus(ip.getTitle(), newIm);
+	}
+	// In TrackPoint:
+	/*
+	public ImagePlus view2ndIm(SecondaryType type, ExtractionParameters ep) {
+		return null; //overridden in ImTrackPoint
+	}
+	*/
+	
+	public ImagePlus get2ndIm(SecondaryType type) {
+		ImagePlus retIm;
+		if (secondaryValidity.get(type.ordinal())) {
+			retIm = secondaryIms.get(type.ordinal());
+		} else {
+			System.out.println("Failed to get "+type.toString()+" image");
+			retIm = null;
+		}
+		return retIm;
+	}
+	// In TrackPoint:
+	/*
+	public ImagePlus get2ndIm(SecondaryType type) {
+		return null; //overridden in ImTrackPoint
+	}
+	*/
+	
+	public void set2ndIm(ImageProcessor im, Rectangle rect, SecondaryType type) {
+		try {
+			secondaryIms.set(type.ordinal(), new ImagePlus(type.toString(), im));
+			secondaryRects.set(type.ordinal(), rect);
+			secondaryValidity.set(type.ordinal(), true);
+		} catch (Exception e) {
+			System.out.println("Failed to set "+type.toString()+" image");
+			secondaryValidity.set(type.ordinal(), false);
+		}
+		
+	}
+	// In TrackPoint:
+	/*
+	public void set2ndIm(ImageProcessor im, Rectangle rect, SecondaryType type) {
+		return null; //overridden in ImTrackPoint
+	}
+	*/
+	
+	@SuppressWarnings("static-access")
+	public void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect, SecondaryType type) {
+		Roi oldRoi = ddtFrameIm.getRoi();
+		ddtFrameIm.setRoi(rect);
+		set2ndIm(ddtFrameIm.getProcessor().crop(), rect, type.DDT);
+		ddtFrameIm.setRoi(oldRoi);
+	}
+	// In TrackPoint:
+	/*
+	public void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect, SecondaryType type) {
+		//overridden in ImTrackPoint
+	}
+	*/
+	
+	// can add more type-specific methods later as needed
+	
+	////////// ExtractionParameter fields //////////
+	
+	public enum DerivMethod {
+		FORWARD, BACKWARD, CENTRAL
+	}
+		
+	////////// PointExtractor fields //////////
+	
+	protected ImagePlus prevIm;
+	protected ImagePlus currentIm;
+	protected ImagePlus nextIm;
+	protected ImagePlus ddtIm;
+	
+	public void calcAndSetDdtIm(DerivMethod derivMethod) {
+		int dt = 1; //placeholder
+		switch(derivMethod) {
+		case FORWARD:
+			calcAndSetDdtIm(currentIm,nextIm,dt);
+			break;
+		case BACKWARD:
+			calcAndSetDdtIm(prevIm,currentIm,dt);
+			break;
+		case CENTRAL:
+			dt = 2;
+			calcAndSetDdtIm(prevIm,nextIm,dt);
+			break;
+		default:
+			System.out.println("Invalid derivation method");
+			ddtIm = null;
+			break;
+		}
+	}
+	
+	public void calcAndSetDdtIm(ImagePlus im1, ImagePlus im2, int dt) {
+		// same as current version in PointExtractor
+	}
+
+	///////////////////////////////////////
+	// Above: secondaryIm related method
+	///////////////////////////////////////
+	
+	@SuppressWarnings("unused")
 	public static void test_PointExtractor() {
 		ImageJ ij = new ImageJ();
 		// load mmf and get ready for point extractor

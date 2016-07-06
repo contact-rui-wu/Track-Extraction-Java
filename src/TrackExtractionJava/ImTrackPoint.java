@@ -30,10 +30,6 @@ public class ImTrackPoint extends TrackPoint{
 	protected int imOriginY;
 	
 	// for now: stores ddt images
-	protected enum SecondaryTypes {
-		DDT
-	}
-	SecondaryTypes secondaryTypes;
 	protected Vector<ImageProcessor> secondaryIms;
 	protected Vector<Rectangle> secondaryRects;
 	
