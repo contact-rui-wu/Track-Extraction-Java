@@ -67,6 +67,11 @@ public class DistanceMapSplitter {
 		//Generate distance maps
 		int[] imSize = {itp.getRawIm().getWidth(),itp.getRawIm().getHeight()}; 
 		Vector<ImagePlus> dist_maps = DistanceMapSplitter.generateDistanceMaps(rois, rt, imSize);
+		// same for ddtIm - fail
+		/*
+		int[] ddtImSize = {itp.get2ndIm(0).getWidth(),itp.get2ndIm(0).getHeight()};
+		Vector<ImagePlus> ddtDistMaps = DistanceMapSplitter.generateDistanceMaps(rois, rt, ddtImSize);
+		*/
 		
 		//Quit if the distance map produced an error
 		if (dist_maps.size()<2){
@@ -79,6 +84,7 @@ public class DistanceMapSplitter {
 			mag0Stack.addSlice(dist_maps.get(0).getProcessor().duplicate());
 			mag1Stack.addSlice(dist_maps.get(1).getProcessor().duplicate());
 		}
+		// do nothing for ddtIm
 		
 		//Split the frame by distance, and save masks
 		Vector<ImagePlus> newMasks = new Vector<ImagePlus>();
@@ -91,6 +97,15 @@ public class DistanceMapSplitter {
 			mag0Stack.addSlice(newMasks.get(0).getProcessor().duplicate());
 			mag1Stack.addSlice(newMasks.get(1).getProcessor().duplicate());
 		}
+		// same for ddtIm (no debug)
+		/*
+		Vector<ImagePlus> newDdtMasks = new Vector<ImagePlus>();
+		for (int j=0; j<ddtDistMaps.size(); j++) {
+			ImagePlus ddtDM = ddtDistMaps.remove(j);
+			newDdtMasks.add(CVUtils.compareImages(CVUtils.LTE, ddtDM, ddtDistMaps));
+			ddtDistMaps.add(j,ddtDM);
+		}
+		*/
 		
 		//Setup for debugging
 		Vector<ImageProcessor> maskedIms = new Vector<ImageProcessor>();
@@ -103,6 +118,8 @@ public class DistanceMapSplitter {
 			//Mask all but the k'th larva out of the original image
 			ImagePlus maskedIm = CVUtils.maskIm(new ImagePlus("",itp.im), newMasks.get(k));
 			if (debug>1) maskedIms.add(maskedIm.getProcessor().duplicate());
+			// same for ddtIm (no debug)
+			//ImagePlus maskedDdtIm = CVUtils.maskIm(itp.get2ndIm(0), newDdtMasks.get(k));
 			
 			//Use original threshold to generate new points from the masked im
 			ImagePlus threshIm = new ImagePlus("Thresh im Frame "+itp.frameNum, maskedIm.getProcessor().duplicate());
@@ -117,9 +134,32 @@ public class DistanceMapSplitter {
 				if (newPt.size()==1){
 					// temp fix: manually attach the same ddtIm to points involved in collision
 					// TODO handle ddtIm in collisions correctly
-					Rectangle ddtRect = (Rectangle)itp.rect.clone();
-					ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
-					newPt.firstElement().set2ndIm(itp.get2ndIm(0).getProcessor(),ddtRect,0);
+					/*
+					Rectangle newDdtRect = (Rectangle)newPt.get(0).rect.clone();
+					newDdtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
+					ImageProcessor ddtIm = itp.get2ndIm(0).getProcessor();
+					Rectangle oldRect = ddtIm.getRoi();
+					ddtIm.setRoi(newDdtRect);
+					newPt.firstElement().set2ndIm(ddtIm.crop(),newDdtRect,0);
+					ddtIm.setRoi(oldRect);
+					*/
+					/*
+					Rectangle newDdtRect = (Rectangle)newPt.firstElement().rect.clone();
+					newDdtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
+					newPt.firstElement().findAndStoreDdtIm(itp.get2ndIm(0),newDdtRect);
+					*/
+					// get the correct ddtRect to store:
+					Rectangle oldDdtRect = itp.get2ndRect(0);
+					Rectangle newDdtRect = (Rectangle)newPt.firstElement().rect.clone();
+					newDdtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
+					// get the correct ddtIm:
+					Rectangle cropRect = oldDdtRect.intersection(newDdtRect);
+					cropRect.setLocation(newDdtRect.x-oldDdtRect.x,newDdtRect.y-oldDdtRect.y);
+					ImageProcessor oldDdtIm = itp.get2ndIm(0).getProcessor();
+					Rectangle oldRoi = oldDdtIm.getRoi();
+					oldDdtIm.setRoi(cropRect);
+					newPt.firstElement().set2ndImAndRect(oldDdtIm.crop(),newDdtRect,0);
+					oldDdtIm.setRoi(oldRoi);
 					// add point to return list
 					spPts.add(newPt.firstElement());
 				} else {

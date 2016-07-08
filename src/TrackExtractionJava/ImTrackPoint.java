@@ -74,7 +74,19 @@ public class ImTrackPoint extends TrackPoint{
 	}
 	
 	@Override
-	public void set2ndIm(ImageProcessor im, Rectangle rect, int secondaryType) {
+	public Rectangle get2ndRect(int secondaryType) {
+		Rectangle retRect;
+		if (secondaryValidity.get(secondaryType)) {
+			retRect = secondaryRects.get(secondaryType);
+		} else {
+			System.out.println("Failed to get secondary rectangle");
+			retRect = null;
+		}
+		return retRect;
+	}
+	
+	@Override
+	public void set2ndImAndRect(ImageProcessor im, Rectangle rect, int secondaryType) {
 		try {
 			if (secondaryIms==null || secondaryRects==null || secondaryValidity==null) {
 				secondaryIms = new Vector<ImagePlus>();
@@ -94,11 +106,16 @@ public class ImTrackPoint extends TrackPoint{
 		
 	}
 	
+	/**
+	 * Given a larger ddtIm (can be ddtFrameIm or ddtCollisionPointIm), crop the correct ddtPointIm using a given rectangle
+	 * @param ddtFrameIm
+	 * @param rect Make sure you pass in a clone!
+	 */
 	@Override
 	public void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect) {
 		Roi oldRoi = ddtFrameIm.getRoi();
 		ddtFrameIm.setRoi(rect);
-		set2ndIm(ddtFrameIm.getProcessor().crop(), rect, 0);
+		set2ndImAndRect(ddtFrameIm.getProcessor().crop(), rect, 0);
 		ddtFrameIm.setRoi(oldRoi);
 	}
 	

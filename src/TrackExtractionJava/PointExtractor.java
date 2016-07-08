@@ -477,7 +477,9 @@ public class PointExtractor {
 							iTPt.setImage(im, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
 							if(ddtIm!=null) {
-								iTPt.findAndStoreDdtIm(ddtIm,iTPt.rect);
+								Rectangle ddtRect = (Rectangle)iTPt.rect.clone();
+								ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
+								iTPt.findAndStoreDdtIm(ddtIm,ddtRect);
 							}
 							tp.add(iTPt);
 							break;
@@ -508,7 +510,9 @@ public class PointExtractor {
 							mTPt.setImage(im2, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
 							if(ddtIm!=null) {
-								mTPt.findAndStoreDdtIm(ddtIm,mTPt.rect);
+								Rectangle ddtRect = (Rectangle)mTPt.rect.clone();
+								ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
+								mTPt.findAndStoreDdtIm(ddtIm,ddtRect);
 							}
 							mTPt.extractFeatures();
 							tp.add(mTPt);

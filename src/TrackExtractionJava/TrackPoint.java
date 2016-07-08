@@ -86,7 +86,11 @@ public class TrackPoint implements Serializable {
 		return null; //overridden in ImTrackPoint
 	}
 	
-	public void set2ndIm(ImageProcessor im, Rectangle rect, int secondaryType) {
+	public Rectangle get2ndRect(int secondaryType) {
+		return null;
+	}
+	
+	public void set2ndImAndRect(ImageProcessor im, Rectangle rect, int secondaryType) {
 		//overridden in ImTrackPoint
 	}
 	
