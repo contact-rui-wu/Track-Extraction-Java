@@ -5,7 +5,9 @@ import ij.gui.Roi;
 import ij.io.FileSaver;
 import ij.io.Opener;
 import ij.process.ByteProcessor;
+import ij.process.ShortProcessor;
 import ij.process.ColorProcessor;
+import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 
 import java.awt.Color;
@@ -299,7 +301,7 @@ public class ImTrackPoint extends TrackPoint{
 		//Write all TrackPoint data
 		super.toDisk(dos, pw);
 		
-		//Image offest, width, and height already written in TrackPoint
+		//Image offset, width, and height already written in TrackPoint
 		
 		//Write image
 		try {
@@ -309,36 +311,118 @@ public class ImTrackPoint extends TrackPoint{
 				for (int k=0; k<im.getHeight(); k++){
 					dos.writeByte(im.getPixel(j,k));
 				}
-			}
-			
-//			if (imDeriv==null){
-//				dos.writeByte(0);
-//				dos.writeByte(0);
-//			} else {
-//				dos.writeByte(imDeriv.getWidth());
-//				dos.writeByte(imDeriv.getHeight());
-//				for (int j=0; j<imDeriv.getWidth(); j++){
-//					for (int k=0; k<imDeriv.getHeight(); k++){
-//						dos.writeByte(((ColorProcessor)imDeriv).getColor(j, k).getRed()-128);
-//						dos.writeByte(((ColorProcessor)imDeriv).getColor(j, k).getGreen()-128);
-//						//Blue is empty
-//					}
-//				}
-//			}
-			
+			}			
 		} catch (Exception e) {
 			if (pw!=null) pw.println("Error writing ImTrackPoint image for point "+pointID+"; aborting save");
+			return 1;
+		}
+		// write secondary images
+		try {
+			// write number of secondary images
+			if (secondaryIms.size()!=secondaryRects.size() || secondaryRects.size()!=secondaryValidity.size() || secondaryIms.size()!=secondaryValidity.size()) {
+				//TODO isn't there better way to check equality of 3 integers?
+				throw new Exception();
+			} else {
+				dos.writeByte(secondaryIms.size());
+				for (int i=0; i<secondaryIms.size(); i++) {
+					// check and write validity
+					dos.writeByte(secondaryValidity.get(i) ? 1:0);
+					if (secondaryValidity.get(i)) {
+						// get the im and rect out
+						ImageProcessor secIm = secondaryIms.get(i).getProcessor();
+						Rectangle secRect = secondaryRects.get(i);
+						// write rectangle
+						dos.writeInt(secRect.x);
+						dos.writeInt(secRect.y);
+						dos.writeInt(secRect.width);
+						dos.writeInt(secRect.height);
+						// write image
+						// check and write processor type
+						dos.writeByte(secIm.getBitDepth());
+						switch (secIm.getBitDepth()) {
+						case 8: //byte
+							for (int j=0; j<secIm.getWidth(); j++) {
+								for (int k=0; k<secIm.getHeight(); k++) {
+									dos.writeByte(secIm.getPixel(j,k));
+								}
+							}
+							break;
+						case 16: //short
+							for (int j=0; j<secIm.getWidth(); j++) {
+								for (int k=0; k<secIm.getHeight(); k++) {
+									dos.writeShort(secIm.getPixel(j,k));
+								}
+							}
+							break;
+						case 24: //color
+							ColorProcessor colorIm = (ColorProcessor)secondaryIms.get(i).getProcessor();
+							for (int j=0; j<colorIm.getWidth(); j++) {
+								for (int k=0; k<colorIm.getHeight(); k++) {
+									Color color = colorIm.getColor(j,k);
+									if (color.getRed()==0 && color.getGreen()==0 && color.getBlue()==0) {
+										// zero ddt
+										dos.writeShort(0);
+									} else if (color.getRed()>0 && color.getGreen()==0 && color.getBlue()==0) {
+										// +ve ddt
+										dos.writeShort(color.getRed());
+									} else if (color.getRed()==0 && color.getGreen()==0 && color.getBlue()>0) {
+										// -ve ddt
+										dos.writeShort(0-color.getBlue());
+									} else {
+										// invalid ddt value
+										throw new Exception();
+									}
+								}
+							}
+							break;
+						case 32: //float
+							for (int j=0; j<secIm.getWidth(); j++) {
+								for (int k=0; k<secIm.getHeight(); k++) {
+									dos.writeFloat(secIm.getPixel(j,k));
+								}
+							}
+							break;
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			if (pw!=null) pw.println("Error writing ImTrackPoint secondary images for point "+pointID+"; aborting save");
 			return 1;
 		}
 		
 		return 0;
 	}
 	
+	/**
+	 * TODO shouldn't this be integrated into {@link toDisk}?
+	 */
 	public int sizeOnDisk(){
 		
 		int size = super.sizeOnDisk();
 		// image
 		size += (2+im.getWidth()*im.getHeight());//Size of byte=1
+		// secondary images
+		if (secondaryIms.size()==secondaryRects.size() && secondaryRects.size()==secondaryValidity.size()) {
+			size += Byte.SIZE;
+			for (int i=0; i<secondaryIms.size(); i++) {
+				size += Byte.SIZE;
+				if (secondaryValidity.get(i)) {
+					size += Integer.SIZE*4+Byte.SIZE;
+					switch (secondaryIms.get(i).getBitDepth()) {
+					case 8:
+						size += Byte.SIZE*secondaryIms.get(i).getWidth()*secondaryIms.get(i).getHeight();
+						break;
+					case 16: case 24:
+						size += Short.SIZE*secondaryIms.get(i).getWidth()*secondaryIms.get(i).getHeight();
+						break;
+					case 32:
+						size += Float.SIZE*secondaryIms.get(i).getWidth()*secondaryIms.get(i).getHeight();
+						break;
+					}
+				}
+			}
+		}
 		return size;
 	}
 
@@ -384,24 +468,81 @@ public class ImTrackPoint extends TrackPoint{
 			ImagePlus imp = new ImagePlus("new",new ByteProcessor(w, h, pix));
 
 			im = imp.getProcessor();
-			
-			//Get imderiv data	
-//			w = dis.readByte();
-//			h = dis.readByte();
-//			imDeriv = new ColorProcessor(w, h);
-//			for (int x=0; x<w; x++){
-//				for(int y=0; y<h; y++){
-//					int [] colors = new int[2];
-//					for (int cc=0; cc<2; cc++){
-//						colors[cc] = (int)dis.readByte()+128;
-//					}
-//					imDeriv.setColor(new Color(colors[0], colors[1], 0));
-//					imDeriv.drawPixel(x, y);
-//				}
-//			}
 		} catch (Exception e) {
 			e.printStackTrace(pw);
-			if (pw!=null) pw.println("Error loading ImTrackPoint Info");
+			if (pw!=null) pw.println("Error loading ImTrackPoint image");
+			return 3;
+		}
+		
+		// read new data: secondary images
+		// Q: do I need ExtractionParameters here?
+		try {
+			int secSize = dis.readByte();
+			secondaryIms = new Vector<ImagePlus>();
+			secondaryIms.setSize(secSize);
+			secondaryRects = new Vector<Rectangle>();
+			secondaryRects.setSize(secSize);
+			secondaryValidity = new Vector<Boolean>();
+			secondaryValidity.setSize(secSize);
+			for (int i=0; i<secSize; i++) {
+				// read and check validity
+				int secValid = dis.readByte();
+				if (secValid==0) {
+					secondaryValidity.set(i, false);
+				} else if (secValid==1) {
+					secondaryValidity.set(i, true);
+					secondaryRects.set(i, new Rectangle(dis.readInt(), dis.readInt(), dis.readInt(), dis.readInt()));
+					// read and check image processor type
+					int ipType = dis.readByte();
+					switch (ipType) {
+					case 8:
+						ByteProcessor bip = new ByteProcessor(secondaryRects.get(i).width,secondaryRects.get(i).height);
+						for (int j=0; j<secondaryRects.get(i).width; j++) {
+							for (int k=0; k<secondaryRects.get(i).height; k++) {
+								bip.set(j,k,dis.readByte());
+							}
+						}
+						secondaryIms.set(i,new ImagePlus(null,bip));
+						break;
+					case 16:
+						ShortProcessor sip = new ShortProcessor(secondaryRects.get(i).width,secondaryRects.get(i).height);
+						for (int j=0; j<secondaryRects.get(i).width; j++) {
+							for (int k=0; k<secondaryRects.get(i).height; k++) {
+								sip.set(j,k,dis.readShort());
+							}
+						}
+						secondaryIms.set(i,new ImagePlus(null,sip));
+						break;
+					case 24:
+						ColorProcessor cip = new ColorProcessor(secondaryRects.get(i).width,secondaryRects.get(i).height);
+						for (int j=0; j<secondaryRects.get(i).width; j++) {
+							for (int k=0; k<secondaryRects.get(i).height; k++) {
+								int px = dis.readByte();
+								if (px>=0) {
+									cip.setColor(new Color(px,0,0));
+								} else if (px<0) {
+									cip.setColor(new Color(0,0,-px));
+								}
+								cip.drawPixel(j,k);
+							}
+						}
+						secondaryIms.set(i,new ImagePlus(null,cip));
+						break;
+					case 32:
+						FloatProcessor fip = new FloatProcessor(secondaryRects.get(i).width,secondaryRects.get(i).height);
+						for (int j=0; j<secondaryRects.get(i).width; j++) {
+							for (int k=0; k<secondaryRects.get(i).height; k++) {
+								fip.setf(j,k,dis.readFloat());
+							}
+						}
+						secondaryIms.set(i,new ImagePlus(null,fip));
+						break;
+					}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace(pw);
+			if (pw!=null) pw.println("Error loading ImTrackPoint secondary images");
 			return 3;
 		}
 		

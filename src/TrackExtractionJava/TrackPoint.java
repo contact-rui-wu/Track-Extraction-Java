@@ -393,7 +393,7 @@ public class TrackPoint implements Serializable {
 		try {
 			dos.writeInt(frameNum);
 			dos.writeDouble(x);
-			dos.writeDouble(y);
+			dos.writeDouble(y); //TODO repetitive data?
 			dos.writeInt(rect.x);
 			dos.writeInt(rect.y);
 			dos.writeInt(rect.width);
