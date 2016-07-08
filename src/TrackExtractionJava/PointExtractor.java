@@ -477,23 +477,23 @@ public class PointExtractor {
 							iTPt.setImage(im, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
 							if(ddtIm!=null) {
-								iTPt.setDdtImage(ddtIm,ep.derivPixelPad);
+								iTPt.findAndStoreDdtIm(ddtIm,iTPt.rect);
 							}
 							tp.add(iTPt);
 							break;
 						case 2: //MaggotTrackPoint
-							MaggotTrackPoint mtPt = new MaggotTrackPoint(x,y,rect,area,frameNum,thresh);
-							mtPt.setCommunicator(comm);
+							MaggotTrackPoint mTPt = new MaggotTrackPoint(x,y,rect,area,frameNum,thresh);
+							mTPt.setCommunicator(comm);
 //							if (currentFrameNum!=frameNum){
 //								loadFrame(frameNum);
 //							}
-							mtPt.setStart((int)rt.getValue("XStart", row)+arX, (int)rt.getValue("YStart", row)+arY);
+							mTPt.setStart((int)rt.getValue("XStart", row)+arX, (int)rt.getValue("YStart", row)+arY);
 							Roi roi = currentIm.getRoi();
 							currentIm.setRoi(crRect);
 							ImageProcessor im2 = currentIm.getProcessor().crop(); //does not affect currentIm
 							currentIm.setRoi(roi);
 							//Set the image mask
-							mtPt.setMask(getMask(rt, row, threshIm, ep));
+							mTPt.setMask(getMask(rt, row, threshIm, ep));
 							
 //							String debugInfo = "Rect: (x="+mtPt.x+", y="+mtPt.y+")\n";
 //							debugInfo+="Bitdepth="+im2.getBitDepth()+"\n";
@@ -505,13 +505,13 @@ public class PointExtractor {
 							new ImagePlus("New point image", im2).show();
 							*/
 							
-							mtPt.setImage(im2, ep.trackWindowWidth, ep.trackWindowHeight);
+							mTPt.setImage(im2, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
 							if(ddtIm!=null) {
-								mtPt.setDdtImage(ddtIm,ep.derivPixelPad);
+								mTPt.findAndStoreDdtIm(ddtIm,mTPt.rect);
 							}
-							mtPt.extractFeatures();
-							tp.add(mtPt);
+							mTPt.extractFeatures();
+							tp.add(mTPt);
 							break;
 						default:
 							TrackPoint newPt = new TrackPoint(x,y,rect,area,frameNum,thresh); 

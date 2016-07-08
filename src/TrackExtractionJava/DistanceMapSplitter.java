@@ -119,7 +119,7 @@ public class DistanceMapSplitter {
 					// TODO handle ddtIm in collisions correctly
 					Rectangle ddtRect = (Rectangle)itp.rect.clone();
 					ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
-					newPt.firstElement().setDdtImage(itp.getRaw2ndIm(0),ddtRect);
+					newPt.firstElement().set2ndIm(itp.get2ndIm(0).getProcessor(),ddtRect,0);
 					// add point to return list
 					spPts.add(newPt.firstElement());
 				} else {

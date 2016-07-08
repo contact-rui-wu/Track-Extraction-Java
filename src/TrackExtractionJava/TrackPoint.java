@@ -1,5 +1,6 @@
 package TrackExtractionJava;
 
+import ij.ImagePlus;
 import ij.process.ImageProcessor;
 import ij.process.ColorProcessor;
 
@@ -71,7 +72,29 @@ public class TrackPoint implements Serializable {
 	 */
 	protected int thresh;
 	
+	////////// Below: secondary image fields //////////
+
+	public ImagePlus view2ndIm(int secondaryType) {
+		return null; //overridden in ImTrackPoint
+	}
 	
+	public ImagePlus view2ndIm(int secondaryType, ExtractionParameters ep) {
+		return null; //overridden in ImTrackPoint
+	}
+	
+	public ImagePlus get2ndIm(int secondaryType) {
+		return null; //overridden in ImTrackPoint
+	}
+	
+	public void set2ndIm(ImageProcessor im, Rectangle rect, int secondaryType) {
+		//overridden in ImTrackPoint
+	}
+	
+	public void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect) {
+		//overridden in ImTrackPoint
+	}
+	
+	////////// Above: secondary image fields //////////
 	
 	////////////////////////////////////
 	// Constructors & Related Methods
@@ -226,16 +249,6 @@ public class TrackPoint implements Serializable {
 	
 	public ImageProcessor getIm(MaggotDisplayParameters mdp){
 		return getIm();
-	}
-	
-	public ImageProcessor get2ndIm(int imInd) {
-		// does nothing; overridden in MaggotTrackPoint
-		ImageProcessor im = new ColorProcessor(300,300);
-		return im;
-	}
-	
-	public void setDdtImage(ImageProcessor ddtIm, Rectangle ddtRect) {
-		// does nothing; overridden in ImTrackPoint
 	}
 	
 	protected void setNumMatches(int num){

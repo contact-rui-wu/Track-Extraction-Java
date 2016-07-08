@@ -409,12 +409,11 @@ public class Track implements Serializable{
 			
 			int width = exp.getEP().trackWindowWidth*exp.getEP().trackZoomFac;
 			int height = exp.getEP().trackWindowHeight*exp.getEP().trackZoomFac;
-			// TODO caution: in Experiment_Processor we use MaggotDisplayParameters.expandFac instead of ExtractionParameters.trackZoomFac
 			
 			//Get the first image
 			ImageProcessor firstIm;
 			try {
-				firstIm = point.get2ndIm(imInd);
+				firstIm = point.view2ndIm(0).getProcessor();
 			} catch (NullPointerException e) {
 				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
 				//firstIm = new ColorProcessor(300,300);
@@ -435,7 +434,7 @@ public class Track implements Serializable{
 				//Get the next image
 				ImageProcessor img;
 				try {
-					img = point.get2ndIm(imInd);
+					img = point.view2ndIm(0).getProcessor();
 				} catch (NullPointerException e) {
 					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
 					//img = new ColorProcessor(300,300);

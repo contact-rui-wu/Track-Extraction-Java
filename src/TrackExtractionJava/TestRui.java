@@ -45,18 +45,19 @@ public class TestRui {
 	
 	////////// ImTrackPoint fields //////////
 	
-	protected Vector<ImagePlus> secondaryIms;
-	protected Vector<Rectangle> secondaryRects;
-	protected Vector<Boolean> secondaryValidity; //is this necessary?
+	private Vector<ImagePlus> secondaryIms;
+	private Vector<Rectangle> secondaryRects;
+	private Vector<Boolean> secondaryValidity; //is this necessary?
 	
 	// do we need a vector to store each secondary parameters?
 	
-	public enum SecondaryType {
+	// In both TrackPoint and ImTrackPoint
+	private enum SecondaryType {
 		DDT, SMOOTHED_DDT
 		// can add more secondary types later as needed
 	}
-	
-	public ImagePlus view2ndIm(SecondaryType type) {
+		
+	private ImagePlus view2ndIm(SecondaryType type) {
 		return view2ndIm(type,null);
 	}
 	// In TrackPoint:
@@ -66,7 +67,7 @@ public class TestRui {
 	}
 	*/
 	
-	public ImagePlus view2ndIm(SecondaryType type, ExtractionParameters ep) {
+	private ImagePlus view2ndIm(SecondaryType type, ExtractionParameters ep) {
 		ImagePlus ip = get2ndIm(type);
 		if (ep==null) {
 			ep = new ExtractionParameters(); //use default
@@ -81,7 +82,7 @@ public class TestRui {
 	}
 	*/
 	
-	public ImagePlus get2ndIm(SecondaryType type) {
+	private ImagePlus get2ndIm(SecondaryType type) {
 		ImagePlus retIm;
 		if (secondaryValidity.get(type.ordinal())) {
 			retIm = secondaryIms.get(type.ordinal());
@@ -98,7 +99,7 @@ public class TestRui {
 	}
 	*/
 	
-	public void set2ndIm(ImageProcessor im, Rectangle rect, SecondaryType type) {
+	private void set2ndIm(ImageProcessor im, Rectangle rect, SecondaryType type) {
 		try {
 			secondaryIms.set(type.ordinal(), new ImagePlus(type.toString(), im));
 			secondaryRects.set(type.ordinal(), rect);
@@ -117,7 +118,7 @@ public class TestRui {
 	*/
 	
 	@SuppressWarnings("static-access")
-	public void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect, SecondaryType type) {
+	private void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect, SecondaryType type) {
 		Roi oldRoi = ddtFrameIm.getRoi();
 		ddtFrameIm.setRoi(rect);
 		set2ndIm(ddtFrameIm.getProcessor().crop(), rect, type.DDT);
@@ -134,18 +135,18 @@ public class TestRui {
 	
 	////////// ExtractionParameter fields //////////
 	
-	public enum DerivMethod {
+	private enum DerivMethod {
 		FORWARD, BACKWARD, CENTRAL
 	}
 		
 	////////// PointExtractor fields //////////
 	
-	protected ImagePlus prevIm;
-	protected ImagePlus currentIm;
-	protected ImagePlus nextIm;
-	protected ImagePlus ddtIm;
+	private ImagePlus prevIm;
+	private ImagePlus currentIm;
+	private ImagePlus nextIm;
+	private ImagePlus ddtIm;
 	
-	public void calcAndSetDdtIm(DerivMethod derivMethod) {
+	private void calcAndSetDdtIm(DerivMethod derivMethod) {
 		int dt = 1; //placeholder
 		switch(derivMethod) {
 		case FORWARD:
@@ -165,7 +166,7 @@ public class TestRui {
 		}
 	}
 	
-	public void calcAndSetDdtIm(ImagePlus im1, ImagePlus im2, int dt) {
+	private void calcAndSetDdtIm(ImagePlus im1, ImagePlus im2, int dt) {
 		// same as current version in PointExtractor
 	}
 
@@ -187,7 +188,7 @@ public class TestRui {
 		PointExtractor pe = new PointExtractor(mmf,comm,ep);
 		
 		// 1) one frame: success
-		///*
+		/*
 		ep.trackPointType = 1;
 		int frameNum = 2;
 		if (pe.loadFrameNew(frameNum)!=0) {
@@ -220,7 +221,7 @@ public class TestRui {
 				System.out.println("ddtIm invalid: "+ddtInvalid);
 			}
 		}		
-		//*/
+		*/
 		
 		// 2) subset of 200 frames: out-of-memory problem
 		/*

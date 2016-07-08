@@ -24,15 +24,14 @@ public class ImTrackPoint extends TrackPoint{
 	 */
 	private static final long serialVersionUID = 1L;
 	transient protected ImageProcessor im;
-	protected ImageProcessor imDeriv; //TODO will replace with secondaryIms
+	/**
+	 * @deprecated Will be replaced by the secondary fields
+	 */
+	@Deprecated
+	protected ImageProcessor imDeriv;
 	protected byte[] serializableIm;
 	protected int imOriginX;
 	protected int imOriginY;
-	
-	// for now: stores ddt images
-	protected Vector<ImageProcessor> secondaryIms;
-	protected Vector<Rectangle> secondaryRects;
-	
 	protected int trackWindowWidth;
 	protected int trackWindowHeight;
 	
@@ -41,6 +40,69 @@ public class ImTrackPoint extends TrackPoint{
 	 */
 	final int pointType = 1;
 	
+	////////// Below: secondary image fields //////////
+	
+	protected Vector<ImagePlus> secondaryIms;
+	protected Vector<Rectangle> secondaryRects;
+	protected Vector<Boolean> secondaryValidity; //is this necessary?
+	
+	@Override
+	public ImagePlus view2ndIm(int secondaryType) {
+		return view2ndIm(secondaryType,null);
+	}
+	
+	@Override
+	public ImagePlus view2ndIm(int secondaryType, ExtractionParameters ep) {
+		ImagePlus ip = get2ndIm(secondaryType);
+		if (ep==null) {
+			ep = new ExtractionParameters(); //use default
+		}
+		ImageProcessor newIm = CVUtils.padAndCenter(ip, ep.trackWindowWidth, ep.trackWindowHeight, ip.getWidth()/2, ip.getHeight()/2);
+		return new ImagePlus(ip.getTitle(), newIm.resize(ep.trackWindowWidth*ep.trackZoomFac));
+	}
+	
+	@Override
+	public ImagePlus get2ndIm(int secondaryType) {
+		ImagePlus retIm;
+		if (secondaryValidity.get(secondaryType)) {
+			retIm = secondaryIms.get(secondaryType);
+		} else {
+			System.out.println("Failed to get secondary image");
+			retIm = null;
+		}
+		return retIm;
+	}
+	
+	@Override
+	public void set2ndIm(ImageProcessor im, Rectangle rect, int secondaryType) {
+		try {
+			if (secondaryIms==null || secondaryRects==null || secondaryValidity==null) {
+				secondaryIms = new Vector<ImagePlus>();
+				secondaryIms.setSize(secondaryType+1);
+				secondaryRects = new Vector<Rectangle>();
+				secondaryRects.setSize(secondaryType+1);
+				secondaryValidity = new Vector<Boolean>();
+				secondaryValidity.setSize(secondaryType+1);
+			}
+			secondaryIms.setElementAt(new ImagePlus(null, im), secondaryType);
+			secondaryRects.setElementAt(rect, secondaryType);
+			secondaryValidity.setElementAt(true, secondaryType);
+		} catch (Exception e) {
+			System.out.println("Failed to set secondary image");
+			secondaryValidity.setElementAt(false, secondaryType);
+		}
+		
+	}
+	
+	@Override
+	public void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect) {
+		Roi oldRoi = ddtFrameIm.getRoi();
+		ddtFrameIm.setRoi(rect);
+		set2ndIm(ddtFrameIm.getProcessor().crop(), rect, 0);
+		ddtFrameIm.setRoi(oldRoi);
+	}
+	
+	////////// Above: secondary image fields //////////
 	
 	public ImTrackPoint() {
 	}
@@ -61,39 +123,12 @@ public class ImTrackPoint extends TrackPoint{
 		trackWindowWidth = dispWidth;
 		trackWindowHeight = dispHeight;
 	}
-	
-	/**
-	 * Manually set ddtIm and ddtRect to any im and rect pair given
-	 */
-	public void setDdtImage(ImageProcessor ddtIm, Rectangle ddtRect) {
-		if (secondaryIms==null || secondaryRects==null) {
-			secondaryIms = new Vector<ImageProcessor>(1,1);
-			secondaryRects = new Vector<Rectangle>(1,1);
-		}
-		if (secondaryIms.isEmpty() || secondaryRects.isEmpty()) {
-			secondaryIms.add(0,ddtIm);
-			secondaryRects.add(0,ddtRect);
-		} else {
-			secondaryIms.set(0,ddtIm);
-			secondaryRects.set(0,ddtRect);
-		}
-	}
-	
-	/**
-	 * Default: find and store ddt point image using this track point's own rect (padded)
-	 * <p>
-	 */
-	public void setDdtImage(ImagePlus ddtFrameIm, int pixelPad) {
-		if (secondaryIms==null || secondaryRects==null) {
-			secondaryIms = new Vector<ImageProcessor>(1,1);
-			secondaryRects = new Vector<Rectangle>(1,1);
-		}
-		findAndStore2ndIm(0, ddtFrameIm, pixelPad);
-	}
 		
 	/**
+	 * @deprecated
 	 * This method is obsolete; ddt calculation is now done elsewhere. Retained only to avoid dependency problems.
 	 */
+	@Deprecated
 	public void calcImDeriv(ImTrackPoint prevITP, ImTrackPoint nextITP, int derivMethod){
 		
 		Rectangle newRect;
@@ -189,29 +224,11 @@ public class ImTrackPoint extends TrackPoint{
 		return im;
 	}
 	
-	public ImageProcessor getRaw2ndIm(int imInd) {
-		return secondaryIms.get(imInd);
-	}
-	
 	public ImageProcessor getIm(){
 		//pad the image so be the same dimensions as the rest in the stack
 		imOriginX = (int)x-(trackWindowWidth/2)-1;
 		imOriginY = (int)y-(trackWindowHeight/2)-1;
 		return CVUtils.padAndCenter(new ImagePlus("Point "+pointID, im), trackWindowWidth, trackWindowHeight, (int)x-rect.x, (int)y-rect.y);
-	}
-	
-	public ImageProcessor getDdtIm() {
-		return get2ndIm(0);
-	}
-	
-	public ImageProcessor get2ndIm(int imInd) {
-		// get raw secondary image
-		ImageProcessor raw2ndIm = getRaw2ndIm(imInd);
-		
-		// pad to same size for visualization
-		int centerX = raw2ndIm.getWidth()/2;
-		int centerY = raw2ndIm.getHeight()/2;
-		return CVUtils.padAndCenter(new ImagePlus("Point "+pointID+" (secondary)", raw2ndIm), trackWindowWidth, trackWindowHeight, centerX, centerY);
 	}
 	
 	public void drawPoint(ColorProcessor backIm, Color c){
@@ -232,40 +249,6 @@ public class ImTrackPoint extends TrackPoint{
 		frameIm.setRoi(rect);
 		im = frameIm.getProcessor().crop();//Does not affect frameIm's image
 		frameIm.setRoi(oldRoi);
-	}
-			
-	/**
-	 * Set secondary image using track point's own rectangle without padding
-	 */
-	// unnecessary; can just set ExtractionParameter.ddtPixelPad=0
-	/*
-	public void findAndStore2ndIm(int imInd, ImagePlus secondaryFrameIm) {
-		findAndStore2ndIm(imInd, secondaryFrameIm, rect);
-	}
-	*/
-	
-	/**
-	 * Set secondary image using the point's own rectangle padded by pixelPad on all 4 sides
-	 */
-	public void findAndStore2ndIm(int imInd, ImagePlus secondaryFrameIm, int pixelPad) {
-		Rectangle newRect = (Rectangle)rect.clone();
-		newRect.grow(pixelPad,pixelPad);
-		findAndStore2ndIm(imInd, secondaryFrameIm, newRect);
-	}
-	
-	/**
-	 * Crop secondary point image from the source frame image using the 
-	 * given rectangle, stores the image in secondaryIms and the rectangle
-	 * in secondaryRects
-	 */
-	public void findAndStore2ndIm(int imInd, ImagePlus secondaryFrameIm, Rectangle rect) {
-		Roi oldRoi = secondaryFrameIm.getRoi();
-		secondaryFrameIm.setRoi(rect);
-		//ImageProcessor tmp = secondaryFrameIm.getProcessor();
-		//tmp.setRoi(rect);
-		secondaryIms.add(imInd, secondaryFrameIm.getProcessor().crop());
-		secondaryRects.add(imInd, (Rectangle)rect.clone());
-		secondaryFrameIm.setRoi(oldRoi);
 	}
 	
 	protected void strip(){
@@ -331,38 +314,6 @@ public class ImTrackPoint extends TrackPoint{
 			return 1;
 		}
 		
-		///*
-		// write secondary images
-		try {
-			// write number of secondary images stored
-			if (secondaryIms==null || secondaryRects==null || secondaryIms.size()!=secondaryRects.size()) {
-				dos.writeByte(0);
-			} else {
-				dos.writeByte(secondaryIms.size());
-				for (int i=0; i<secondaryIms.size(); i++) {
-					ColorProcessor tmpIm = (ColorProcessor)secondaryIms.get(i);
-					Rectangle tmpRect = secondaryRects.get(i);
-					// write each secondary rectangle
-					dos.writeInt(tmpRect.x);
-					dos.writeInt(tmpRect.y);
-					dos.writeInt(tmpRect.width);
-					dos.writeInt(tmpRect.height);
-					// write each secondary image
-					for (int j=0; j<tmpIm.getWidth(); j++) {
-						for (int k=0; k<tmpIm.getHeight(); k++) {
-							dos.writeByte(tmpIm.getColor(j,k).getRed()-128);
-							dos.writeByte(tmpIm.getColor(j,k).getBlue()-128);
-							// for now, green is empty
-						}
-					}
-				}
-			}
-		} catch (Exception e) {
-			if (pw!=null) pw.println("Error writing ImTrackPoint secondary images for point "+pointID+"; aborting save");
-			return 1;
-		}
-		//*/
-		
 		return 0;
 	}
 	
@@ -371,18 +322,6 @@ public class ImTrackPoint extends TrackPoint{
 		int size = super.sizeOnDisk();
 		// image
 		size += (2+im.getWidth()*im.getHeight());//Size of byte=1
-		///*
-		// secondary images
-		size += 1; //stores number of secondary images
-		if (secondaryIms != null && secondaryRects != null) {
-			if (secondaryIms.size()==secondaryRects.size()) {
-				for (int i=0; i<secondaryIms.size(); i++) {
-					size += (4+secondaryRects.get(i).width+secondaryRects.get(i).height);
-				} //size of each secondary image
-			}
-
-		}
-		//*/
 		return size;
 	}
 
@@ -443,36 +382,6 @@ public class ImTrackPoint extends TrackPoint{
 //					imDeriv.drawPixel(x, y);
 //				}
 //			}
-			
-			///*
-			// get secondary images data
-			// get number of images
-			int numOf2nds = dis.readByte();
-			if (numOf2nds!=0) {
-				for (int i=0; i<numOf2nds; i++) {
-					// load rectangle
-					int secX = dis.readByte();
-					int secY = dis.readByte();
-					int secW = dis.readByte();
-					int secH = dis.readByte();
-					Rectangle rect = new Rectangle(secX,secY,secW,secH);
-					secondaryRects.set(i, rect);
-					// load image
-					ColorProcessor secIm = new ColorProcessor(secW,secH);
-					for (int j=0; j<secW; j++) {
-						for (int k=0; k<secH; k++) {
-							int[] colors = new int[2];
-							colors[0]=(int)dis.readByte()+128; //red
-							colors[1]=(int)dis.readByte()+128; //blue
-							secIm.setColor(new Color(colors[0],0,colors[1]));
-							secIm.drawPixel(j,k);
-						}
-					}
-					secondaryIms.set(i, secIm);
-				}
-			}
-			//*/
-			
 		} catch (Exception e) {
 			e.printStackTrace(pw);
 			if (pw!=null) pw.println("Error loading ImTrackPoint Info");
@@ -500,8 +409,6 @@ public class ImTrackPoint extends TrackPoint{
 		}
         
 	}
-	
-	
 	
 	public String getTypeName(){
 		return "ImTrackPoint";
