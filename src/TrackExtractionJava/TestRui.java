@@ -29,9 +29,9 @@ public class TestRui {
 		
 		//test_PointExtractor();
 		
-		test_extraction();
+		test_extraction(1); //0 - rect MMF; 1 - square MMF
 		
-		//test_viewSampleExp(1);
+		//test_viewSampleExp(2); //0 - Natalie's sample; 1 - prejav; 2 - jav
 		
 		//test_runTime();
 		
@@ -39,140 +39,15 @@ public class TestRui {
 	
 	// write each test as a void method so that don't have to write a lot in main
 	
-	///////////////////////////////////////
-	// Below: secondaryIm related method
-	///////////////////////////////////////
-	
-	////////// ImTrackPoint fields //////////
-	
-	private Vector<ImagePlus> secondaryIms;
-	private Vector<Rectangle> secondaryRects;
-	private Vector<Boolean> secondaryValidity; //is this necessary?
-	
-	// do we need a vector to store each secondary parameters?
-	
-	// In both TrackPoint and ImTrackPoint
-	private enum SecondaryType {
-		DDT, SMOOTHED_DDT
-		// can add more secondary types later as needed
+	public static void test_loadPrejav() {
+		ImageJ ij = new ImageJ();
+		String dir = "/home/data/rw1679/Documents/Gershow_lab_local/";
+		String fName = "sampleMMF_copy.prejav";
+		// TODO load experiment from disk using Experiment's own methods
+		Experiment ex = new Experiment(dir+fName);
+		ExperimentFrame exFrame = new ExperimentFrame(ex);
+		exFrame.run(null);
 	}
-		
-	private ImagePlus view2ndIm(SecondaryType type) {
-		return view2ndIm(type,null);
-	}
-	// In TrackPoint:
-	/*
-	public ImagePlus view2ndIm(SecondaryType type) {
-		return null; //overridden in ImTrackPoint
-	}
-	*/
-	
-	private ImagePlus view2ndIm(SecondaryType type, ExtractionParameters ep) {
-		ImagePlus ip = get2ndIm(type);
-		if (ep==null) {
-			ep = new ExtractionParameters(); //use default
-		}
-		ImageProcessor newIm =  CVUtils.padAndCenter(ip, ep.trackWindowWidth*ep.trackZoomFac, ep.trackWindowHeight*ep.trackZoomFac, ip.getWidth()/2, ip.getHeight()/2);
-		return new ImagePlus(ip.getTitle(), newIm);
-	}
-	// In TrackPoint:
-	/*
-	public ImagePlus view2ndIm(SecondaryType type, ExtractionParameters ep) {
-		return null; //overridden in ImTrackPoint
-	}
-	*/
-	
-	private ImagePlus get2ndIm(SecondaryType type) {
-		ImagePlus retIm;
-		if (secondaryValidity.get(type.ordinal())) {
-			retIm = secondaryIms.get(type.ordinal());
-		} else {
-			System.out.println("Failed to get "+type.toString()+" image");
-			retIm = null;
-		}
-		return retIm;
-	}
-	// In TrackPoint:
-	/*
-	public ImagePlus get2ndIm(SecondaryType type) {
-		return null; //overridden in ImTrackPoint
-	}
-	*/
-	
-	private void set2ndIm(ImageProcessor im, Rectangle rect, SecondaryType type) {
-		try {
-			secondaryIms.set(type.ordinal(), new ImagePlus(type.toString(), im));
-			secondaryRects.set(type.ordinal(), rect);
-			secondaryValidity.set(type.ordinal(), true);
-		} catch (Exception e) {
-			System.out.println("Failed to set "+type.toString()+" image");
-			secondaryValidity.set(type.ordinal(), false);
-		}
-		
-	}
-	// In TrackPoint:
-	/*
-	public void set2ndIm(ImageProcessor im, Rectangle rect, SecondaryType type) {
-		return null; //overridden in ImTrackPoint
-	}
-	*/
-	
-	@SuppressWarnings("static-access")
-	private void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect, SecondaryType type) {
-		Roi oldRoi = ddtFrameIm.getRoi();
-		ddtFrameIm.setRoi(rect);
-		set2ndIm(ddtFrameIm.getProcessor().crop(), rect, type.DDT);
-		ddtFrameIm.setRoi(oldRoi);
-	}
-	// In TrackPoint:
-	/*
-	public void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect, SecondaryType type) {
-		//overridden in ImTrackPoint
-	}
-	*/
-	
-	// can add more type-specific methods later as needed
-	
-	////////// ExtractionParameter fields //////////
-	
-	private enum DerivMethod {
-		FORWARD, BACKWARD, CENTRAL
-	}
-		
-	////////// PointExtractor fields //////////
-	
-	private ImagePlus prevIm;
-	private ImagePlus currentIm;
-	private ImagePlus nextIm;
-	private ImagePlus ddtIm;
-	
-	private void calcAndSetDdtIm(DerivMethod derivMethod) {
-		int dt = 1; //placeholder
-		switch(derivMethod) {
-		case FORWARD:
-			calcAndSetDdtIm(currentIm,nextIm,dt);
-			break;
-		case BACKWARD:
-			calcAndSetDdtIm(prevIm,currentIm,dt);
-			break;
-		case CENTRAL:
-			dt = 2;
-			calcAndSetDdtIm(prevIm,nextIm,dt);
-			break;
-		default:
-			System.out.println("Invalid derivation method");
-			ddtIm = null;
-			break;
-		}
-	}
-	
-	private void calcAndSetDdtIm(ImagePlus im1, ImagePlus im2, int dt) {
-		// same as current version in PointExtractor
-	}
-
-	///////////////////////////////////////
-	// Above: secondaryIm related method
-	///////////////////////////////////////
 	
 	@SuppressWarnings("unused")
 	public static void test_PointExtractor() {
@@ -252,7 +127,7 @@ public class TestRui {
 		*/
 	}
 	
-	public static void test_extraction() {
+	public static void test_extraction(int whose) {
 		ImageJ ij = new ImageJ();
 		TicToc timer = new TicToc();
 		
@@ -260,17 +135,29 @@ public class TestRui {
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.doFitting = true;
 		prParams.showFitEx = true;
-		prParams.saveMagEx = false;
-		prParams.saveFitEx = false;
-		prParams.saveErrors = false;
+		//prParams.saveMagEx = false;
+		//prParams.saveFitEx = false;
+		//prParams.saveErrors = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true;
 		extrParams.startFrame = 1;
 		extrParams.endFrame = 1000;
-		extrParams.derivMethod = 3;
-		//extrParams.trackPointType = 1;
+		extrParams.trackWindowWidth = 40;
+		extrParams.trackWindowHeight = 40;
+		//extrParams.derivMethod = 3;
 		
-		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
+		String path;
+		switch (whose) {
+		case 0:
+			path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.mmf";
+			break;
+		case 1:
+			path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleMMF_copy.mmf";
+			break;
+		default:
+			path = "";
+			break;
+		}
 		Experiment_Processor ep = new Experiment_Processor();
 		
 		ep.runningFromMain = true;
@@ -701,17 +588,23 @@ public class TestRui {
 	}
 	
 	public static void test_viewSampleExp(int whose) {
-		//String prejavPath = "/home/data/rw1679/Documents/Gershow_lab_local/sampleShortExp_copy.prejav";
 		String dir = "/home/data/rw1679/Documents/Gershow_lab_local";
 		String fnameN = "Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
-		String fnameR = "sampleShortExp_copy.jav";
+		String fnameR1 = "sampleMMF_copy.prejav";
+		String fnameR2 = "sampleMMF_copy.jav";
 		Experiment_Viewer ev = new Experiment_Viewer();
 		switch(whose) {
 		case 0: //Natalie's
 			ev.run(dir + "/" + fnameN);
 			break;
-		case 1: //mine
-			ev.run(dir + "/" + fnameR);
+		case 1: //mine (w/o fitting)
+			ev.run(dir + "/" + fnameR1);
+			break;
+		case 2: //mine (with fitting)
+			ev.run(dir + "/" + fnameR2);
+			break;
+		case 3: //manually choose file
+			ev.run("");
 			break;
 		}
 	}

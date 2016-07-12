@@ -57,7 +57,9 @@ public class ImTrackPoint extends TrackPoint{
 	public ImagePlus view2ndIm(int secondaryType, ExtractionParameters ep) {
 		ImagePlus ip = get2ndIm(secondaryType);
 		if (ep==null) {
-			ep = new ExtractionParameters(); //use default
+			ep = new ExtractionParameters();
+			ep.trackWindowWidth = trackWindowWidth;
+			ep.trackWindowHeight = trackWindowHeight;
 		}
 		ImageProcessor newIm = CVUtils.padAndCenter(ip, ep.trackWindowWidth, ep.trackWindowHeight, ip.getWidth()/2, ip.getHeight()/2);
 		return new ImagePlus(ip.getTitle(), newIm.resize(ep.trackWindowWidth*ep.trackZoomFac));
@@ -543,7 +545,7 @@ public class ImTrackPoint extends TrackPoint{
 		} catch (Exception e) {
 			e.printStackTrace(pw);
 			if (pw!=null) pw.println("Error loading ImTrackPoint secondary images");
-			return 3;
+			return 4;
 		}
 		
 		return 0;

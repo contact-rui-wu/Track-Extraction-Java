@@ -406,23 +406,24 @@ public class Track implements Serializable{
 		
 			TrackPoint point = tpIt.next();
 			point.setTrack(this);
-			
+						
 			int width = exp.getEP().trackWindowWidth*exp.getEP().trackZoomFac;
 			int height = exp.getEP().trackWindowHeight*exp.getEP().trackZoomFac;
 			
 			//Get the first image
+			// TODO use secondaryValidity here
 			ImageProcessor firstIm;
 			try {
 				firstIm = point.view2ndIm(0).getProcessor();
 			} catch (NullPointerException e) {
 				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
-				//firstIm = new ColorProcessor(300,300);
 				firstIm = new ColorProcessor(width,height);
 				firstIm.setColor(new Color(0,0,0));
 				firstIm.fill();
 			}
 			
 			ImageStack trackStack = new ImageStack(firstIm.getWidth(), firstIm.getHeight());
+			// TODO caution: although this shouldn't happen, be ware of point.trackWindow* != ep.trackWindow*
 			
 			trackStack.addSlice(firstIm);
 			
@@ -437,8 +438,7 @@ public class Track implements Serializable{
 					img = point.view2ndIm(0).getProcessor();
 				} catch (NullPointerException e) {
 					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
-					//img = new ColorProcessor(300,300);
-					img = new ColorProcessor(width,height);
+					img = new ColorProcessor(firstIm.getWidth(), firstIm.getHeight());
 					img.setColor(new Color(0,0,0));
 					img.fill();
 				}
