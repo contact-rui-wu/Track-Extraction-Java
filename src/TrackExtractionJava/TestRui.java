@@ -27,7 +27,7 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		//test_extraction(1); //0 - rect MMF; 1 - square MMF
+		test_extraction(0); //0 - rect MMF; 1 - square MMF
 		
 		//test_loadPrejav();
 		
@@ -180,8 +180,8 @@ public class TestRui {
 		extrParams.subset = true;
 		extrParams.startFrame = 1;
 		extrParams.endFrame = 1000;
-		extrParams.trackWindowWidth = 40;
-		extrParams.trackWindowHeight = 40;
+		//extrParams.trackWindowWidth = 40;
+		//extrParams.trackWindowHeight = 40;
 		//extrParams.derivMethod = 3;
 		
 		String path;

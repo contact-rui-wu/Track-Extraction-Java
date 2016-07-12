@@ -393,11 +393,18 @@ public class Track implements Serializable{
 		}
 	}
 	
+	/**
+	 * Returns the ddt image stack in an ImagePlus object with "(ddt)" in the title.
+	 */
 	public void playDdtMovie() {
 		play2ndMovie(trackID, 0, "ddt");
 	}
 	
-	public void play2ndMovie(int labelInd, int imInd, String secTypeMsg) {
+	/**
+	 * Returns an ImagePLus object which contains the specified secondary image stack.
+	 * @param secTypeMsg Indicates type of secondary image in the ImagePlus title
+	 */
+	public void play2ndMovie(int labelInd, int secType, String secTypeMsg) {
 		if (tb!=null){
 			tb.comm.message("This track has "+points.size()+"points", VerbLevel.verb_message);
 		}
@@ -422,8 +429,8 @@ public class Track implements Serializable{
 				firstIm.fill();
 			}
 			*/
-			if (point.is2ndValid(0)) {
-				firstIm = point.view2ndIm(0).getProcessor();
+			if (point.is2ndValid(secType)) {
+				firstIm = point.view2ndIm(secType).getProcessor();
 			} else {
 				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
 				firstIm = new ColorProcessor(width,height);
@@ -453,8 +460,8 @@ public class Track implements Serializable{
 					img.fill();
 				}
 				*/
-				if (point.is2ndValid(0)) {
-					img = point.view2ndIm(0).getProcessor();
+				if (point.is2ndValid(secType)) {
+					img = point.view2ndIm(secType).getProcessor();
 				} else {
 					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
 					img = new ColorProcessor(firstIm.getWidth(), firstIm.getHeight());
