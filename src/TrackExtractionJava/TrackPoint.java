@@ -74,6 +74,10 @@ public class TrackPoint implements Serializable {
 	
 	////////// Below: secondary image fields //////////
 
+	public Boolean is2ndValid(int secondaryType) {
+		return null;
+	}
+	
 	public ImagePlus view2ndIm(int secondaryType) {
 		return null; //overridden in ImTrackPoint
 	}

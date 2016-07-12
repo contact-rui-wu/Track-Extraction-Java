@@ -201,7 +201,6 @@ public class PointExtractor {
 	/**
 	 * Load currentIm, prevIm and/or nextIm depending on derivMethod; calculate and set ddtIm
 	 * <p>
-	 * TODO handle error codes and communicator messages
 	 */
 	public int loadFrameNew(int frameNum) {
 		// address out-of-range error
@@ -662,12 +661,10 @@ public class PointExtractor {
 	 * Calculates ddtIm of current frame given two images and dt
 	 */
 	public void calcAndSetDdtFrameIm(ImagePlus imp1, ImagePlus imp2, int dt) {
-		//System.out.println("Calculating ddt frame image for frame "+currentFrameNum);
 		
 		ImageProcessor im1 = imp1.getProcessor();
 		ImageProcessor im2 = imp2.getProcessor();
 		
-		//ColorProcessor newIm = new ColorProcessor(im1.getWidth(), im1.getHeight());
 		ddtIm.setProcessor(new ColorProcessor(im1.getWidth(), im1.getHeight()));
 		
 		for(int i=0; i<im1.getWidth(); i++) {
@@ -675,19 +672,13 @@ public class PointExtractor {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
 				int ddt = pixDiff/dt; //TODO potential round-off error
 				if (pixDiff>0) {
-					//newIm.setColor(new Color(ddt,0,0));//move into: red
 					ddtIm.getProcessor().setColor(new Color(ddt,0,0));
 				} else {
-					//newIm.setColor(new Color(0,0,-ddt)); //move out of: blue
 					ddtIm.getProcessor().setColor(new Color(0,0,-ddt));
 				}
-				//newIm.drawPixel(i,j);
 				ddtIm.getProcessor().drawPixel(i,j);
 			}
 		}
-		
-		//ddtIm.setProcessor(newIm);
-		//ddtIm = new ImagePlus("Frame "+currentFrameNum+" (ddt)",newIm);
 	}
 	
 }

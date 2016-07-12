@@ -411,11 +411,20 @@ public class Track implements Serializable{
 			int height = exp.getEP().trackWindowHeight*exp.getEP().trackZoomFac;
 			
 			//Get the first image
-			// TODO use secondaryValidity here
 			ImageProcessor firstIm;
+			/*
 			try {
 				firstIm = point.view2ndIm(0).getProcessor();
 			} catch (NullPointerException e) {
+				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
+				firstIm = new ColorProcessor(width,height);
+				firstIm.setColor(new Color(0,0,0));
+				firstIm.fill();
+			}
+			*/
+			if (point.is2ndValid(0)) {
+				firstIm = point.view2ndIm(0).getProcessor();
+			} else {
 				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
 				firstIm = new ColorProcessor(width,height);
 				firstIm.setColor(new Color(0,0,0));
@@ -434,9 +443,19 @@ public class Track implements Serializable{
 				
 				//Get the next image
 				ImageProcessor img;
+				/*
 				try {
 					img = point.view2ndIm(0).getProcessor();
 				} catch (NullPointerException e) {
+					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
+					img = new ColorProcessor(firstIm.getWidth(), firstIm.getHeight());
+					img.setColor(new Color(0,0,0));
+					img.fill();
+				}
+				*/
+				if (point.is2ndValid(0)) {
+					img = point.view2ndIm(0).getProcessor();
+				} else {
 					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
 					img = new ColorProcessor(firstIm.getWidth(), firstIm.getHeight());
 					img.setColor(new Color(0,0,0));

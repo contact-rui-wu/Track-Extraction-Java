@@ -27,28 +27,66 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		//test_PointExtractor();
+		//test_extraction(1); //0 - rect MMF; 1 - square MMF
 		
-		test_extraction(1); //0 - rect MMF; 1 - square MMF
+		//test_loadPrejav();
 		
-		//test_viewSampleExp(2); //0 - Natalie's sample; 1 - prejav; 2 - jav
+		//test_loadJav();
 		
-		//test_runTime();
+		//test_viewSampleExp(2); //rect MMF, 0 - Natalie's sample (doesn't work anymore because no secondary fields); 1 - prejav; 2 - jav
 		
 	}
 	
 	// write each test as a void method so that don't have to write a lot in main
 	
+	@SuppressWarnings("unused")
 	public static void test_loadPrejav() {
 		ImageJ ij = new ImageJ();
 		String dir = "/home/data/rw1679/Documents/Gershow_lab_local/";
 		String fName = "sampleMMF_copy.prejav";
-		// TODO load experiment from disk using Experiment's own methods
 		Experiment ex = new Experiment(dir+fName);
 		ExperimentFrame exFrame = new ExperimentFrame(ex);
 		exFrame.run(null);
 	}
 	
+	@SuppressWarnings("unused")
+	public static void test_loadJav() {
+		ImageJ ij = new ImageJ();
+		String dir = "/home/data/rw1679/Documents/Gershow_lab_local/";
+		String fName = "sampleMMF_copy.jav";
+		Experiment ex = new Experiment(dir+fName);
+		//ex.getEP().trackWindowWidth = 35;
+		//ex.getEP().trackWindowHeight = 35;
+		// TODO make ExperimentFrame display movies in any window size we want
+		// alternatively, save ExtractionParameter with the experiment and always draw from that
+		ExperimentFrame exFrame = new ExperimentFrame(ex);
+		exFrame.run(null);
+	}
+	
+	@SuppressWarnings("unused")
+	public static void test_viewSampleExp(int whose) {
+		ImageJ ij = new ImageJ();
+		String dir = "/home/data/rw1679/Documents/Gershow_lab_local/";
+		String fnameN = "Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
+		String fnameR1 = "sampleShortExp_copy.prejav";
+		String fnameR2 = "sampleShortExp_copy.jav";
+		Experiment_Viewer ev = new Experiment_Viewer();
+		switch(whose) {
+		case 0: //Natalie's
+			ev.run(dir+fnameN);
+			break;
+		case 1: //mine (w/o fitting)
+			ev.run(dir+fnameR1);
+			break;
+		case 2: //mine (with fitting)
+			ev.run(dir+fnameR2);
+			break;
+		case 3: //manually choose file
+			ev.run("");
+			break;
+		}
+	}
+
 	@SuppressWarnings("unused")
 	public static void test_PointExtractor() {
 		ImageJ ij = new ImageJ();
@@ -585,28 +623,6 @@ public class TestRui {
 		ret.addSlice(padded2.convertToColorProcessor());
 		ret.addSlice(ret3);
 		return ret;
-	}
-	
-	public static void test_viewSampleExp(int whose) {
-		String dir = "/home/data/rw1679/Documents/Gershow_lab_local";
-		String fnameN = "Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
-		String fnameR1 = "sampleMMF_copy.prejav";
-		String fnameR2 = "sampleMMF_copy.jav";
-		Experiment_Viewer ev = new Experiment_Viewer();
-		switch(whose) {
-		case 0: //Natalie's
-			ev.run(dir + "/" + fnameN);
-			break;
-		case 1: //mine (w/o fitting)
-			ev.run(dir + "/" + fnameR1);
-			break;
-		case 2: //mine (with fitting)
-			ev.run(dir + "/" + fnameR2);
-			break;
-		case 3: //manually choose file
-			ev.run("");
-			break;
-		}
 	}
 	
 	/**

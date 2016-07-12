@@ -38,7 +38,7 @@ public class ImTrackPoint extends TrackPoint{
 	protected int trackWindowHeight;
 	
 	/**
-	 * Identitfies the point as an IMTRACKPOINT
+	 * Identifies the point as an IMTRACKPOINT
 	 */
 	final int pointType = 1;
 	
@@ -47,6 +47,11 @@ public class ImTrackPoint extends TrackPoint{
 	protected Vector<ImagePlus> secondaryIms;
 	protected Vector<Rectangle> secondaryRects;
 	protected Vector<Boolean> secondaryValidity; //is this necessary?
+	
+	@Override
+	public Boolean is2ndValid(int secondaryType) {
+		return secondaryValidity.get(secondaryType);
+	}
 	
 	@Override
 	public ImagePlus view2ndIm(int secondaryType) {
@@ -493,11 +498,16 @@ public class ImTrackPoint extends TrackPoint{
 					secondaryValidity.set(i, false);
 				} else if (secValid==1) {
 					secondaryValidity.set(i, true);
-					secondaryRects.set(i, new Rectangle(dis.readInt(), dis.readInt(), dis.readInt(), dis.readInt()));
+					int x = dis.readInt();
+					int y = dis.readInt();
+					int w = dis.readInt();
+					int h = dis.readInt();
+					secondaryRects.set(i, new Rectangle(x,y,w,h));
 					// read and check image processor type
 					int ipType = dis.readByte();
 					switch (ipType) {
 					case 8:
+						///*
 						ByteProcessor bip = new ByteProcessor(secondaryRects.get(i).width,secondaryRects.get(i).height);
 						for (int j=0; j<secondaryRects.get(i).width; j++) {
 							for (int k=0; k<secondaryRects.get(i).height; k++) {
@@ -505,6 +515,16 @@ public class ImTrackPoint extends TrackPoint{
 							}
 						}
 						secondaryIms.set(i,new ImagePlus(null,bip));
+						//*/
+						/*
+						byte[] pix = new byte[w*h];
+						for (int j=0; j<w; j++){
+							for(int k=0; k<h; k++){
+								pix[k*w+j] = dis.readByte();
+							}
+						}
+						secondaryIms.set(i,new ImagePlus(null,new ByteProcessor(w,h,pix)));
+						*/
 						break;
 					case 16:
 						ShortProcessor sip = new ShortProcessor(secondaryRects.get(i).width,secondaryRects.get(i).height);
@@ -519,7 +539,7 @@ public class ImTrackPoint extends TrackPoint{
 						ColorProcessor cip = new ColorProcessor(secondaryRects.get(i).width,secondaryRects.get(i).height);
 						for (int j=0; j<secondaryRects.get(i).width; j++) {
 							for (int k=0; k<secondaryRects.get(i).height; k++) {
-								int px = dis.readByte();
+								int px = dis.readShort();
 								if (px>=0) {
 									cip.setColor(new Color(px,0,0));
 								} else if (px<0) {

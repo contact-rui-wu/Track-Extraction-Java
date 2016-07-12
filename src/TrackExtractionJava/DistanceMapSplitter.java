@@ -132,22 +132,8 @@ public class DistanceMapSplitter {
 				Vector<TrackPoint> newPt = PointExtractor.findPtsInIm(itp.frameNum, maskedIm, threshIm, ep.globalThreshValue, frameSize, itp.rect, ep, false, null);
 				// if single point is found (splitting successful), add it to return list
 				if (newPt.size()==1){
-					// temp fix: manually attach the same ddtIm to points involved in collision
-					// TODO handle ddtIm in collisions correctly
-					/*
-					Rectangle newDdtRect = (Rectangle)newPt.get(0).rect.clone();
-					newDdtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
-					ImageProcessor ddtIm = itp.get2ndIm(0).getProcessor();
-					Rectangle oldRect = ddtIm.getRoi();
-					ddtIm.setRoi(newDdtRect);
-					newPt.firstElement().set2ndIm(ddtIm.crop(),newDdtRect,0);
-					ddtIm.setRoi(oldRect);
-					*/
-					/*
-					Rectangle newDdtRect = (Rectangle)newPt.firstElement().rect.clone();
-					newDdtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
-					newPt.firstElement().findAndStoreDdtIm(itp.get2ndIm(0),newDdtRect);
-					*/
+					// TODO handle ddtIm in collisions correctly (use polygon roi)
+					// temp fix: cropped the pre-split ddtIm with post-split points' rect
 					// get the correct ddtRect to store:
 					Rectangle oldDdtRect = itp.get2ndRect(0);
 					Rectangle newDdtRect = (Rectangle)newPt.firstElement().rect.clone();
