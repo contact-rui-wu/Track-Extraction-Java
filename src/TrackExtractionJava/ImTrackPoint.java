@@ -96,37 +96,39 @@ public class ImTrackPoint extends TrackPoint{
 		}
 		return retRect;
 	}
+
+	@Override
+	public void ensure2ndSize(int secType) {
+		// initialize secondary fields if necessary
+		if (secondaryIms==null || secondaryRects==null || secondaryValidity==null) {
+			secondaryIms = new Vector<ImageProcessor>(0,1);
+			secondaryRects = new Vector<Rectangle>(0,1);
+			secondaryValidity = new Vector<Boolean>(0,1);
+		}
+		// increase size if necessary
+		if (secondaryIms.size()<secType+1) secondaryIms.setSize(secType+1);
+		if (secondaryRects.size()<secType+1) secondaryRects.setSize(secType+1);
+		if (secondaryValidity.size()<secType+1) secondaryValidity.setSize(secType+1);
+	}
 	
 	@Override
 	public void set2ndImAndRect(ImageProcessor im, Rectangle rect, int secType) {
-		try {
-			// initialize secondary fields if necessary
-			if (secondaryIms==null || secondaryRects==null || secondaryValidity==null) {
-				secondaryIms = new Vector<ImageProcessor>(0,1);
-				secondaryRects = new Vector<Rectangle>(0,1);
-				secondaryValidity = new Vector<Boolean>(0,1);
-			}
-			// increase size if necessary
-			if (secondaryIms.size()<secType+1) secondaryIms.setSize(secType+1);
-			if (secondaryRects.size()<secType+1) secondaryRects.setSize(secType+1);
-			if (secondaryValidity.size()<secType+1) secondaryValidity.setSize(secType+1);
-			// set element
-			secondaryIms.setElementAt(im, secType);
-			secondaryRects.setElementAt(rect, secType);
-			secondaryValidity.setElementAt(true, secType);
-		} catch (Exception e) {
-			System.out.println("Failed to set secondary image");
-			secondaryValidity.setElementAt(false, secType);
-		}
-		
+		secondaryIms.setElementAt(im, secType);
+		secondaryRects.setElementAt(rect, secType);
+		secondaryValidity.setElementAt(true, secType);
 	}
 	
 	@Override
 	public void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect) {
-		Roi oldRoi = ddtFrameIm.getRoi();
-		ddtFrameIm.setRoi(rect);
-		set2ndImAndRect(ddtFrameIm.getProcessor().crop(), rect, 0);
-		ddtFrameIm.setRoi(oldRoi);
+		ensure2ndSize(0);
+		if (ddtFrameIm==null) {
+			secondaryValidity.setElementAt(false, 0);
+		} else {
+			Roi oldRoi = ddtFrameIm.getRoi();
+			ddtFrameIm.setRoi(rect);
+			set2ndImAndRect(ddtFrameIm.getProcessor().crop(), rect, 0);
+			ddtFrameIm.setRoi(oldRoi);
+		}
 	}
 	
 	////////// Above: secondary image fields //////////

@@ -9,9 +9,12 @@ import java.awt.Rectangle;
 import java.util.Vector;
 
 import ij.ImageJ;
+import ij.ImagePlus;
 import ij.ImageStack;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
+
+import edu.nyu.physics.gershowlab.mmf.mmf_Reader;
 
 public class TestRui {
 
@@ -19,19 +22,64 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
+		//test_frameSizeDdtMovie();
+		
 		//test_vectorSizeAndCapacity(4);
 		
 		test_extraction(1); //0 - rect MMF; 1 - square MMF
 		
 		//test_loadPrejav();
 		
-		test_loadJav();
+		//test_loadJav();
 		
 		//test_viewSampleExp(2); //rect MMF, 0 - Natalie's sample (doesn't work anymore because no secondary fields); 1 - prejav; 2 - jav
 		
 	}
 	
 	// write each test as a void method so that don't have to write a lot in main
+	
+	public static void test_frameSizeDdtMovie() {
+		ImageJ ij = new ImageJ();
+		// load mmf and get ready for point extractor
+		String path = "/home/data/rw1679/Documents/Gershow_lab_local/sampleMMF_copy.mmf";
+		mmf_Reader mr = new mmf_Reader();
+		mr.loadStack(path);
+		ImageStack mmf = mr.getMmfStack();
+		Communicator comm = new Communicator();
+		comm.setVerbosity(VerbLevel.verb_warning);
+		ExtractionParameters ep = new ExtractionParameters();
+		ep.subset=true;
+		ep.startFrame=1;
+		ep.endFrame=80;
+		ep.derivMethod=2;
+		
+		PointExtractor pe = new PointExtractor(mmf,comm,ep);
+		
+		int width = mmf.getProcessor(ep.startFrame).getWidth();
+		int height = mmf.getProcessor(ep.startFrame).getHeight();
+		ImageStack ddtStack = new ImageStack(width,height);
+		for (int i=ep.startFrame;i<=ep.endFrame;i++) {
+			if (i%10==0) {
+				System.out.println("Working on "+i+"th frame");
+			}
+			if (pe.loadFrameNew(i)!=0) {
+				System.out.println("Failed to load frame "+i);
+				break;
+			} else {
+				if (pe.ddtIm!=null) {
+					//ImageProcessor newIP = pe.ddtIm.getProcessor();
+					//newIP.autoThreshold();
+					//ddtStack.addSlice(newIP);
+					ddtStack.addSlice(pe.ddtIm.getProcessor());
+				} else continue; // skip bad ddtIm
+			}
+		}
+		
+		System.out.println(pe.comm.toString());
+		
+		ImagePlus ddtPlus = new ImagePlus(null,ddtStack);
+		//ddtPlus.show();
+	}
 	
 	public static void test_vectorSizeAndCapacity(int scenario) {
 		Vector<Integer> ints;
@@ -148,8 +196,8 @@ public class TestRui {
 		//prParams.saveErrors = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true;
-		extrParams.startFrame = 1;
-		extrParams.endFrame = 1000;
+		extrParams.startFrame = 23750;
+		extrParams.endFrame = 23823;
 		//extrParams.trackWindowWidth = 40;
 		//extrParams.trackWindowHeight = 40;
 		//extrParams.derivMethod = 3;

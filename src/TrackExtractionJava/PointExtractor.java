@@ -205,65 +205,133 @@ public class PointExtractor {
 	public int loadFrameNew(int frameNum) {
 		// address out-of-range error
 		// Q: Natalie only did current>end, is it because we can have frameNum = -1?
+		/*
 		if (frameNum<startFrameNum || frameNum>endFrameNum) {
 			System.out.println("Out of processing range!");
 			return 1; //out-of-range error
 		}
+		*/
 		
 		currentFrameNum = frameNum;
-		//int prevFrameNum = frameNum-increment;
+		if (currentFrameNum>endFrameNum) {
+			comm.message("Attempt to load frame "+currentFrameNum+" but the stack ends at frame "+endFrameNum, VerbLevel.verb_error);
+			return 1;
+		}
+		
+		int prevFrameNum = frameNum-increment;
 		int nextFrameNum = frameNum+increment;
 		
-		// 1) if currentIm has not been passed from prevIm, load currentIm
-		if (currentIm==null) {
-			if(fl.getFrame(frameNum,fnm,normFactor)!=0) {
-				System.out.println("Failed to load frame "+frameNum);
-				return 2;
-			} else {
-				currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
-			}
-		}
-		// 2) handle other frameIm(s) based on derivMethod
 		switch(ep.derivMethod) {
 		case 1: //forward
-			// pass old nextIm to currentIm
-			if (nextIm!=null) {
+			if (frameNum==startFrameNum) { //beginning of extraction
+				// load currentIm
+				if (fl.getFrame(frameNum, fnm, normFactor)!=0) {
+					if (comm!=null) comm.message("Frame Loader returned error", VerbLevel.verb_warning);
+					return 2; //frame loader returned error
+				} else {
+					if (comm!=null) comm.message("No error from frame loader when loading frame "+frameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+					currentIm = new ImagePlus("Frame "+frameNum,fl.returnIm);
+				}
+				// load nextIm
+				if (fl.getFrame(nextFrameNum, fnm, normFactor)!=0) {
+					if (comm!=null) comm.message("Frame Loader returned error", VerbLevel.verb_warning);
+					return 2;
+				} else {
+					if (comm!=null) comm.message("No error from frame loader when loading frame "+nextFrameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+					nextIm = new ImagePlus("Frame "+nextFrameNum,fl.returnIm);
+				}
+			} else { //middle of extraction
+				// move old nextIm up
 				currentIm = nextIm;
-			}
-			// load new nextIm
-			if (fl.getFrame(nextFrameNum,fnm,normFactor)!=0) {
-				nextIm = null;
-			} else {
-				nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
+				// load new nextIm
+				if (fl.getFrame(nextFrameNum, fnm, normFactor)!=0) { //error or reached end of stack
+					nextIm = null;
+					if (frameNum==endFrameNum) {
+						if (comm!=null) comm.message("Reached end of stack", VerbLevel.verb_warning);
+					} else {
+						if (comm!=null) comm.message("Frame Loader returned error", VerbLevel.verb_warning);
+						return 2;
+					}
+				} else {
+					if (comm!=null) comm.message("No error from frame loader when loading frame "+nextFrameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+					nextIm = new ImagePlus("Frame "+nextFrameNum,fl.returnIm);
+				}
 			}
 			break;
 		case 2: //backward
-			// pass old currentIm to prevIm
-			if (currentIm!=null) {
+			if (frameNum==startFrameNum) { //beginning of extraction
+				//load currentIm
+				if (fl.getFrame(frameNum, fnm, normFactor)!=0) {
+					if (comm!=null) comm.message("Frame Loader returned error", VerbLevel.verb_warning);
+					return 2;
+				} else {
+					if (comm!=null) comm.message("No error from frame loader when loading frame "+frameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+					currentIm = new ImagePlus("Frame "+frameNum,fl.returnIm);
+				}
+				//try to load prevIm
+				if (fl.getFrame(prevFrameNum, fnm, normFactor)!=0) { //error or at beginning of stack
+					if (comm!=null) comm.message("At beginning of stack", VerbLevel.verb_warning);
+					assert prevIm == null;
+				} else {
+					if (comm!=null) comm.message("No error from frame loader when loading frame "+prevFrameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+					prevIm = new ImagePlus("Frame "+prevFrameNum,fl.returnIm);
+				}
+			} else { //middle of extraction
+				// move old currentIm up
 				prevIm = currentIm;
-			}
-			// load new currentIm
-			if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
-				System.out.println("Failed to load frame "+frameNum);
-				return 2; 
-			} else {
-				currentIm = new ImagePlus("Frame "+frameNum, fl.returnIm);
+				// load new currentIm
+				if (fl.getFrame(frameNum, fnm, normFactor)!=0) {
+					if (comm!=null) comm.message("Frame Loader returned error", VerbLevel.verb_warning);
+					return 2;
+				} else {
+					if (comm!=null) comm.message("No error from frame loader when loading frame "+frameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+					currentIm = new ImagePlus("Frame "+frameNum,fl.returnIm);
+				}
 			}
 			break;
 		case 3: //central
-			// pass old currentIm to prevIm
-			if (currentIm!=null) {
-				prevIm = currentIm;
-			}
-			// pass old nextIm to currentIm
-			if (nextIm!=null) {
-				currentIm = nextIm;
-			}
-			// load new nextIm
-			if (fl.getFrame(nextFrameNum,fnm,normFactor)!=0) {
-				nextIm = null;
+			if (frameNum==startFrameNum) { //beginning of extraction
+				//load currentIm, nextIm, then move on
+				if (fl.getFrame(frameNum, fnm, normFactor)!=0) {
+					if (comm!=null) comm.message("Frame Loader returned error", VerbLevel.verb_warning);
+					return 2; //frame loader returned error
+				} else {
+					if (comm!=null) comm.message("No error from frame loader when loading frame "+frameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+					currentIm = new ImagePlus("Frame "+frameNum,fl.returnIm);
+				}
+				// load nextIm
+				if (fl.getFrame(nextFrameNum, fnm, normFactor)!=0) {
+					if (comm!=null) comm.message("Frame Loader returned error", VerbLevel.verb_warning);
+					return 2;
+				} else {
+					if (comm!=null) comm.message("No error from frame loader when loading frame "+nextFrameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+					nextIm = new ImagePlus("Frame "+nextFrameNum,fl.returnIm);
+				}
+				//try to load prevIm
+				if (fl.getFrame(prevFrameNum, fnm, normFactor)!=0) { //error or at beginning of stack
+					if (comm!=null) comm.message("At beginning of stack", VerbLevel.verb_warning);
+					assert prevIm == null;
+				} else {
+					if (comm!=null) comm.message("No error from frame loader when loading frame "+prevFrameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+					prevIm = new ImagePlus("Frame "+prevFrameNum,fl.returnIm);
+				}
 			} else {
-				nextIm = new ImagePlus("Frame "+nextFrameNum, fl.returnIm);
+				// move old currentIm and nextIm up
+				prevIm = currentIm;
+				currentIm = nextIm;
+				// load new nextIm
+				if (fl.getFrame(nextFrameNum, fnm, normFactor)!=0) { //error or reached end of stack
+					nextIm = null;
+					if (frameNum==endFrameNum) {
+						if (comm!=null) comm.message("Reached end of stack", VerbLevel.verb_warning);
+					} else {
+						if (comm!=null) comm.message("Frame Loader returned error", VerbLevel.verb_warning);
+						return 2;
+					}
+				} else {
+					if (comm!=null) comm.message("No error from frame loader when loading frame "+nextFrameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+					nextIm = new ImagePlus("Frame "+nextFrameNum,fl.returnIm);
+				}
 			}
 			break;
 		}
@@ -271,7 +339,7 @@ public class PointExtractor {
 		ddtIm = new ImagePlus();
 		calcAndSetDdtFrameIm(ep.derivMethod);
 		if (ddtIm==null) {
-			System.out.println("No ddtIm for frame "+frameNum);
+			if (comm!=null) comm.message("No ddtIm for frame "+frameNum, VerbLevel.verb_warning);
 		}
 		
 		if (comm!=null) comm.message("Thresholding image to zero...", VerbLevel.verb_debug);
@@ -461,8 +529,8 @@ public class PointExtractor {
 				
 				if (comm!=null) comm.message("Converting Point "+row+" "+"("+(int)x+","+(int)y+")"+"to TrackPoint", VerbLevel.verb_debug);
 				if (ep.properPointSize(area)) {
-					//Rectangle ddtRect = (Rectangle)rect.clone();
-					//ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
+					Rectangle ddtRect = (Rectangle)rect.clone();
+					ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
 					switch (ep.trackPointType){
 						case 1: //ImTrackPoint
 							ImTrackPoint iTPt = new ImTrackPoint(x,y,rect,area,frameNum,thresh);
@@ -476,12 +544,12 @@ public class PointExtractor {
 							currentIm.setRoi(oldRoi);
 							iTPt.setImage(im, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
-							if(ddtIm!=null) {
+							//if(ddtIm!=null) {
 							// note: any error will be caught in ImTrackPoint.set2ndImAndRect() and validity will be set to false
-								Rectangle ddtRect = (Rectangle)iTPt.rect.clone();
-								ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
+								//Rectangle ddtRect = (Rectangle)iTPt.rect.clone();
+								//ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
 								iTPt.findAndStoreDdtIm(ddtIm,ddtRect);
-							}
+							//}
 							tp.add(iTPt);
 							break;
 						case 2: //MaggotTrackPoint
@@ -510,12 +578,8 @@ public class PointExtractor {
 							
 							mTPt.setImage(im2, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
-							if(ddtIm!=null) {
-								// note: any error will be caught in ImTrackPoint.set2ndImAndRect() and validity will be set to false
-								Rectangle ddtRect = (Rectangle)mTPt.rect.clone();
-								ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
-								mTPt.findAndStoreDdtIm(ddtIm,ddtRect);
-							}
+							mTPt.findAndStoreDdtIm(ddtIm,ddtRect);
+							
 							mTPt.extractFeatures();
 							tp.add(mTPt);
 							break;
@@ -625,7 +689,6 @@ public class PointExtractor {
 	 * Calculates ddtIm of current frame using specified derivation method
 	 */
 	public void calcAndSetDdtFrameIm(int derivMethod) {
-		int dt = increment;
 		switch(derivMethod) {
 		case 1: //forward
 			// handle last frame
@@ -633,7 +696,7 @@ public class PointExtractor {
 				ddtIm = null;
 				System.out.println("Cannot calculate ddt frame image: nextIm doesn't exist");
 			} else {
-				calcAndSetDdtFrameIm(currentIm,nextIm,dt);
+				calcAndSetDdtFrameIm(currentIm,nextIm,increment);
 			}
 			break;
 		case 2: //backward
@@ -642,11 +705,10 @@ public class PointExtractor {
 				ddtIm = null;
 				System.out.println("Cannot calculate ddt frame image: prevIm doesn't exist");
 			} else {
-				calcAndSetDdtFrameIm(prevIm,currentIm,dt);
+				calcAndSetDdtFrameIm(prevIm,currentIm,increment);
 			}
 			break;
 		case 3: //central
-			dt = increment*2;
 			if(prevIm == null) {
 				ddtIm = null;
 				System.out.println("Cannot calculate ddt frame image: prevIm doesn't exist");
@@ -654,7 +716,7 @@ public class PointExtractor {
 				ddtIm = null;
 				System.out.println("Cannot calculate ddt frame image: nextIm doesn't exist");
 			} else {
-				calcAndSetDdtFrameIm(prevIm,nextIm,dt);
+				calcAndSetDdtFrameIm(prevIm,nextIm,increment*2);
 			}
 			break;
 		}

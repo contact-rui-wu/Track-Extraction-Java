@@ -104,10 +104,16 @@ public class TrackPoint implements Serializable {
 	}
 	
 	/**
-	 * Returns the rectangular roi of a secondary image
+	 * Return the rectangular roi of a secondary image
 	 */
 	public Rectangle get2ndRect(int secondaryType) {
 		return null;
+	}
+	/**
+	 * Make sure secondary vectors are large enough
+	 */
+	public void ensure2ndSize(int secType) {
+		//overridden in ImTrackPoint
 	}
 	
 	/**
