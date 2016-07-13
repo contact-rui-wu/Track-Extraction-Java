@@ -419,18 +419,8 @@ public class Track implements Serializable{
 			
 			//Get the first image
 			ImageProcessor firstIm;
-			/*
-			try {
-				firstIm = point.view2ndIm(0).getProcessor();
-			} catch (NullPointerException e) {
-				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
-				firstIm = new ColorProcessor(width,height);
-				firstIm.setColor(new Color(0,0,0));
-				firstIm.fill();
-			}
-			*/
 			if (point.is2ndValid(secType)) {
-				firstIm = point.view2ndIm(secType).getProcessor();
+				firstIm = point.view2ndIm(secType);
 			} else {
 				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
 				firstIm = new ColorProcessor(width,height);
@@ -450,18 +440,8 @@ public class Track implements Serializable{
 				
 				//Get the next image
 				ImageProcessor img;
-				/*
-				try {
-					img = point.view2ndIm(0).getProcessor();
-				} catch (NullPointerException e) {
-					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
-					img = new ColorProcessor(firstIm.getWidth(), firstIm.getHeight());
-					img.setColor(new Color(0,0,0));
-					img.fill();
-				}
-				*/
 				if (point.is2ndValid(secType)) {
-					img = point.view2ndIm(secType).getProcessor();
+					img = point.view2ndIm(secType);
 				} else {
 					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
 					img = new ColorProcessor(firstIm.getWidth(), firstIm.getHeight());

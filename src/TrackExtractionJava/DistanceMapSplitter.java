@@ -141,7 +141,7 @@ public class DistanceMapSplitter {
 					// get the correct ddtIm:
 					Rectangle cropRect = oldDdtRect.intersection(newDdtRect);
 					cropRect.setLocation(newDdtRect.x-oldDdtRect.x,newDdtRect.y-oldDdtRect.y);
-					ImageProcessor oldDdtIm = itp.get2ndIm(0).getProcessor();
+					ImageProcessor oldDdtIm = itp.get2ndIm(0);
 					Rectangle oldRoi = oldDdtIm.getRoi();
 					oldDdtIm.setRoi(cropRect);
 					newPt.firstElement().set2ndImAndRect(oldDdtIm.crop(),newDdtRect,0);

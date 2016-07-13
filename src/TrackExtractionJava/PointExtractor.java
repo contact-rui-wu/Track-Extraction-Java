@@ -461,7 +461,8 @@ public class PointExtractor {
 				
 				if (comm!=null) comm.message("Converting Point "+row+" "+"("+(int)x+","+(int)y+")"+"to TrackPoint", VerbLevel.verb_debug);
 				if (ep.properPointSize(area)) {
-					
+					//Rectangle ddtRect = (Rectangle)rect.clone();
+					//ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
 					switch (ep.trackPointType){
 						case 1: //ImTrackPoint
 							ImTrackPoint iTPt = new ImTrackPoint(x,y,rect,area,frameNum,thresh);
@@ -476,6 +477,7 @@ public class PointExtractor {
 							iTPt.setImage(im, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
 							if(ddtIm!=null) {
+							// note: any error will be caught in ImTrackPoint.set2ndImAndRect() and validity will be set to false
 								Rectangle ddtRect = (Rectangle)iTPt.rect.clone();
 								ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
 								iTPt.findAndStoreDdtIm(ddtIm,ddtRect);
@@ -509,6 +511,7 @@ public class PointExtractor {
 							mTPt.setImage(im2, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
 							if(ddtIm!=null) {
+								// note: any error will be caught in ImTrackPoint.set2ndImAndRect() and validity will be set to false
 								Rectangle ddtRect = (Rectangle)mTPt.rect.clone();
 								ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
 								mTPt.findAndStoreDdtIm(ddtIm,ddtRect);

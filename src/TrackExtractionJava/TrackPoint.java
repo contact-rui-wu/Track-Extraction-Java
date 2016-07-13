@@ -2,7 +2,6 @@ package TrackExtractionJava;
 
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
-import ij.process.ColorProcessor;
 
 import java.awt.Color;
 import java.awt.Rectangle;
@@ -86,21 +85,21 @@ public class TrackPoint implements Serializable {
 	 * <p>
 	 * Default: track window = 30x30, expand by 10x
 	 */
-	public ImagePlus view2ndIm(int secondaryType) {
+	public ImageProcessor view2ndIm(int secondaryType) {
 		return null; //overridden in ImTrackPoint
 	}
 	
 	/**
 	 * Returns a padded and enlarged secondary image for display, using settings specified in ep
 	 */
-	public ImagePlus view2ndIm(int secondaryType, ExtractionParameters ep) {
+	public ImageProcessor view2ndIm(int secondaryType, ExtractionParameters ep) {
 		return null; //overridden in ImTrackPoint
 	}
 	
 	/**
 	 * Returns a raw secondary image
 	 */
-	public ImagePlus get2ndIm(int secondaryType) {
+	public ImageProcessor get2ndIm(int secondaryType) {
 		return null; //overridden in ImTrackPoint
 	}
 	
