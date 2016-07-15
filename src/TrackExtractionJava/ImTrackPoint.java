@@ -69,7 +69,7 @@ public class ImTrackPoint extends TrackPoint{
 			ep.trackWindowWidth = trackWindowWidth;
 			ep.trackWindowHeight = trackWindowHeight;
 		}
-		ImageProcessor newIm = CVUtils.padAndCenter(new ImagePlus("",get2ndIm(secType)), ep.trackWindowWidth, ep.trackWindowHeight, im.getWidth()/2, im.getHeight()/2);
+		ImageProcessor newIm = CVUtils.padAndCenter(new ImagePlus("",get2ndIm(secType)), ep.trackWindowWidth, ep.trackWindowHeight, get2ndRect(secType).width/2, get2ndRect(secType).height/2);
 		return newIm.resize(ep.trackWindowWidth*ep.trackZoomFac);
 	}
 	

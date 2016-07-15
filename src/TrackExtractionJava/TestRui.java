@@ -21,12 +21,12 @@ public class TestRui {
 	public static void main(String[] args) {
 		// put the testing methods here
 		// uncomment when a test is ready to run
-		
+				
 		//test_frameSizeDdtMovie();
 		
 		//test_vectorSizeAndCapacity(4);
 		
-		test_extraction(1); //0 - rect MMF; 1 - square MMF
+		//test_extraction(0); //0 - rect MMF; 1 - square MMF
 		
 		//test_loadPrejav();
 		
@@ -38,6 +38,7 @@ public class TestRui {
 	
 	// write each test as a void method so that don't have to write a lot in main
 	
+	@SuppressWarnings("unused")
 	public static void test_frameSizeDdtMovie() {
 		ImageJ ij = new ImageJ();
 		// load mmf and get ready for point extractor
@@ -196,11 +197,11 @@ public class TestRui {
 		//prParams.saveErrors = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true;
-		extrParams.startFrame = 23750;
-		extrParams.endFrame = 23823;
+		extrParams.startFrame = 1;
+		extrParams.endFrame = 1000;
 		//extrParams.trackWindowWidth = 40;
 		//extrParams.trackWindowHeight = 40;
-		//extrParams.derivMethod = 3;
+		//extrParams.derivMethod = 1;
 		
 		String path;
 		switch (whose) {
