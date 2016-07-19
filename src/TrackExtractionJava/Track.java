@@ -393,11 +393,18 @@ public class Track implements Serializable{
 		}
 	}
 	
+	/**
+	 * Returns the ddt image stack in an ImagePlus object with "(ddt)" in the title.
+	 */
 	public void playDdtMovie() {
 		play2ndMovie(trackID, 0, "ddt");
 	}
 	
-	public void play2ndMovie(int labelInd, int imInd, String secTypeMsg) {
+	/**
+	 * Returns an ImagePLus object which contains the specified secondary image stack.
+	 * @param secTypeMsg Indicates type of secondary image in the ImagePlus title
+	 */
+	public void play2ndMovie(int labelInd, int secType, String secTypeMsg) {
 		if (tb!=null){
 			tb.comm.message("This track has "+points.size()+"points", VerbLevel.verb_message);
 		}
@@ -406,24 +413,23 @@ public class Track implements Serializable{
 		
 			TrackPoint point = tpIt.next();
 			point.setTrack(this);
-			
+						
 			int width = exp.getEP().trackWindowWidth*exp.getEP().trackZoomFac;
 			int height = exp.getEP().trackWindowHeight*exp.getEP().trackZoomFac;
-			// TODO caution: in Experiment_Processor we use MaggotDisplayParameters.expandFac instead of ExtractionParameters.trackZoomFac
 			
 			//Get the first image
 			ImageProcessor firstIm;
-			try {
-				firstIm = point.get2ndIm(imInd);
-			} catch (NullPointerException e) {
+			if (point.is2ndValid(secType)) {
+				firstIm = point.view2ndIm(secType);
+			} else {
 				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
-				//firstIm = new ColorProcessor(300,300);
 				firstIm = new ColorProcessor(width,height);
 				firstIm.setColor(new Color(0,0,0));
 				firstIm.fill();
 			}
 			
 			ImageStack trackStack = new ImageStack(firstIm.getWidth(), firstIm.getHeight());
+			// TODO caution: although this shouldn't happen, be ware of point.trackWindow* != ep.trackWindow*
 			
 			trackStack.addSlice(firstIm);
 			
@@ -434,12 +440,11 @@ public class Track implements Serializable{
 				
 				//Get the next image
 				ImageProcessor img;
-				try {
-					img = point.get2ndIm(imInd);
-				} catch (NullPointerException e) {
+				if (point.is2ndValid(secType)) {
+					img = point.view2ndIm(secType);
+				} else {
 					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
-					//img = new ColorProcessor(300,300);
-					img = new ColorProcessor(width,height);
+					img = new ColorProcessor(firstIm.getWidth(), firstIm.getHeight());
 					img.setColor(new Color(0,0,0));
 					img.fill();
 				}

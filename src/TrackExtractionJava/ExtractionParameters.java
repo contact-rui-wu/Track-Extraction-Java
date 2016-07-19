@@ -27,10 +27,21 @@ public class ExtractionParameters implements Serializable{
 	private static final long serialVersionUID = 1L;
 	
 	// handle time derivative calculation
+	/**
+	 * @deprecated Replaced by derivMethod
+	 */
+	@Deprecated
 	static final int DERIV_FORWARD = 1;
+	/**
+	 * @deprecated Replaced by derivMethod
+	 */
+	@Deprecated
 	static final int DERIV_BACKWARD = 2;
+	/**
+	 * @deprecated Replaced by derivMethod
+	 */
+	@Deprecated
 	static final int DERIV_SYMMETRIC = 3;
-	// TODO above will be replaced with below
 	public int derivMethod = 3; //default: central method
 	public int derivPixelPad = 3;
 
@@ -244,7 +255,7 @@ public class ExtractionParameters implements Serializable{
 		
 		ExtractionParameters ep = new ExtractionParameters();
 		System.out.println("Saving params to disk...");
-		ep.toDisk("C:\\Users\\Natalie\\Documents\\test.txt");
+		ep.toDisk("C:\\Users\\Natalie\\Documents\\test.txt"); //TODO why is this (Natalie's path here) not giving me any trouble?
 		System.out.println("...done saving params to disk");
 	}
 	

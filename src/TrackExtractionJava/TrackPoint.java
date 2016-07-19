@@ -1,7 +1,7 @@
 package TrackExtractionJava;
 
+import ij.ImagePlus;
 import ij.process.ImageProcessor;
-import ij.process.ColorProcessor;
 
 import java.awt.Color;
 import java.awt.Rectangle;
@@ -71,7 +71,67 @@ public class TrackPoint implements Serializable {
 	 */
 	protected int thresh;
 	
+	////////// Below: secondary image fields //////////
 	
+	/**
+	 * Checks whether a secondary image is valid
+	 */
+	public Boolean is2ndValid(int secondaryType) {
+		return null;
+	}
+	
+	/**
+	 * Returns a padded and enlarged secondary image for display, using the default setting
+	 * <p>
+	 * Default: track window = 30x30, expand by 10x
+	 */
+	public ImageProcessor view2ndIm(int secondaryType) {
+		return null; //overridden in ImTrackPoint
+	}
+	
+	/**
+	 * Returns a padded and enlarged secondary image for display, using settings specified in ep
+	 */
+	public ImageProcessor view2ndIm(int secondaryType, ExtractionParameters ep) {
+		return null; //overridden in ImTrackPoint
+	}
+	
+	/**
+	 * Returns a raw secondary image
+	 */
+	public ImageProcessor get2ndIm(int secondaryType) {
+		return null; //overridden in ImTrackPoint
+	}
+	
+	/**
+	 * Return the rectangular roi of a secondary image
+	 */
+	public Rectangle get2ndRect(int secondaryType) {
+		return null;
+	}
+	/**
+	 * Make sure secondary vectors are large enough
+	 */
+	public void ensure2ndSize(int secType) {
+		//overridden in ImTrackPoint
+	}
+	
+	/**
+	 * Store im and rect in the secondary vectors at the position specified by secondaryType
+	 */
+	public void set2ndImAndRect(ImageProcessor im, Rectangle rect, int secondaryType) {
+		//overridden in ImTrackPoint
+	}
+	
+	/**
+	 * Given a larger ddtIm, crop a smaller ddtIm using rect, then store smaller ddtIm and rect in the secondary vectors at position 0
+	 * @param rect Make sure you pass in a cloned rect!
+	 */
+	public void findAndStoreDdtIm(ImagePlus ddtFrameIm, Rectangle rect) {
+		//overridden in ImTrackPoint
+	}
+	
+	////////// Above: secondary image fields //////////
 	
 	////////////////////////////////////
 	// Constructors & Related Methods
@@ -228,16 +288,6 @@ public class TrackPoint implements Serializable {
 		return getIm();
 	}
 	
-	public ImageProcessor get2ndIm(int imInd) {
-		// does nothing; overridden in MaggotTrackPoint
-		ImageProcessor im = new ColorProcessor(300,300);
-		return im;
-	}
-	
-	public void setDdtImage(ImageProcessor ddtIm, Rectangle ddtRect) {
-		// does nothing; overridden in ImTrackPoint
-	}
-	
 	protected void setNumMatches(int num){
 		numMatches = num;
 	}
@@ -376,7 +426,7 @@ public class TrackPoint implements Serializable {
 		try {
 			dos.writeInt(frameNum);
 			dos.writeDouble(x);
-			dos.writeDouble(y);
+			dos.writeDouble(y); //TODO repetitive data?
 			dos.writeInt(rect.x);
 			dos.writeInt(rect.y);
 			dos.writeInt(rect.width);
