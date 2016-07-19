@@ -18,8 +18,15 @@ public class DiskReaderWriter {
 	DataInputStream dis;
 	DataOutputStream dos;
 	PrintWriter pw;
+	int dataVersionTag;
 	
-	////////// Constructors //////////
+	//////////////////
+	// Constructors //
+	//////////////////
+	
+	public DiskReaderWriter() {
+		// default constructor
+	}
 	
 	public DiskReaderWriter(DataInputStream dis, PrintWriter pw) {
 		this.dis = dis;
@@ -31,15 +38,18 @@ public class DiskReaderWriter {
 		this.pw = pw;
 	}
 	
-	////////// Experiment-level to/fromDisk methods: handles all versions here //////////
+	/////////////////////////////////////////////////////////////////////
+	// Experiment-level to/fromDisk methods: handles all versions here //
+	/////////////////////////////////////////////////////////////////////
 	
 	public void experimentToDisk(Experiment ex) {
 		// handle all exceptions here
 		try {
-			// version tag: if got tag, then has secondary images
+			// write data version tag
 			// experiment size
 			// # of tracks
 			// loop of trackToDisk()
+			dos.flush();
 		} catch (Exception e) {
 			// handle exceptions
 		}
@@ -49,7 +59,7 @@ public class DiskReaderWriter {
 		try {
 			Experiment ex = new Experiment();
 			// read and try to match version tag
-			// - if fails, go back to beginning
+			// - if fails, go back to beginning and assume version 0
 			// read experiment size
 			// read # of tracks
 			// loop of trackFromDisk()
@@ -60,10 +70,15 @@ public class DiskReaderWriter {
 		}
 	}
 	
-	////////// Sub-level to/fromDisk methods: version 1 //////////
+	//////////////////////////////////////////////
+	// Sub-level to/fromDisk methods: version 1 //
+	//////////////////////////////////////////////
+	
+	////////// track level //////////
+	
+	// Note: need to write sizeOnDisk at track level so that can skip tracks at experiment level
 	
 	public void trackToDisk1(Track tr) {
-		// do not use try block
 		// track size
 		// # of points
 		// loop of trackPointToDisk()
@@ -77,22 +92,31 @@ public class DiskReaderWriter {
 		return tr;
 	}
 	
+	////////// track point level //////////
+	
+	// Note: no need for sizeOnDisk at this level since we almost never look at single points
+	// TODO handle different track point types
+	
 	public void trackPointToDisk1(TrackPoint tp) {
-		// do not use try block
-		// get track point type
-		// (just add a validity boolean to all possible features of a track point?)
+		// write track point type
+		// write features
 	}
 	
 	public TrackPoint trackPointFromDisk1() {
 		TrackPoint tp = new TrackPoint();
-		// read track point size
 		// read track point type
+		// read features
 		return tp;
 	}
-		
+	
+	////////// feature level //////////
+	
+	// Note: simple features like rect can be handled directly in the track point level
+	// TODO handle non-image features, e.g. backbone
+	
 	public void imageToDisk1(ImageProcessor ip, Rectangle rect) throws IOException {
 		// write image processor type
-		dos.writeByte(ip.getBitDepth()); //TODO absent in old version
+		dos.writeByte(ip.getBitDepth());
 		switch (ip.getBitDepth()) {
 		case 8: //byte processor
 			for (int j=0; j<rect.width; j++) {
@@ -172,10 +196,62 @@ public class DiskReaderWriter {
 		return ip;
 	}
 	
-	////////// Sub-level to/fromDisk methods: version 0 //////////
+	//////////////////////////////////////////////
+	// Sub-level to/fromDisk methods: version 0 //
+	//////////////////////////////////////////////
 	
-	// Note: don't try to optimize, copy the exact codes
+	// Note: when all get() methods are ready, copy the object-specific methods here and modify appropriately 
 	
-	// TODO call/copy the (*)Track(Point).to/from/sizeOnDisk() methods in these ones
+	////////// track level //////////
+	
+	public int trackToDisk0(Track tr, DataOutputStream dos, PrintWriter pw) {
+		return tr.toDisk(dos, pw);
+	}
+	
+	public static Track trackFromDisk0(DataInputStream dis, int pointType, Experiment ex, PrintWriter pw) {
+		return Track.fromDisk(dis, pointType, ex, pw);
+	}
+	
+	////////// track point level //////////
+	
+	// TrackPoint
+	
+	public int tpToDisk0(TrackPoint tp, DataOutputStream dos, PrintWriter pw) {
+		return tp.toDisk(dos, pw);
+	}
+	
+	public static TrackPoint tpFromDisk0(DataInputStream dis, Track tr, PrintWriter pw) {
+		return TrackPoint.fromDisk(dis, tr, pw);
+	}
+	
+	// ImTrackPoint
+	
+	public int itpToDisk0(ImTrackPoint itp, DataOutputStream dos, PrintWriter pw) {
+		return itp.toDisk(dos, pw);
+	}
+	
+	public static ImTrackPoint itpFromDisk0(DataInputStream dis, Track tr, PrintWriter pw) {
+		return ImTrackPoint.fromDisk(dis, tr, pw);
+	}
+	
+	// MaggotTrackPoint
+	
+	public int mtpToDisk0(MaggotTrackPoint mtp, DataOutputStream dos, PrintWriter pw) {
+		return mtp.toDisk(dos, pw);
+	}
+	
+	public static MaggotTrackPoint mtpFromDisk0(DataInputStream dis, Track tr, PrintWriter pw) {
+		return MaggotTrackPoint.fromDisk(dis, tr, pw);
+	}
+	
+	// BackboneTrackPoint
+	
+	public int btpToDisk0(BackboneTrackPoint btp, DataOutputStream dos, PrintWriter pw) {
+		return btp.toDisk(dos, pw);
+	}
+	
+	public static BackboneTrackPoint btpFromDisk0(DataInputStream dis, Track tr, PrintWriter pw) {
+		return BackboneTrackPoint.fromDisk(dis, tr, pw);
+	}
 	
 }
