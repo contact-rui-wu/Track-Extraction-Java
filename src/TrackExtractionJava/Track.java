@@ -8,6 +8,9 @@ import ij.process.ImageProcessor;
 import ij.text.TextWindow;
 
 import java.awt.Color;
+import java.awt.Robot;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.PrintWriter;
@@ -16,7 +19,13 @@ import java.io.StringWriter;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Scanner;
 import java.util.Vector;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+
+import sun.awt.SunToolkit.InfiniteLoop;
 
 
 public class Track implements Serializable{
@@ -116,6 +125,12 @@ public class Track implements Serializable{
 
 	}
 	
+	/**
+	 * StartInd and endInd are indices to trackpoints; both inclusive 
+	 * @param tr
+	 * @param startInd
+	 * @param endInd
+	 */
 	public Track(Track tr, int startInd, int endInd){
 		
 		nextIDNum = tr.getNextIDNum();
@@ -259,6 +274,108 @@ public class Track implements Serializable{
 		
 	}
 	
+	
+	public double[] getAreas(){
+		if (points==null) return new double[0];
+		double[] areas = new double[points.size()];
+		for (int i=0;i<points.size(); i++) areas[i]=points.get(i).area;
+		return areas;
+	}
+	
+	public double[] getHTdists(){
+		if (points==null || points.firstElement().getPointType()<MaggotTrackPoint.pointType) return new double[0];
+		double[] HTdist = new double[points.size()];
+		for (int i=0;i<points.size(); i++) {
+			MaggotTrackPoint mtp = (MaggotTrackPoint)points.get(i);
+			if (mtp.htValid){
+				HTdist[i]=Math.sqrt((mtp.head.x-mtp.tail.x)*(mtp.head.x-mtp.tail.x) + (mtp.head.y-mtp.tail.y)*(mtp.head.y-mtp.tail.y) );
+			} else {
+				HTdist[i] = Double.POSITIVE_INFINITY;
+			}
+		}
+		return HTdist;
+	}
+	
+	/**
+	 * Calculates trackpoint energies using default fitting parameters
+	 * 
+	 */
+//	public void calcEnergies(){
+//		calcEnergies(new FittingParameters());
+//	}
+	
+	/**
+	 * Calculates trackpoint energies using 
+	 * @param fp
+	 */
+//	public void calcEnergies(FittingParameters fp){
+//		
+//		for (int i=0; i<points.size(); i++){
+//			points.get(i).calcEnergies(fp);
+//		}
+//	}
+	
+	/**
+	 * Gathers and returns energies of the given type from trackpoints
+	 * 
+	 * returns [] if energy type is not available for this type of point
+	 * 
+	 * @param energyType
+	 */
+	public double[] getEnergies(String energyType){
+		
+		if (points==null || points.size()==0){
+			System.out.println("No points in track");
+			return null;
+		}
+		
+		double[] e = new double[points.size()];
+		for (int i=0; i<e.length; i++){
+			e[i] = points.get(i).getEnergy(energyType);
+		}
+		
+		return e;
+	}
+	
+	public double[] getEnergyMeanStdDev(String energyType){
+		double[] energies = getEnergies(energyType);
+		return getEnergyMeanStdDev(energies, energyType);
+	}
+	
+	
+	public double[] getEnergyMeanStdDev(double[] energies, String energyType){
+		
+		double[] meanStdDev = new double[2];
+		meanStdDev[0] = MathUtils.mean(energies);
+		meanStdDev[1] = MathUtils.stdDev(energies, meanStdDev[0]);
+		return meanStdDev;
+	}
+	
+	public Vector<Gap> findBapGaps(String eType, int numStdDevs){
+		return findBadGaps(eType, numStdDevs, 1);
+	}
+	
+	public Vector<Gap> findBadGaps(String eType, int numStdDevs, int minValidSegmentLen){
+		
+		double[] e = getEnergies(eType);
+		
+		double[] meanStdDev = getEnergyMeanStdDev(e, eType);
+		double thresh = meanStdDev[0] + numStdDevs*meanStdDev[1];
+		
+		boolean[] bad = new boolean[e.length];
+		for (int i=0; i<bad.length; i++){
+			bad[i] = e[i]>thresh;
+		}
+		
+		Vector<Gap> badGaps = Gap.bools2Segs(bad);
+		if (badGaps.size()>1) BBFPointListGenerator.mergeGaps(badGaps, minValidSegmentLen, null);
+		
+		
+ 		return badGaps;
+
+	}
+	
+	
 	/**
 	 * Clips and returns the list of track points indicated by the startFrame (inclusive) and endFrame (exclusive)
 	 * @param startFrame
@@ -290,6 +407,10 @@ public class Track implements Serializable{
 	
 	public boolean diverged(){
 		return diverged;
+	}
+	
+	protected void setTrackID(int tid){
+		trackID = tid;
 	}
 	
 	public int getTrackID(){
@@ -346,8 +467,11 @@ public class Track implements Serializable{
 	}
 	
 	
-	public void playMovie(int labelInd, MaggotDisplayParameters mdp){
-		
+	public ImagePlus playMovie(int labelInd, MaggotDisplayParameters mdp){
+		return getMovieStack(labelInd, mdp, true); 
+	}
+	
+	public ImagePlus getMovieStack(int labelInd, MaggotDisplayParameters mdp, boolean showMovie){
 		if (tb!=null){
 			tb.comm.message("This track has "+points.size()+"points", VerbLevel.verb_message);
 		}
@@ -388,8 +512,10 @@ public class Track implements Serializable{
 			//Show the stack
 			ImagePlus trackPlus = new ImagePlus("Track "+trackID+": frames "+points.firstElement().frameNum+"-"+points.lastElement().frameNum ,trackStack);
 			
-			trackPlus.show();
-			
+			if (showMovie) trackPlus.show();
+			return trackPlus;
+		} else {
+			return null;
 		}
 	}
 	
@@ -452,8 +578,70 @@ public class Track implements Serializable{
 		return false;
 	}
 
+	public int[] getMaxPlateDimensions(){
+		int[] dim = {0,0};
+		
+		for (TrackPoint tp : points){
+			int tDim[] = {tp.rect.x+tp.rect.width, tp.rect.y+tp.rect.height};
+			if (tDim[0]>dim[0]){
+				dim[0]=tDim[0];
+			}
+			if (tDim[1]>dim[1]){
+				dim[1]=tDim[1];
+			}
+		}
+		
+		return dim;
+		
+		
+	}
 	
 	
+	public void showFitting(){
+		if (points==null || points.size()==0 || points.firstElement().getPointType()!=MaggotTrackPoint.pointType){
+			return;
+		}
+		
+		//Make a button
+//		JFrame buttonFrame = new JFrame("NextIterationFrame");
+////		buttonFrame.setSize(200, 200);
+//		
+//		JButton nextButton = new JButton("Next Iteration");
+//		nextButton.addActionListener(new ActionListener() {
+//			@Override
+//			public void actionPerformed(ActionEvent e) {
+//				notify();
+//			}
+//		});
+//		
+//		buttonFrame.add(nextButton);
+//		buttonFrame.setVisible(true);
+		
+		
+		BackboneFitter bbf = new BackboneFitter(this);
+		bbf.doPause = true;
+		bbf.userIn = new Scanner(System.in);
+		bbf.userOut = System.out;
+		
+		// TODO pass in a track fitting scheme and/or Fitting Params
+		bbf.fitTrackNewScheme();
+		
+		
+		
+	}
+	
+	public Track fitTrack(FittingParameters fp){
+		if (points==null || points.size()==0 || points.firstElement().getPointType()!=MaggotTrackPoint.pointType){
+			return null;
+		}
+		BackboneFitter bbf = new BackboneFitter(this, fp );
+		return fitTrack(bbf);
+	}
+	
+	public Track fitTrack(BackboneFitter bbf){
+		bbf.fitTrackNewScheme();
+		return bbf.workingTrack;
+	}
 	
 	public int toDisk(DataOutputStream dos, PrintWriter pw){
 		
@@ -467,6 +655,7 @@ public class Track implements Serializable{
 			if (nBytes>=0){
 				if (pw!=null) pw.println("Writing Track size");
 				dos.writeInt(nBytes);
+				dos.writeInt(trackID);
 			} else {
 				if (pw!=null) pw.println("...Error getting size of track "+trackID+"; aborting save");
 				return 3;
@@ -577,6 +766,7 @@ public class Track implements Serializable{
 		try {
 			int size = dis.readInt();
 			if (pw!=null) pw.println(size+" bytes to load...");
+			trackID = dis.readInt();
 		} catch (Exception e) {
 			if (pw!=null) pw.println("ERROR: Unable to advance past field 'size on disk'");
 			return 4;

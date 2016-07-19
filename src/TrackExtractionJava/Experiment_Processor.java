@@ -7,9 +7,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
@@ -109,6 +111,8 @@ public class Experiment_Processor implements PlugIn{
 		runTime = new TicToc();
 		
 		boolean success = (loadFile(arg0));
+		if (dstDir==null) dstDir = srcDir;
+		if (prParams.saveSysOutToFile) setupSysOut();
 		setupParams();
 
 		try {
@@ -251,6 +255,24 @@ public class Experiment_Processor implements PlugIn{
 		
 	}
 	
+	protected void setupSysOut(){
+
+		File f = new File(dstDir+"SystemDOTout.txt");
+		if (!f.exists())
+			try {
+				f.createNewFile();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} 
+
+		try {
+			System.setOut(new PrintStream(new BufferedOutputStream(new FileOutputStream(f.getAbsolutePath()))));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
 	/**
 	 * Set ups the processing objects
 	 */
@@ -275,7 +297,7 @@ public class Experiment_Processor implements PlugIn{
 				if (fitParams==null){
 					fitParams = new FittingParameters();
 				}
-				bbf = new BackboneFitter(fitParams);
+				//bbf = new BackboneFitter(fitParams);
 			}
 			if (csvPrefs==null){
 				csvPrefs = new CSVPrefs();
@@ -428,7 +450,7 @@ public class Experiment_Processor implements PlugIn{
 			ex = new Experiment(Experiment.deserialize(new File(dir, filename).getPath())); 
 			IJ.showStatus("Experiment open");*/
 			IJ.showStatus("Opening Experiment...");
-			ex = new Experiment(Experiment.fromPath(new File(dir, filename).getPath())); 
+			ex = new Experiment(Experiment.fromPath(new File(dir, filename).getPath()));//Experiment.fromPath(new File(dir, filename).getPath());// 
 			IJ.showStatus("Experiment open");
 			return true;
 		} catch (Exception e){
@@ -562,7 +584,7 @@ public class Experiment_Processor implements PlugIn{
 		//Fit each track that is long enough for the course passes
 		for (int i=0; i<ex.getNumTracks(); i++){
 			
-			if (i%bbf.params.GCInterval==0){
+			if (i%fitParams.GCInterval==0){
 				System.gc();
 			}
 			TicToc trTic = new TicToc();
@@ -580,7 +602,11 @@ public class Experiment_Processor implements PlugIn{
 //				newTr = fitTrack(tr);
 				
 				BackboneFitter bbf = new BackboneFitter(tr, fitParams);
-				bbf.fitTrack();
+				if (prParams.fitType>0){
+					bbf.fitTrackNewScheme();
+				} else {
+					bbf.fitTrack();
+				}
 				newTr = bbf.getTrack();
 				
 				long[] minSec = trTic.tocMinSec();
@@ -596,6 +622,10 @@ public class Experiment_Processor implements PlugIn{
 					tr.setDiverged(true); 
 					System.out.println(trStr+": diverged "+timStr);
 					toRemove.add(tr);
+					errorsToSave.add(tr);
+				} else if (bbf.divergedGaps!=null && bbf.divergedGaps.size()>0){
+					divergedCount++;
+					System.out.println(trStr+": diverged, but was frozen "+timStr);
 					errorsToSave.add(tr);
 				} else {
 					tr.setValid(false);
@@ -640,13 +670,20 @@ public class Experiment_Processor implements PlugIn{
 		System.out.println((ex.getNumTracks()-toRemove.size()+shortCount)+"/"+(ex.getNumTracks()-shortCount-divergedCount)+" remaining were fit successfully");
 		
 		//Remove the tracks that couldn't be fit
-//		for(Track t : toRemove){
-//			ex.removeTrack(t);
-//		}
+		for(Track t : toRemove){
+			ex.removeTrack(t);
+		}
 		
 		if (prParams.diagnosticIm){
+			
+			int[] dim; 
+			if (mmfStack!=null){
+				dim = mmfStack.getDimensions();
+			} else {
+				dim = ex.getMaxPlateDimensions();
+			}
 			System.out.println("Generating diagnostic im...");
-			ImagePlus dIm1 = ex.getDiagnIm(mmfStack.getWidth(), mmfStack.getHeight());
+			ImagePlus dIm1 = ex.getDiagnIm(dim[0], dim[1]);
 			String ps = File.separator;
 			String diagnPath = (dstDir!=null)? dstDir : srcDir;
 			diagnPath += "fit diagnostics"+ps;
@@ -657,6 +694,7 @@ public class Experiment_Processor implements PlugIn{
 			diagnPath = diagnPath.replace(diagnPath.substring(diagnPath.lastIndexOf("."), diagnPath.length()), " diagnostic foreground.bmp");
 			IJ.save(dIm1, diagnPath);
 			System.out.println("...Done generating diagnostic im");
+			
 		}
 		
 		if (prParams.saveErrors){

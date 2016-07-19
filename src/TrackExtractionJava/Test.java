@@ -2,8 +2,11 @@ package TrackExtractionJava;
 
 import ij.ImageJ;
 import ij.ImagePlus;
+import ij.gui.Plot;
+import ij.process.ImageProcessor;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -14,6 +17,8 @@ import java.util.Scanner;
 import java.util.Vector;
 
 import javax.swing.JFrame;
+
+import com.sun.j3d.utils.behaviors.vp.WandViewBehavior.ResetViewListener;
 
 
 
@@ -28,6 +33,30 @@ public class Test {//extends JFrame
 	public static void main(String[] args) {
 		
 		/*
+		testBadTrackFinder();
+		*/
+		
+		/*
+		testFitterPauseDisplay();
+		*/
+		
+		/*
+		testSubsetInchInwards();
+		*/
+		
+		fitExperimentNewScheme();
+		/*
+		*/
+		
+		/*
+		testNewBBFScheme();
+		*/
+		
+		/*
+		testFreezeDiverged();
+		*/
+		
+		/*
 		testBBFsubset();
 		*/
 			
@@ -39,8 +68,8 @@ public class Test {//extends JFrame
 		generateEnergyProfiles();
 		*/
 		
-		runDefaultFitting();
 		/*
+		runDefaultFitting();
 		*/
 		
 		/*
@@ -186,6 +215,150 @@ public class Test {//extends JFrame
 		
 	}
 	
+	public static void testBadTrackFinder(){
+		ImageJ ij = new ImageJ();
+		
+		String outputDir = "E:\\testing\\Java Backbone Fitting\\test badness fixer\\";
+		String inputFileName = outputDir+"4 After Param adjustment\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.jav";//"E:\\data\\phototaxis\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
+		
+		Experiment ex = new Experiment(inputFileName);
+		Experiment badEx = ex.flagBadTracks();
+		
+		if (badEx.getNumTracks()>0) {
+			badEx.showEx();
+		} else {
+			System.out.println("No bad tracks found in experiment");
+		}
+		
+		ij.quit();
+	}
+	
+	public static void testFitterPauseDisplay(){
+		ImageJ ij = new ImageJ();
+		
+		String outputDir = "E:\\testing\\Java Backbone Fitting\\test badness fixer\\";
+		String inputFileName = outputDir+"0 Before any fixing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";//"E:\\data\\phototaxis\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
+		
+		
+		int trackID = 8;
+		Experiment ex = new Experiment(inputFileName);
+		Track t = ex.getTrack(trackID);
+		
+//		t.showFitting();
+		BackboneFitter bbf = new BackboneFitter(t);
+//		bbf.doPause = true;
+//		bbf.userIn = new Scanner(System.in);
+//		bbf.userOut = System.out;
+		
+		bbf.fitTrackNewScheme();
+		
+		
+		if (bbf.getTrack()!=null){
+			Vector<Track> newTracks = new Vector<Track>();
+			newTracks.add(bbf.getTrack());
+			Experiment newExperiment = new Experiment(ex, newTracks);
+			newExperiment.showEx();
+		}
+		
+		ij.quit();
+	}
+	
+	public static void testSubsetInchInwards(){
+		ImageJ ij = new ImageJ();
+		
+		String outputDir = "E:\\testing\\Java Backbone Fitting\\test bbf subset\\newEnergySavingWFrozenDiverged\\";
+		String inputFileName = outputDir+"Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
+		int trackID = 8;
+		Experiment ex = new Experiment(inputFileName);
+		Track t = ex.getTrack(trackID);
+		BackboneFitter bbf = new BackboneFitter(t);
+		
+		bbf.fitTrackNewScheme();
+//		bbf.resetForNextExectution();
+//		bbf.patchGap_InchInwards(new Gap(1730, 1800), 1);
+//		FittingParameters spp = FittingParameters.getSinglePassParams();
+//		spp.leaveFrozenBackbonesAlone = true;//This tells the plg not to re-initialize the frozen bb's
+//		spp.freezeDiverged = true;
+//		spp.leaveBackbonesInPlace = true;
+//		bbf.resetParams(spp);
+//		bbf.fitTrack();
+		
+		
+		if (bbf.getTrack()!=null){
+			Vector<Track> newTracks = new Vector<Track>();
+			newTracks.add(bbf.getTrack());
+			Experiment newExperiment = new Experiment(ex, newTracks);
+			newExperiment.showEx();
+		}
+		
+		
+		ij.quit();
+	}
+	
+	public static void fitExperimentNewScheme(){
+		
+		ImageJ ij = new ImageJ();
+		
+		String outputDir = "E:\\testing\\Java Backbone Fitting\\test badness fixer\\";
+		String inputFileName = outputDir+"0 Before any fixing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";//"E:\\data\\phototaxis\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
+		
+		String args[] = new String[2];
+		args[0] = inputFileName;
+		args[1] = outputDir+"6 New weighting scheme plus looped refits plus coord inclusion\\";
+		
+		Experiment_Processor ep = new Experiment_Processor();
+		ep.runningFromMain = true;
+		ExtractionParameters exP = new ExtractionParameters();
+		exP.subset = true;
+		exP.startFrame = 1;
+		exP.endFrame = 2000;
+
+		ProcessingParameters pp = new ProcessingParameters();
+		pp.doFitting = true;
+		pp.fitType=1;
+		ep.extrParams = exP;
+		ep.prParams = pp;
+		
+		ep.run(args);
+		
+		ij.quit();
+	}
+	
+	public static void testNewBBFScheme(){
+		
+		ImageJ ij = new ImageJ();
+		
+		String outputDir = "E:\\testing\\Java Backbone Fitting\\test bbf subset\\";
+		String inputFileName = outputDir+"Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
+		int trackID = 4;
+		Experiment ex = new Experiment(inputFileName);
+		Track t = ex.getTrack(trackID);
+		BackboneFitter bbf = new BackboneFitter(t);
+		
+		bbf.fitTrackNewScheme();
+//		bbf.patchTrackSubset(new Gap(1730, 1800), 32*5);
+		
+		if (bbf.getTrack()!=null){
+			Vector<Track> newTracks = new Vector<Track>();
+			newTracks.add(t);
+			newTracks.add(bbf.getTrack());
+			Experiment newExperiment = new Experiment(ex, newTracks);
+			newExperiment.showEx();
+		}
+		
+//		bbf.resetForNextExectution();
+//		bbf.setFrozen(0, bbf.workingTrack.points.size(), true);
+//		bbf.params.leaveFrozenBackbonesAlone = true;
+//		bbf.runSingleIteration();
+		double[] totalE = MathUtils.castFloatArray2Double(bbf.energyProfiles.lastElement().getLastEnergies());
+		double mean = MathUtils.mean(totalE);
+		double stdDev = MathUtils.stdDev(totalE, mean);
+		MathUtils.plotDataMeanStdDev(totalE,mean,stdDev, "Total Energy vs frame", "total e", bbf.workingTrack.points.firstElement().frameNum);
+		
+		ij.quit();
+	}
+	
+	
 	public static void testBBFsubset(){
 		
 		ImageJ ij = new ImageJ();
@@ -193,25 +366,161 @@ public class Test {//extends JFrame
 		String outputDir = "E:\\testing\\Java Backbone Fitting\\test bbf subset\\";
 		String inputFileName = outputDir+"Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
 			
-		Experiment ex = new Experiment(inputFileName);
+		int trackInd = 46;
 		Vector<Track> newTracks = new Vector<Track>();
-		BackboneFitter bbf = new BackboneFitter(ex.getTrackFromInd(51));
+		
+		Experiment ex = new Experiment(inputFileName);
+		
+		Track t = ex.getTrackFromInd(trackInd);
+		MaggotDisplayParameters mdp = new MaggotDisplayParameters();
+		mdp.ht = true;
+		mdp.mid = true;
+		t.playMovie(mdp);
+		
+		FittingParameters fp = new FittingParameters();
+		fp.storeEnergies = true;
+		BackboneFitter bbf = new BackboneFitter(t,fp);
+		bbf.runSingleIteration();
+		
+		double[] dists = t.getHTdists();
+		dists[501]=0;
+		MathUtils.plotDataMeanStdDev(dists, "HT Dist (Before Fitting)", "dstSqr");
+//		MathUtils.plotDataMeanStdDev(bbf.energyProfiles.lastElement().energies.firstElement(), "Total Backbone Energy (Before Fitting)", "total E");
+//		MathUtils.plotDataMeanStdDev(bbf.energyProfiles.get(1).energies.firstElement(), "Backbone Length Energy (Before Fitting)", "length E");
+//		MathUtils.plotDataMeanStdDev(bbf.energyProfiles.get(2).energies.firstElement(), "Backbone Smooth Energy (Before Fitting)", "smooth E");
+		
+		
+		
+		
 		bbf.fitTrack();
 		if (bbf.getTrack()!=null) newTracks.add(bbf.getTrack());
 		
 		
-		BackboneFitter bbf2 = new BackboneFitter(ex.getTrackFromInd(51));
-		int startInd = 0;
-		int endInd = 500;
-		bbf2.fitTrackSubset(startInd, endInd);
+		
+		/*
+		int startInd = 1200;
+		int endInd = 1900;
+		BackboneFitter bbf2 = new BackboneFitter(ex.getTrackFromInd(trackInd));
+		bbf2.fitTrackSubset_IgnoreSurrounding_old(startInd, endInd);
 		if (bbf2.getTrack()!=null) newTracks.add(bbf2.getTrack());
 		
 
+		BackboneFitter bbf3 = new BackboneFitter(ex.getTrackFromInd(trackInd));
+		bbf3.fitTrackSubset_IncludeSurrounding_old(startInd, endInd);
+		bbf3.resetFitter();
+		bbf3.fitTrackSubset_IncludeSurrounding_old(900, 1400); 
+		if (bbf3.getTrack()!=null) newTracks.add(bbf3.getTrack());
+		*/
+		
+		Vector<Gap> subsets1 = new Vector<Gap>();
+		subsets1.add(new Gap(200,900));
+		subsets1.add(new Gap(1200,1900));
+		
+		Vector<Gap> subsets2 = new Vector<Gap>();
+		subsets2.add(new Gap(901,1199));
+		
+		FittingParameters spp = FittingParameters.getSinglePassParams();
+		
+		BackboneFitter bbf4 = new BackboneFitter(ex.getTrackFromInd(trackInd));
+		bbf4.resetParams(spp);
+		bbf4.fitSubsets(subsets1, false);
+//		bbf4.resetFitter();
+		
+//		if (bbf4.getTrack()!=null) newTracks.add(bbf4.getTrack());
+//		Experiment newExperiment = new Experiment(ex, newTracks);
+//		newExperiment.showEx();
+
+		
+		spp.leaveFrozenBackbonesAlone = true;
+		bbf4.resetParams(spp);
+		bbf4.fitSubsets(subsets2,false);
+		
+		Float[] e1 = bbf4.energyProfiles.lastElement().energies.get(bbf4.numIters.firstElement()-1);
+		Float[] e2 = bbf4.energyProfiles.lastElement().energies.get(bbf4.numIters.firstElement()+bbf4.numIters.lastElement()-1);
+		
+		
+		bbf4.patchTrackSubset(new Gap(1200, 1500), 32*5);
+//		bbf4.patchTrackSubset(new Gap(900, 1200), 32*5);
+		
+//		if (bbf4.getTrack()!=null) newTracks.add(bbf4.getTrack());
+		
+//		BackboneFitter bbf5 = new BackboneFitter(ex.getTrackFromInd(trackInd));
+//		spp.leaveFrozenBackbonesAlone = false;
+//		bbf5.resetParams(spp);
+//		bbf5.fitSubsets(subsets2, true);
+//		if (bbf5.getTrack()!=null) newTracks.add(bbf5.getTrack());
+		
+		if (bbf4.getTrack()!=null) newTracks.add(bbf4.getTrack());
 		Experiment newExperiment = new Experiment(ex, newTracks);
 		newExperiment.showEx();
 		
 		
+		
+		
+		
 		ij.quit();
+	}
+	
+	
+	
+	public static void testFreezeDiverged(){
+		
+		/*
+		ImageJ IJ = new ImageJ();
+		String baseDir = "E:\\testing\\Java Backbone Fitting\\testSinglePass_freezeDiverged\\";//testClusterEdits\\voronoi\\subset_runonshortenedexp\\";
+		
+		String[] args = new String[2];
+		args[0] = "E:\\testing\\Java Backbone Fitting\\test contour fix\\full\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";		
+		args[1] = baseDir;
+		
+		
+		FittingParameters fP = FittingParameters.getSinglePassParams();
+		fP.storeEnergies = true;
+		fP.freezeDiverged = true;
+		fP.leaveFrozenBackbonesAlone = true;
+		
+		ProcessingParameters prP = new ProcessingParameters();
+		prP.diagnosticIm = false;
+		
+		Experiment_Processor ep = new Experiment_Processor();
+		ep.runningFromMain = true;
+		ep.prParams = prP;
+		ep.fitParams = fP;
+		
+		ep.run(args);
+		
+		
+		IJ.quit();
+		 */
+		
+		
+		
+		ImageJ ij = new ImageJ();
+		
+		String outputDir = "E:\\testing\\Java Backbone Fitting\\test interpolation fix\\";
+		String inputFileName = outputDir+"Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
+			
+		FittingParameters spp = FittingParameters.getSinglePassParams();
+		spp.freezeDiverged = true;
+		spp.leaveFrozenBackbonesAlone = true;
+		
+
+		Experiment ex = new Experiment(inputFileName);
+		Vector<Track> newTracks = new Vector<Track>();
+//		int trackInd = 47;
+		for (int trackInd=67; trackInd<75; trackInd++){
+			
+			BackboneFitter bbf = new BackboneFitter(ex.getTrackFromInd(trackInd), spp);
+			bbf.fitTrack();
+			if (bbf.getTrack()!=null) newTracks.add(bbf.getTrack());
+		}
+		Experiment newExperiment = new Experiment(ex, newTracks);
+		newExperiment.showEx();
+		
+		
+		
+		ij.quit();
+		
 	}
 	
 	public static void testNewBBFArchitecture(){
@@ -607,18 +916,21 @@ public class Test {//extends JFrame
 		
 		
 //		args[0] = "E:\\data\\phototaxis2\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
-		args[1] = "E:\\testing\\Java Backbone Fitting\\test interpolation fix\\";
-		args[0] = args[1]+"Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
-		
+		args[1] = "E:\\testing\\Java Backbone Fitting\\test divergence fix\\";
+		args[0] = args[1]+"divergedTrackExp.jav";//+"Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
+		args[1] += "divergedTracks\\";//"testparams\\t_p3p3p1_sl_p7_ss_p7";
 		
 		FittingParameters fP = new FittingParameters();
 		float[] timeLengthWeight = {.3f, 0.3f, 0.1f};
 		float[] timeSmoothWeight = {.3f, 0.3f, 0.1f}; 
 		fP.timeLengthWeight = timeLengthWeight;
 		fP.timeSmoothWeight = timeSmoothWeight;
+//		fP.spineLengthWeight = .7f;
+//		fP.spineSmoothWeight = 0.9f;
 //		fP.imageWeight = 0.9f;
 		fP.clusterMethod=0;
 		fP.storeEnergies = true;
+		fP.refitDiverged = true;
 		ExtractionParameters exP = new ExtractionParameters();
 		exP.subset = true;
 		exP.startFrame = 1;

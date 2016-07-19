@@ -11,6 +11,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Vector;
 
 
@@ -28,7 +29,7 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	/**
 	 * Identifies the point as a BACKBONETRACKPOINT
 	 */
-	final int pointType = 3;
+	final static int pointType = 3;
 	 
 	/**
 	 * The number of pixels in the image considered as part of the maggot
@@ -92,6 +93,13 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	transient BackboneFitter bf;
 	
 	protected boolean artificialMid;
+	
+	public boolean bbvalid = true;
+	
+	protected boolean hidden = false;
+	protected boolean frozen = false;
+	
+	protected double scaleFactor = 1;
 	
 	public BackboneTrackPoint(){
 		
@@ -369,6 +377,15 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	}
 	
 
+	protected void setHidden(boolean h){
+		hidden = h;
+	}
+	
+	
+	protected void setFrozen(boolean f){
+		frozen = f;
+	}
+	
 	/**
 	 * Stores a working backbone
 	 * @param newBackbone The updated backbone
@@ -400,6 +417,18 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			backbone = new PolygonRoi(new FloatPolygon(), PolygonRoi.POLYLINE);
 			//h, t, and mid are left as they were in MTP
 		}
+	}
+	
+	public void storeEnergies(HashMap<String, Double> energies){
+		this.energies = energies;
+	}
+	
+	public BackboneTrackPoint getPrev(){
+		return (BackboneTrackPoint)prev;
+	}
+	
+	public BackboneTrackPoint getNext(){
+		return (BackboneTrackPoint)next;
 	}
 	
 	public int getNumPix(){
@@ -452,6 +481,38 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		}
 	}
 	
+	public float[] getCOM(){
+		
+		return getClusterCOM(-1);
+		
+	}
+	
+	public float[] getClusterCOM(int cluster){
+		
+		if (MagPixI==null || MagPixI.length==0 || cluster>=numBBPts){
+			float[] err = {-1,-1};
+			return err;
+		}
+		
+		float[] com = new float[2];
+		float comNorm = 0;
+		for (int i=0; i<MagPixI.length; i++){
+			if (cluster==-1 || clusterInds[i]==cluster){
+				int mpi = MagPixI[i];
+				
+				com[0]+=mpi*MagPixX[i];
+				com[1]+=mpi*MagPixY[i];
+				comNorm+=mpi;
+			}
+		}
+		
+		com[0]=com[0]/comNorm;
+		com[1]=com[1]/comNorm;
+		
+		return com;
+		
+	}
+	
 	public boolean getArtificialMid(){
 		return artificialMid;
 	}
@@ -478,7 +539,7 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	
 	public ImageProcessor getIm(){
 
-		return getIm(MaggotDisplayParameters.DEFAULTexpandFac, MaggotDisplayParameters.DEFAULTclusters,MaggotDisplayParameters.DEFAULTmid, MaggotDisplayParameters.DEFAULTinitialBB, 	
+		return getIm(MaggotDisplayParameters.DEFAULTexpandFac, MaggotDisplayParameters.DEFAULTclusters,MaggotDisplayParameters.DEFAULTmid, MaggotDisplayParameters.DEFAULTinitialBB, MaggotDisplayParameters.DEFAULTnewBB, 	
 				MaggotDisplayParameters.DEFAULTcontour, MaggotDisplayParameters.DEFAULTht, MaggotDisplayParameters.DEFAULTforces, MaggotDisplayParameters.DEFAULTbackbone);
 		
 	}
@@ -488,13 +549,13 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		if (mdp==null){
 			return getIm();
 		} else {
-			return getIm(mdp.expandFac, mdp.clusters, mdp.mid, mdp.initialBB, 	
+			return getIm(mdp.expandFac, mdp.clusters, mdp.mid, mdp.initialBB, mdp.newBB, 	
 				mdp.contour, mdp.ht, mdp.forces, mdp.backbone);
 		}
 	}
 	
 	
-	public ImageProcessor getIm(int expandFac, boolean clusters, boolean mid, boolean initialBB, boolean contour, boolean ht, boolean forces, boolean bb){
+	public ImageProcessor getIm(int expandFac, boolean clusters, boolean mid, boolean initialBB, boolean newBB, boolean contour, boolean ht, boolean forces, boolean bb){
 
 		if (mid && MagPixX==null){
 			reloadMagPix();
@@ -514,7 +575,7 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		int offY = trackWindowHeight*(expandFac/2) - ((int)y-rect.y)*expandFac;//rect.y-imOriginY;
 		
 		
-		return drawFeatures(pIm, offX, offY, expandFac, clusters, mid, initialBB, contour, ht, forces, bb); 
+		return drawFeatures(pIm, offX, offY, expandFac, clusters, mid, initialBB, newBB, contour, ht, forces, bb); 
 		
 	}
 
@@ -549,7 +610,7 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		return im;
 	}
 	
-	protected ImageProcessor drawFeatures(ImageProcessor grayIm, int offX, int offY, int expandFac, boolean clusters, boolean mid, boolean initialBB, boolean contour, boolean ht, boolean forces, boolean bb){
+	protected ImageProcessor drawFeatures(ImageProcessor grayIm, int offX, int offY, int expandFac, boolean clusters, boolean mid, boolean initialBB, boolean newBB, boolean contour, boolean ht, boolean forces, boolean bb){
 		
 		ImageProcessor im = grayIm.convertToRGB();
 		
@@ -568,6 +629,9 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 
 		//INITIAL SPINE
 		if (initialBB) displayUtils.drawBBInit(im, bbInit, offX, offY, rect, expandFac, Color.MAGENTA);
+		
+		if (newBB) displayUtils.drawBackbone(im, bbNew, expandFac, offX, offY, rect, Color.blue);
+		
 		
 		//CONTOUR
 		if (contour) displayUtils.drawContour(im, contourX, contourY, expandFac, offX, offY, Color.BLUE);
@@ -679,6 +743,17 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			}
 			//Write artificial mid
 			dos.writeByte(artificialMid ? 1:0);
+			
+			if (energies==null){
+				dos.writeInt(0);
+			} else {
+				dos.writeInt(energies.keySet().size());
+				for(String key : energies.keySet()){
+					dos.writeUTF(key);
+					dos.writeDouble(energies.get(key));
+				}
+			}
+			
 		} catch (Exception e) {
 			if (pw!=null) pw.println("Error writing BackboneTrackPoint image for point "+pointID+"; aborting save");
 			return 1;
@@ -735,6 +810,16 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			//artificialMid
 			artificialMid = (dis.readByte()==1);
 			
+			// energies
+			int numKeys = dis.readInt();
+			if (numKeys>0) {
+				energies = new HashMap<String, Double>();
+				for (int i=0; i<numKeys; i++){
+					String key = dis.readUTF();
+					energies.put(key, dis.readDouble());
+				}
+			}
+			
 		} catch (Exception e) {
 			if (pw!=null) pw.println("Error writing BackboneTrackPoint Info");
 			return 2;
@@ -759,7 +844,10 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		}
         
 	}
-	
+
+	public int getPointType(){
+		return BackboneTrackPoint.pointType;
+	}
 	
 	public String getTypeName(){
 		if (backbone==null || backbone.getNCoordinates()==0){

@@ -9,6 +9,8 @@ import java.util.Vector;
 
 public class ImageForce extends Force {
 
+
+	static final String defaultName = "Image"; 
 	
 	public ImageForce(float[] weights, float totalWeight){
 		super(weights, totalWeight, 1,"Image");
@@ -28,8 +30,6 @@ public class ImageForce extends Force {
 		float[] norm = new float[numBBPts];
 		Arrays.fill(norm, 0);
 
-		//Calculate the center of mass of each backbone cluster
-		
 		//Sum the coordinates and build the normalization factor from the weights
 		if (btp.getClusterMethod()==0){
 			for (int pix=0; pix<btp.getNumPix(); pix++){
@@ -48,15 +48,77 @@ public class ImageForce extends Force {
 			}
 		}
 		
-		//Normalize the coordinates
+		//Normalize the coordinates 
+		int numOut = 0 ;
 		for (int k=0; k<numBBPts; k++){
 			if (norm[k]!=0){
 				targetX[k] = targetX[k]/norm[k];
 				targetY[k] = targetY[k]/norm[k];
-			} 
+			} else {
+				numOut++;
+				
+			}
 		}
+		
+		//Move target points back in the maggot region
+		float fracToCluster = 0.2f;
+		for (int k=0; numOut>0 && k<numBBPts; k++){
+			if (targetX[k]==0 && targetY[k]==0){
+				
+				//Find the nearest cluster to the location of the point
+				int kk = findNearestCluster(btp, k, targetX, targetY);
+				float[] clst = new float[2];
+				if (kk>=0){
+					clst[0] = targetX[kk];
+					clst[1] = targetY[kk];
+				} else {
+					//There should always be a closest cluster, but just in case...
+					System.out.println("WARNING Image target coord assigned to COM: track"+btp.track.getTrackID()+" pt "+btp.pointID+" crd "+k);
+					clst = btp.getCOM(); 
+				}
+				
+				//Move target point towards nearest nearest cluster
+				targetX[k] = fracToCluster*clst[0] + (1-fracToCluster)*btp.bbOld.xpoints[k];
+				targetY[k] = fracToCluster*clst[1] + (1-fracToCluster)*btp.bbOld.ypoints[k];
+				
+				numOut--;
+			}
+		}
+		
 		
 		return new FloatPolygon(targetX, targetY);
 	}
+	
+	/**
+	 * Method for finding nearest cluster optimized to ImageEnergy's targetPoint calculations
+	 * @param btp
+	 * @param crdInd
+	 * @param targetX
+	 * @param targetY
+	 * @return
+	 */
+	private int findNearestCluster(BackboneTrackPoint btp, int crdInd, float[] targetX, float[] targetY){
+		
+		float[] crdLoc = {btp.bbOld.xpoints[crdInd], btp.bbOld.ypoints[crdInd]};
+		
+		int nearest = -1;
+		float mindist = Float.POSITIVE_INFINITY;
+		//Check each target point (i.e. com of cluster) to 
+		for (int k=0; k<targetX.length; k++){
+			
+			float[] clstLoc = {targetX[k], targetY[k]};
+			
+			if (crdInd!=k && clstLoc[0]!=0 && clstLoc[1]!=0){
+				float dist = (crdLoc[0]-clstLoc[0])*(crdLoc[0]-clstLoc[0]);
+				dist += (crdLoc[1]-clstLoc[1])*(crdLoc[1]-clstLoc[1]);
+				if (dist<mindist){
+					mindist = dist;
+					nearest = k;
+				}
+			}
+		}
+		return nearest;
+	}
+	
 	
 }

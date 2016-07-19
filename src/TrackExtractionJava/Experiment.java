@@ -118,6 +118,34 @@ public class Experiment implements Serializable{
 		Forces = exOld.Forces;
 	}
 	
+	public Experiment flagBadTracks(){
+		FittingParameters fp = new FittingParameters(); 
+		
+		int numStdDevs = fp.numStdDevForBadGap;
+		int minValidSegmentLen = fp.minValidSegmentLen;
+		String[] eTypes = {TimeLengthForce.defaultName, ImageForce.defaultName};
+		
+		return flagBadTracks(eTypes, numStdDevs, minValidSegmentLen);
+	}
+	
+	public Experiment flagBadTracks(String[] eTypes, int numStdDevs, int minValidSegmentLen){
+		
+		Vector<Track> badTracks = new Vector<Track>();
+		for (Track t : tracks){
+			boolean in = false;
+			for (String eType : eTypes) {
+				if (!in && t.findBadGaps(eType, numStdDevs, minValidSegmentLen).size()>0) {
+					badTracks.add(t);
+					in = true;
+				}
+			}
+			
+		}
+		
+		Experiment badEx = new Experiment(this, badTracks);
+		return badEx;
+	}
+	
 	public int toDisk(DataOutputStream dos, PrintWriter pw){
 		
 		
@@ -639,6 +667,55 @@ public class Experiment implements Serializable{
 	public void showEx(){
 		ExperimentFrame ef = new ExperimentFrame(this);
 		ef.run(null);
+	}
+	
+	public int[] getMaxPlateDimensions(){
+		int[] dim = {0,0};
+		
+		int tDim[];
+		for (Track t : tracks){
+			tDim = t.getMaxPlateDimensions();
+			if (tDim[0]>dim[0]){
+				dim[0]=tDim[0];
+			}
+			if (tDim[1]>dim[1]){
+				dim[1]=tDim[1];
+			}
+		}
+		
+		return dim;
+	}
+	
+	public int getNumPoints(){
+		int numPts = 0;
+		for (int i=0; i<tracks.size(); i++){
+			numPts += tracks.get(i).getNumPoints();
+		}
+		return numPts;
+	}
+	
+	
+	
+	public double[] getEnergyMeanStdDev(String energyType){
+		
+		int nPts = getNumPoints();
+
+		double[] energies = new double[nPts];
+		int startInd = 0;
+		for (int trackInd=0; trackInd<tracks.size(); trackInd++){
+			
+			double[] e = tracks.get(trackInd).getEnergies(energyType);
+			for (int eInd=0; eInd<e.length; eInd++){
+				energies[startInd+eInd] = e[eInd]; 
+			}
+			startInd+=e.length;
+			
+		}
+		
+		double[] meanStdDev = new double[2];
+		meanStdDev[0] = MathUtils.mean(energies);
+		meanStdDev[1] = MathUtils.stdDev(energies, meanStdDev[0]);
+		return meanStdDev;
 	}
 	
 }

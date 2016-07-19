@@ -32,10 +32,8 @@ public class MaggotTrackPoint extends ImTrackPoint {
 	/**
 	 * Identifies the point as a MAGGOTTRACKPOINT
 	 */
-	final int pointType = 2;
+	final static int pointType = 2;
 	
-	protected MaggotTrackPoint prev;
-	protected MaggotTrackPoint next;
 	
 	protected Point contourStart;
 	protected int nConPts;
@@ -650,11 +648,11 @@ public class MaggotTrackPoint extends ImTrackPoint {
 	
 	
 	public MaggotTrackPoint getPrev(){
-		return prev;
+		return (MaggotTrackPoint)prev;
 	}
 	
 	public MaggotTrackPoint getNext(){
-		return next;
+		return (MaggotTrackPoint)next;
 	}
 	
 	public int getNumContourPoints(){
@@ -1271,7 +1269,10 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		
 		return splitPts;
 	}
-	
+
+	public int getPointType(){
+		return MaggotTrackPoint.pointType;
+	}
 	
 	public String getTypeName(){
 		return "MaggotTrackPoint";

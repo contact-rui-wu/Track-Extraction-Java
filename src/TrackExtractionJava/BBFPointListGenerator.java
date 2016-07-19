@@ -13,13 +13,19 @@ public class BBFPointListGenerator {
 	BackboneFitter bbf;
 	
 	Track workingTrack;
+	int startFrame;
+	int endFrame;
+	int startInd;
+	int endInd;
+	boolean subset;
 	private Vector<BackboneTrackPoint> BTPs;
 	FittingParameters params;
 	Communicator comm;
 	
-	protected boolean clipEnds = false;
-	protected int BTPstartFrame = -1;
-	protected int BTPendFrame = -1;
+	
+	protected boolean clipEnds;// = false;
+	protected int BTPstartFrame;// = -1;
+	protected int BTPendFrame;// = -1;
 	private Vector<TrackPoint> startClippings;
 	private Vector<TrackPoint> endClippings;
 	
@@ -27,11 +33,27 @@ public class BBFPointListGenerator {
 	public BBFPointListGenerator(BackboneFitter bbf, Track track, FittingParameters fp, Communicator comm) {
 		this.bbf = bbf;
 		workingTrack = track;
+		reset();
+		turnOffSubsets();
 		params = fp;
 		this.comm = comm;
+		
 	}
 	
-
+	protected void reset(){
+		clipEnds = false;
+		BTPstartFrame = -1;
+		BTPendFrame = -1;
+	}
+	
+	public void turnOffSubsets(){
+		startInd = 0;
+		endInd = workingTrack.getNumPoints()-1;
+		startFrame = workingTrack.points.firstElement().frameNum;
+		endFrame = workingTrack.points.lastElement().frameNum;
+		subset = false;
+	}
+	
 	/**
 	 * Generates a list of BTPs from the original trackPoint list, with the
 	 * proper grain
@@ -61,11 +83,28 @@ public class BBFPointListGenerator {
 			return false;
 		}
 	}
-
+	
+	
+	/*
+	public boolean generateBTPList(int pass, FittingParameters fp){
+		
+		FittingParameters p = params;
+		params = fp;
+		boolean b = generateBTPList(pass);
+		params = p;
+		return b;
+	}
+	*/
+	
 	
 	public boolean generateFullBTPList(){
 
 		BTPs = new Vector<BackboneTrackPoint>();
+		
+		int s = startInd;
+		int e = endInd;
+		startInd = 0;
+		endInd = workingTrack.points.size()-1;
 		
 		try {
 			
@@ -75,13 +114,16 @@ public class BBFPointListGenerator {
 			
 			return noError;
 
-		} catch (Exception e) {
+		} catch (Exception ex) {
 			
 			StringWriter sw = new StringWriter();
 			PrintWriter pw = new PrintWriter(sw);
-			e.printStackTrace(pw);
+			ex.printStackTrace(pw);
 			comm.message("Problem getting BTPS from the track at grain 1 \n" + sw.toString(), VerbLevel.verb_error);
 			return false;
+		} finally {
+			startInd = s;
+			endInd = e;
 		}
 	}
 	
@@ -91,13 +133,14 @@ public class BBFPointListGenerator {
 	 */
 	private void sampleTrackPoints(int grain){
 		
-		
+//		int numTPs = (endInd-startInd)/grain;
 		int numTPs = workingTrack.getNumPoints()/grain;
 		try {
 			
 			for (int i=0; i<numTPs; i++){
-				
+
 				BTPs.add((BackboneTrackPoint)workingTrack.getPoint(i*grain));
+//				BTPs.add((BackboneTrackPoint)workingTrack.getPoint(startInd+i*grain));
 				
 			}
 			
@@ -116,31 +159,56 @@ public class BBFPointListGenerator {
 		float[] origin = new float[2];
 		try {
 			if (pass==0){
+
 				for (int i=0; i<BTPs.size(); i++){
-					origin[0] = BTPs.get(i).rect.x;
-					origin[1] = BTPs.get(i).rect.y;
-					BTPs.get(i).setBackboneInfo(params.clusterMethod, BTPs.get(i).midline, origin);
+					if (params.leaveFrozenBackbonesAlone && BTPs.get(i).frozen){
+						//do nothing
+					} else if ((params.leaveBackbonesInPlace && BTPs.get(i).backbone!=null && BTPs.get(i).backbone.getNCoordinates()>0)){
+						origin[0]=0;
+						origin[1]=0;
+						BTPs.get(i).setBackboneInfo(params.clusterMethod, BTPs.get(i).backbone, origin);
+					} else {
+						origin[0] = BTPs.get(i).rect.x;
+						origin[1] = BTPs.get(i).rect.y;
+						BTPs.get(i).setBackboneInfo(params.clusterMethod, BTPs.get(i).midline, origin);
+					}
+					
 					comm.message("Adding backbone info to BTP "+i+"(frame "+BTPs.get(i).frameNum+")", VerbLevel.verb_debug);
 				}
+				
 				boolean noError = cleanUpBTPs(findEmptyMids(), params.minFlickerDist*grain);
 				return noError;
+				
 			} else {
-//				if (clipEnds) clipEnds();
 				origin[0] = 0;
 				origin[1] = 0;
 				//The old spines are already in the BTPs from the previous pass; find the empty ones and interpolate
-				int prev = 0; 				
+				int prev = 0;//startInd; 
+				int count=0;
+				int relativeGrain=params.grains[pass-1]/params.grains[pass];
 				Vector<FloatPolygon> interpdBBs;
-				for (int i=(prev+1); i<BTPs.size(); i++){
-					if(BTPs.get(i).backbone!=null){
+				
+				for (int i=(prev+1); i<BTPs.size() ;i++){//i<endInd; i++){
+					count++;
+					if(count==relativeGrain && BTPs.get(i).backbone!=null){// && !BTPs.get(i).backbone.equals(new PolygonRoi(BTPs.get(i).bbInit, PolygonRoi.POLYLINE))){
 						interpdBBs = interpBackbones(i-prev-1, origin, origin, BTPs.get(prev).backbone.getFloatPolygon(), BTPs.get(i).backbone.getFloatPolygon());
 						//fill in the midlines
 						for (int j=0; j<interpdBBs.size(); j++){
-							BTPs.get(prev+1+j).setBackboneInfo(params.clusterMethod, new PolygonRoi(interpdBBs.get(j), PolygonRoi.POLYLINE), origin);
-						} 
+							if (params.leaveFrozenBackbonesAlone && BTPs.get(i).frozen){
+//								float[] o = origin;
+//								origin[0] = BTPs.get(i).rect.x;
+//								origin[1] = BTPs.get(i).rect.y;
+//								BTPs.get(prev+1+j).setBackboneInfo(params.clusterMethod, BTPs.get(prev+1+j).backbone, origin);
+//								origin = o;
+							} else {
+								BTPs.get(prev+1+j).setBackboneInfo(params.clusterMethod, new PolygonRoi(interpdBBs.get(j), PolygonRoi.POLYLINE), origin);
+							}
+						}
 						prev = i;
+						count = 0;
 					}
 				}
+				
 				if (prev!=(BTPs.size()-1)){
 					for (int i=(prev+1); i<BTPs.size(); i++){
 						origin[0] = BTPs.get(i).rect.x;
@@ -149,6 +217,7 @@ public class BBFPointListGenerator {
 					}
 					return cleanUpBTPs(findEmptyMids(), params.minFlickerDist*grain);
 				}
+				
 				return true;
 			}
 			
@@ -169,8 +238,14 @@ public class BBFPointListGenerator {
 		
 		boolean[] sampledEmptyMids = new boolean[BTPs.size()];
 		
+		//leaveBackbonesInPlace, leaveFrozenBackbonesAlone
+		
 		for (int i=0; i<BTPs.size(); i++){
-			sampledEmptyMids[i] = (BTPs.get(i).midline==null);
+			if (params.leaveBackbonesInPlace || (params.leaveFrozenBackbonesAlone && BTPs.get(i).frozen) ){
+				sampledEmptyMids[i] = (BTPs.get(i).backbone==null);// TODO or diverged?
+			} else {
+				sampledEmptyMids[i] = (BTPs.get(i).midline==null);
+			}
 		}
 		
 		return sampledEmptyMids;
@@ -192,7 +267,9 @@ public class BBFPointListGenerator {
 			if (!noError){
 				return false;
 			}
-			if (clipEnds) clipEnds();
+			if (clipEnds) {
+				return clipEnds();
+			}
 		}
 		return true;
 	}
@@ -237,7 +314,7 @@ public class BBFPointListGenerator {
 		int ptr = 0;
 		while (ptr < emptyMidlines.length) {
 
-			if (emptyMidlines[ptr]) {
+			if (emptyMidlines[ptr] && (!params.leaveFrozenBackbonesAlone || !BTPs.get(ptr).frozen)) {
 				comm.message("Gap starting at frame "+(ptr+BTPs.firstElement().frameNum), VerbLevel.verb_debug);
 				gapStart = ptr;
 				// Find the end of the gap
@@ -294,7 +371,11 @@ public class BBFPointListGenerator {
 	
 	protected static boolean mergeGaps(Vector<Gap> gaps, int minValidSegmentLen, Communicator comm){
 		
-		boolean clearGaps = false;
+		if (gaps.size()<2){
+			return false;
+		}
+		
+		boolean gapsChanged = false;
 		
 		Gap prevGap;
 		Gap currGap = null;
@@ -313,7 +394,7 @@ public class BBFPointListGenerator {
 				prevGap.merge2Next(currGap); //Move currGap into prevGap
 				gIt.remove(); //Remove currGap from the list
 				//Do not advance prevGap, so you compare the next gap to the merged gap
-				clearGaps = true;
+				gapsChanged = true;
 			} else {
 				//Advance prevGap
 				prevGap = currGap;
@@ -321,7 +402,7 @@ public class BBFPointListGenerator {
 			
 		} while (gIt.hasNext());
 		
-		return clearGaps;
+		return gapsChanged;
 	}
 
 	private void invalidateGaps(Vector<Gap> gaps){
@@ -329,7 +410,7 @@ public class BBFPointListGenerator {
 			Gap gap = gaps.get(i);
 			for (int j=gap.start; j<=gap.end; j++){
 				BackboneTrackPoint btp = BTPs.get(j);
-				btp.htValid = false;
+				btp.bbvalid = false;
 			}
 		}
 	}
@@ -404,7 +485,10 @@ public class BBFPointListGenerator {
 	
 			} else if (gapStart != 0 && gapEnd != (BTPs.size() - 1)) {
 				comm.message("Filling large gap", VerbLevel.verb_debug);
+				
 				Vector<FloatPolygon> newMids = interpBackbones(gapStart - 1, gapEnd + 1);
+				
+				//Debug messages
 				comm.message("Interpolation complete; Midlines:", VerbLevel.verb_debug);
 				for (int i=0; i<newMids.size(); i++){
 					FloatPolygon mid = newMids.get(i);
@@ -416,6 +500,7 @@ public class BBFPointListGenerator {
 					}
 					comm.message(s, VerbLevel.verb_debug);
 				}
+				
 				for (int i = gapStart; i <= gapEnd; i++) {
 					float[] origin = {0.0f,0.0f};
 					PolygonRoi newMid = new PolygonRoi(newMids.get(i-gapStart), PolygonRoi.POLYLINE);
@@ -423,11 +508,14 @@ public class BBFPointListGenerator {
 					BTPs.get(i).bf = bbf;
 					BTPs.get(i).fillInBackboneInfo(params.clusterMethod, newMid, origin);
 				}
+				
 				comm.message("Gap filled", VerbLevel.verb_debug);
+			
 			} else if (gapStart==0 && gapEnd == (BTPs.size()-1)){
 				comm.message("All midlines are invalid in track "+workingTrack.getTrackID(), VerbLevel.verb_error);
 				System.out.println("All midlines are invalid in track "+workingTrack.getTrackID());
 				return false;
+				
 			} else {
 				clipEnds=true;
 				if (gapStart == 0) {
@@ -450,6 +538,14 @@ public class BBFPointListGenerator {
 		
 		comm.message("Clipping ends on track "+workingTrack.getTrackID()+": startFrame="+BTPstartFrame+" endFrame="+BTPendFrame, VerbLevel.verb_message);
 		
+		int nFrames = (BTPendFrame>0)? BTPendFrame : workingTrack.points.lastElement().frameNum;
+		nFrames -= (BTPstartFrame>0)? BTPstartFrame : workingTrack.points.firstElement().frameNum;
+		if (nFrames<params.minTrackLen) {
+			System.out.println("After clipping, track is too short");
+			return false;
+		}
+		
+		
 		if (BTPendFrame>0){//new end frame
 			
 			//Clip the actual track
@@ -462,6 +558,7 @@ public class BBFPointListGenerator {
 			}
 			
 			if (BTPs.get(i-1).getFrameNum()==BTPendFrame){
+				
 				//invalidate BTPs
 				for (int j=i; j<BTPs.size(); j++){
 					BTPs.get(j).htValid = false;
@@ -469,10 +566,16 @@ public class BBFPointListGenerator {
 				}
 				//Remove elements
 				BTPs.subList(i, BTPs.size()).clear();
+				
+				
+				//TODO edit the subset in bbf
+				
 			} else {
 				comm.message("Error clipping ends in track "+workingTrack.getTrackID()+": could not find index of new end frame ("+BTPendFrame+")", VerbLevel.verb_error);
 				return false;
 			}
+			
+			
 		}
 		
 		if (BTPstartFrame>0){// New Start frame:
@@ -485,7 +588,9 @@ public class BBFPointListGenerator {
 				i++;
 			}
 			
-			if (BTPs.get(i+1).getFrameNum()==BTPstartFrame){
+			if (BTPs.get(i+1).getFrameNum()==BTPstartFrame && i>0){
+				
+				int frames2Remove = BTPs.get(i).frameNum-BTPs.firstElement().frameNum;
 				//Invalidate BTPs
 				for (int j=0; j<=i; j++){
 					BTPs.get(j).htValid = false;
@@ -493,6 +598,37 @@ public class BBFPointListGenerator {
 				}
 				//Remove elements
 				BTPs.subList(0, i+1).clear();
+				
+				if (bbf.bentLarvae!=null && bbf.bentLarvae.size()>0){
+					Vector<Gap> gapsToRemove = new Vector<Gap>();
+					for (Gap g : bbf.bentLarvae){
+						g.subtract(frames2Remove);
+						if (g.start<0){
+							g.start=0;
+						}
+						if (g.end<0){
+							gapsToRemove.add(g);
+						}
+						
+					}
+					bbf.bentLarvae.remove(gapsToRemove);
+				}
+				
+				if (bbf.straightLarvae!=null && bbf.straightLarvae.size()>0){
+					Vector<Gap> gapsToRemove = new Vector<Gap>();
+					for (Gap g : bbf.straightLarvae){
+						g.subtract(frames2Remove);
+						if (g.start<0){
+							g.start=0;
+						}
+						if (g.end<0){
+							gapsToRemove.add(g);
+						}
+						
+					}
+					bbf.straightLarvae.remove(gapsToRemove);
+				}
+				
 			} else {
 				comm.message("Error clipping ends in track "+workingTrack.getTrackID()+": could not find index of new start frame ("+BTPstartFrame+")", VerbLevel.verb_error);
 				return false;
@@ -505,11 +641,34 @@ public class BBFPointListGenerator {
 	
 	protected Vector<FloatPolygon> interpBackbones(int firstBTP, int endBTP) {
 		
-		FloatPolygon bbFirst = BTPs.get(firstBTP).midline.getFloatPolygon();
-		FloatPolygon bbEnd = BTPs.get(endBTP).midline.getFloatPolygon();
+		BackboneTrackPoint fbtp = BTPs.get(firstBTP);
+		BackboneTrackPoint ebtp = BTPs.get(endBTP);
+		
+		FloatPolygon bbFirst;// = BTPs.get(firstBTP).midline.getFloatPolygon();
+		FloatPolygon bbEnd;// = BTPs.get(endBTP).midline.getFloatPolygon();
 
-		float[] firstO = {BTPs.get(firstBTP).rect.x, BTPs.get(firstBTP).rect.y};
-		float[] endO = {BTPs.get(endBTP).rect.x, BTPs.get(endBTP).rect.y};
+		float[] firstO;
+		float[] endO;
+		
+		if (params.leaveBackbonesInPlace || (params.leaveFrozenBackbonesAlone && fbtp.frozen) ){
+			float[] fO = {0,0};
+			firstO = fO;
+			bbFirst = fbtp.backbone.getFloatPolygon();
+		} else {
+			float[] fO = {fbtp.rect.x, fbtp.rect.y};
+			firstO = fO;
+			bbFirst = fbtp.midline.getFloatPolygon();
+		}
+			
+		if (params.leaveBackbonesInPlace || (params.leaveFrozenBackbonesAlone && ebtp.frozen) ){	
+			float[] eO = {0,0};
+			endO = eO;
+			bbEnd = ebtp.backbone.getFloatPolygon();
+		} else {
+			float[] eO = {ebtp.rect.x, ebtp.rect.y};
+			endO = eO;
+			bbEnd = ebtp.midline.getFloatPolygon();
+		}
 		
 		return interpBackbones(endBTP - firstBTP - 1, firstO, endO, bbFirst, bbEnd);
 	}
@@ -518,6 +677,16 @@ public class BBFPointListGenerator {
 	protected static Vector<FloatPolygon> interpBackbones(int numnewbbs, float[] firstO, float[] endO, FloatPolygon bbFirst, FloatPolygon bbEnd) {
 		
 		if (numnewbbs<1) return null;
+		
+		int fnp = bbFirst.npoints;
+		int enp = bbEnd.npoints;
+		if (fnp!=enp){
+			if (fnp>0 && enp>0){//arbitrarily chose to interpolate the first bb to the # bbPts of the second bb
+				bbFirst = MaggotTrackPoint.getInterpolatedSegment(new PolygonRoi(bbFirst, PolygonRoi.POLYLINE), enp, true).getFloatPolygon();
+			} else {
+				return null;
+			}
+		}
 		
 		
 		//Copy the coordinates of the surrounding BTPs so that they can be manipulated

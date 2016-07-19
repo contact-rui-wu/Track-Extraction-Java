@@ -20,8 +20,18 @@ public class FittingParameters {
 	
 	
 	boolean storeEnergies = true;
+
 	
-	boolean divFix = false;
+	/**
+	 * Number of points on either side of divergence event to freeze & include when trying to fix a divergence event  
+	 */
+	int divBufferSize = 50; //~7seconds of buffer
+	
+	double fracOfStdDevForBentCutoff = 0.5;
+	
+	String energyTypeForBadGap = "Time-Length";
+	int numStdDevForBadGap = 5;
+	int edgeSize = 1; //number of frames in the "edge" when fitting by inching inwards
 	
 	/*
 	 * 0= voronoi clusters 
@@ -30,8 +40,8 @@ public class FittingParameters {
 	int clusterMethod = 0;
 	
 	public int[] grains = {32,16, 1}; 
-	public int smallGapMaxLen = 10;//The maximum gap length for which the previous midline will be carried forward (otherwise interpolate)
-	public int minValidSegmentLen = 5;//The minimum segment length (in frames) which is situated between two midline gaps and which is considered valid
+	public int smallGapMaxLen = 5;//The maximum gap length for which the previous midline will be carried forward (otherwise interpolate)
+	public int minValidSegmentLen = 20;//The minimum segment length (in frames) which is situated between two midline gaps and which is considered valid
 	public double minFlickerDist = numBBPts;//The minimum distance between spines which indicates an erroneous midline flicker 
 	public int gapDilation = 5;
 	public boolean dilateToEdges = true;
@@ -43,8 +53,8 @@ public class FittingParameters {
 	public float imageWeight = 1.0f;
 	public float spineLengthWeight = 0.4f;
 	public float spineSmoothWeight = 0.8f;
-	public float[] timeLengthWeight = {3.0f, .1f, .1f};
-	public float[] timeSmoothWeight = {1.0f, 0.1f, 0.1f}; 
+	public float[] timeLengthWeight = {0.3f, 0.1f, 0.1f};
+	public float[] timeSmoothWeight = {0.3f, 0.1f, 0.1f}; 
 	
 	//Head=0, Tail=end
 	public float[] imageWeights = {1,1,1, 1,1,1, 1};
@@ -56,6 +66,27 @@ public class FittingParameters {
 	public float[][] timeSmoothWeights = { {1,1,1, 1,1,1, 1},
 											{1,1,1, 1,1,1, 1},
 											{1,1,1, 1,1,1, 1} };
+	
+	
+	/**
+	 * Refits the segments of a diverged track surrounding the divergence event
+	 */
+	boolean refitDiverged = false;
+	
+	/**
+	 * Tries to mend the divergence event 
+	 */
+	boolean fixDiverged = false;
+	
+	boolean leaveBackbonesInPlace = false;
+	boolean leaveFrozenBackbonesAlone = false;
+	
+	boolean freezeDiverged = false;
+	
+	int divergedPatchBuffer = grains[0]*4;
+	
+	
+	
 	
 	fittingParamTableModel fpTableModel;
 	
@@ -137,7 +168,23 @@ public class FittingParameters {
 		return fpPanel;
 	}
 	
+	
+	public static FittingParameters getSinglePassParams(){
+		FittingParameters fp = new FittingParameters();
+		
+		fp.grains = new int[1];
+		fp.timeLengthWeight = new float[1];
+		fp.timeSmoothWeight = new float[1];
+		
+		fp.grains[0] = 1;
+		fp.timeLengthWeight[0] = 0.1f;
+		fp.timeSmoothWeight[0] = 0.1f;
+		
+		return fp;
+	}
 }
+
+
 
 
 class fittingParamTableModel extends AbstractTableModel {

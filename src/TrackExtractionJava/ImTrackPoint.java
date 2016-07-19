@@ -34,7 +34,7 @@ public class ImTrackPoint extends TrackPoint{
 	/**
 	 * Identitfies the point as an IMTRACKPOINT
 	 */
-	final int pointType = 1;
+	final static int pointType = 1;
 	
 	
 	public ImTrackPoint() {
@@ -122,6 +122,14 @@ public class ImTrackPoint extends TrackPoint{
 		
 	}
 	
+	public ImTrackPoint getPrev(){
+		return (ImTrackPoint)prev;
+	}
+	
+	public ImTrackPoint getNext(){
+		return (ImTrackPoint)next;
+	}
+	
 	public static Rectangle getCombinedBounds(ImTrackPoint im1, ImTrackPoint im2){
 		
 		int x = (im1.rect.x<im2.rect.x)? im1.rect.x : im2.rect.x;
@@ -132,6 +140,13 @@ public class ImTrackPoint extends TrackPoint{
 		return new Rectangle(x, y, w, h);
 	}
 	
+	/**
+	 * Gets the pixel at the absolute (frame) coordinate xx, yy,  or 0 if the coordinate is not in the trackpoint frame
+	 * @param itp
+	 * @param xx
+	 * @param yy
+	 * @return
+	 */
 	public static int getPixVal(ImTrackPoint itp, int xx, int yy){
 		
 		int i = xx-itp.rect.x;
@@ -338,6 +353,10 @@ public class ImTrackPoint extends TrackPoint{
 	}
 	
 	
+
+	public int getPointType(){
+		return ImTrackPoint.pointType;
+	}
 	
 	public String getTypeName(){
 		return "ImTrackPoint";

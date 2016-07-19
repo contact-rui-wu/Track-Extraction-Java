@@ -30,6 +30,13 @@ public class ProcessingParameters {
 	
 	public boolean doFitting = true;
 	
+	/**
+	 * 0 = 3-pass fit scheme on entire track (or specified subset)
+	 * 1 = straight subsets (1-pass) + bent subsets (1-pass) + patch (3-pass)
+	 */
+	public int fitType = 1;
+	
+	
 //	public boolean loadSingleTrackForFitting = false;
 	
 //	public boolean saveSingleTracksFromFitting = false;
@@ -64,6 +71,8 @@ public class ProcessingParameters {
 	boolean diagnosticIm = true;
 	
 	public boolean savetoCSV = false;
+	
+	public boolean saveSysOutToFile = true;
 	
 	boolean testMagFromDisk = false;
 	boolean testFitFromDisk = false;
