@@ -31,7 +31,7 @@ public class DiskReaderWriter {
 		this.pw = pw;
 	}
 	
-	////////// Experiment-level to/fromDisk methods //////////
+	////////// Experiment-level to/fromDisk methods: handles all versions here //////////
 	
 	public void experimentToDisk(Experiment ex) {
 		// handle all exceptions here
@@ -128,7 +128,7 @@ public class DiskReaderWriter {
 			break;
 		}	
 	}
-	
+		
 	public ImageProcessor imageFromDisk1(int width, int height) throws IOException {
 		int ipType = dis.readByte();
 		ImageProcessor ip;
@@ -176,22 +176,6 @@ public class DiskReaderWriter {
 	
 	// Note: don't try to optimize, copy the exact codes
 	
-	public int trackToDisk0() {
-		
-	}
-	
-	private int trackSizeOnDisk() {
-		
-	}
-	
-	public static Track trackFromDisk0() {
-		
-	}
-	
-	private int loadTrackFromDisk() {
-		
-	}
-	
-	// TODO copy track point to/from/sizeOnDisk() methods to here
+	// TODO call/copy the (*)Track(Point).to/from/sizeOnDisk() methods in these ones
 	
 }

@@ -68,7 +68,7 @@ public class PointExtractor {
 	/**
 	 * Whether or not the frame being processed is the first one
 	 */
-	boolean isFirstRun;
+	//boolean isFirstRun;
 	
 	
 	/**
@@ -164,7 +164,7 @@ public class PointExtractor {
 //		endFrameNum = imageStack.getSize()-1;//.getNFrames()-1;// 
 		increment = ep.increment;
 		lastFrameExtracted=-1;
-		isFirstRun=true;
+		//isFirstRun=true;
 		fl = new FrameLoader(comm, stack);
 //		IC = new ImageCalculator();
 		fnm = fl.fnm;
