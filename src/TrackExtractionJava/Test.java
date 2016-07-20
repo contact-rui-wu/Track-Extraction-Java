@@ -18,7 +18,7 @@ import java.util.Vector;
 
 import javax.swing.JFrame;
 
-import com.sun.j3d.utils.behaviors.vp.WandViewBehavior.ResetViewListener;
+//import com.sun.j3d.utils.behaviors.vp.WandViewBehavior.ResetViewListener;
 
 
 
