@@ -5,9 +5,7 @@ import ij.ImageJ;
 public class TestRui {
 
 	public static void main(String[] args) {
-		
-		//test_dataVersion0Handling();
-		
+				
 		test_extraction();
 
 	}
