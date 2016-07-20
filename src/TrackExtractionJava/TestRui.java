@@ -6,11 +6,11 @@ public class TestRui {
 
 	public static void main(String[] args) {
 				
-		test_extraction();
+		test_pipeline();
 
 	}
 	
-	public static void test_extraction() {
+	public static void test_pipeline() {
 		ImageJ ij = new ImageJ();
 		String dir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/sampleShortExp/";
 		String mmfname = "sampleShortExp_copy.mmf";
