@@ -27,10 +27,11 @@ public class Test {//extends JFrame
 
 	public static void main(String[] args) {
 		
+		
 		/*
 		testBadTrackFinder();
 		*/
-		
+
 		/*
 		testFitterPauseDisplay();
 		*/
@@ -235,25 +236,25 @@ public class Test {//extends JFrame
 		String inputFileName = outputDir+"0 Before any fixing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";//"E:\\data\\phototaxis\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
 		
 		
-		int trackID = 18;
+		int trackID = 8;
 		Experiment ex = new Experiment(inputFileName);
 		Track t = ex.getTrack(trackID);
 		
 		t.showFitting();
-		BackboneFitter bbf = new BackboneFitter(t);
+//		BackboneFitter bbf = new BackboneFitter(t);
 //		bbf.doPause = true;
-//		bbf.userIn = new Scanner(System.in);
+////		bbf.userIn = new Scanner(System.in);
 //		bbf.userOut = System.out;
+//		
+//		bbf.fitTrackNewScheme();
 		
-		bbf.fitTrackNewScheme();
 		
-		
-		if (bbf.getTrack()!=null){
-			Vector<Track> newTracks = new Vector<Track>();
-			newTracks.add(bbf.getTrack());
-			Experiment newExperiment = new Experiment(ex, newTracks);
-			newExperiment.showEx();
-		}
+//		if (bbf.getTrack()!=null){
+//			Vector<Track> newTracks = new Vector<Track>();
+//			newTracks.add(bbf.getTrack());
+//			Experiment newExperiment = new Experiment(ex, newTracks);
+//			newExperiment.showEx();
+//		}
 		
 		ij.quit();
 	}
@@ -269,6 +270,7 @@ public class Test {//extends JFrame
 		BackboneFitter bbf = new BackboneFitter(t);
 		
 		bbf.fitTrackNewScheme();
+		bbf.getTrack().playMovie();
 //		bbf.resetForNextExectution();
 //		bbf.patchGap_InchInwards(new Gap(1730, 1800), 1);
 //		FittingParameters spp = FittingParameters.getSinglePassParams();
@@ -295,18 +297,18 @@ public class Test {//extends JFrame
 		ImageJ ij = new ImageJ();
 		
 		String outputDir = "E:\\testing\\Java Backbone Fitting\\test badness fixer\\";
-		String inputFileName = outputDir+"0 Before any fixing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";//"E:\\data\\phototaxis\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
+		String inputFileName = "E:\\data\\phototaxis2\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";//outputDir+"7 Coord to contour from marc\\4000_6000\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav" ;//outputDir+"0 Before any fixing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";// 
 		
 		String args[] = new String[2];
 		args[0] = inputFileName;
-		args[1] = "E:\\testing\\Java Backbone Fitting\\test communicator output\\";// outputDir+"7 Coord to contour\\";
+		args[1] = outputDir+"7 Coord to contour from marc\\4000_6000\\";
 		
 		Experiment_Processor ep = new Experiment_Processor();
 		ep.runningFromMain = true;
 		ExtractionParameters exP = new ExtractionParameters();
 		exP.subset = true;
-		exP.startFrame = 1;
-		exP.endFrame = 2000;
+		exP.startFrame = 4000;
+		exP.endFrame = 6000;
 
 		ProcessingParameters pp = new ProcessingParameters();
 		pp.doFitting = true;

@@ -6,9 +6,15 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+<<<<<<< HEAD
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/home/data/rw1679/Documents/Gershow_lab_local/MMF-ImageJ-Plugin.jar"/>
 	<classpathentry kind="lib" path="/home/data/rw1679/Documents/Gershow_lab_local/unidataCommon-4.2.20.jar"/>
 	<classpathentry kind="lib" path="/home/data/rw1679/Documents/Fiji.app/jars/ij-1.51b-SNAPSHOT.jar"/>
+=======
+	<classpathentry kind="lib" path="C:/Fiji.app/jars/ij-1.50e.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/MMF-ImageJ-Plugin"/>
+>>>>>>> upstream/master
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

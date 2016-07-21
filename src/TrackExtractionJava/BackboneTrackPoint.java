@@ -37,6 +37,7 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	private transient int numPix;
 	/**
 	 * A list of X Coordinates of points that are considered as part of the maggot 
+	 * QUESTION: These coordinates are referenced to original video image, not to subimage stored in ImTrackPoint ?
 	 * <p>
 	 * Contains numPix valid elements
 	 */
@@ -72,6 +73,8 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	 */
 	private int numBBPts;
 	
+	private transient double gmmClusterVariance = -1;
+	
 	/**
 	 * The backbone of the maggot
 	 */
@@ -89,6 +92,8 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	 * Temporary backbone used to fit the final backbone
 	 */
 	protected transient FloatPolygon bbNew;
+	
+	protected Vector<FloatPolygon> targetBackbones = null;
 	
 	transient BackboneFitter bf;
 	
@@ -117,6 +122,7 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	public BackboneTrackPoint(double x, double y, Rectangle rect, double area,
 			int frame, int thresh) {
 		super(x, y, rect, area, frame, thresh);
+		//QUESTION: needs numBBPts?
 	}
 	
 	
@@ -321,26 +327,30 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	}
 	
 	private void setGaussianMixtureWeights(){
-
-		double var = calcVariance();
 		
-		double[] wDenom = new double[numPix]; 
-		//Calculate the denominator of the weight
+		double var = (gmmClusterVariance <= 0) ? calcVariance() : gmmClusterVariance;
+		setVoronoiClusters();
 		for (int pix=0; pix<numPix; pix++){
 			for (int cl=0; cl<numBBPts; cl++){
-				wDenom[pix] += Math.exp(((-0.5)*calcDistSqrBtwnPixAndBBPt(cl, pix))/var);
+				MagPixWnew[cl][pix] = 0;
 			}
 		}
-		
-		//Calculate the weight
 		for (int pix=0; pix<numPix; pix++){
-			for (int cl=0; cl<numBBPts; cl++){
-				double wNumer = Math.exp(((-0.5)*calcDistSqrBtwnPixAndBBPt(cl, pix))/var);
-				MagPixWnew[cl][pix] = wNumer/wDenom[pix];
+			double denom = 0;
+			for (int cl = clusterInds[pix] - 1; cl < numBBPts; cl++ ) {
+				if (cl < 0){
+					continue;
+				}
+				MagPixWnew[cl][pix] = Math.exp(((-0.5)*calcDistSqrBtwnPixAndBBPt(cl, pix))/var);
+				denom += MagPixWnew[cl][pix];
 			}
-		}
-			
-		
+			for (int cl = clusterInds[pix] - 1; cl < numBBPts; cl++ ) {
+				if (cl < 0){
+					continue;
+				}
+				MagPixWnew[cl][pix] /= denom;
+			}
+		}	
 	}
 	
 	private double calcVariance(){
@@ -645,44 +655,8 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		}
 		
 		//FORCES
-		if (forces) {
-			boolean error = false;
-			
-			String status = "Frame "+frameNum+"\n";
-	//		displayUtils.drawForces(im, bbNew, bf.Forces, bf.BTPs, expandFac, expandFac, offX, offY, rect);
-			Color[] colors = {Color.WHITE, Color.MAGENTA,Color.GREEN, Color.CYAN, Color.RED};
-			for(int f=0; f<(bf.Forces.size()-1); f++){
-				
-				im.setColor(colors[f]);
-				try{
-					status += bf.Forces.get(f).getName()+": ";
-					
-					FloatPolygon targetPts = bf.Forces.get(f).getTargetPoints(frameNum-bf.BTPs.firstElement().frameNum, bf.BTPs);
-					
-					if (targetPts!=null && targetPts.npoints==bbNew.npoints){
-						for (int i=0; i<targetPts.npoints; i++){
-							
-							int x1 = offX + (int)(expandFac*(bbNew.xpoints[i]-rect.x));
-							int y1 = offY + (int)(expandFac*(bbNew.ypoints[i]-rect.y));
-							int x2 = (int)(expandFac*(targetPts.xpoints[i]-rect.x)+offX);
-							int y2 = (int)(expandFac*(targetPts.ypoints[i]-rect.y)+offY);
-							status += "("+(targetPts.xpoints[i]-rect.x)+","+(targetPts.ypoints[i]-rect.y)+") ";
-							
-							im.drawLine(x1, y1, x2, y2);
-							im.drawOval(x2, y2, 2, 2);
-		//					im.drawDot((int)(expandFac*(targetPts.xpoints[i]-rect.x)+offX), (int)(expandFac*(targetPts.ypoints[i]-rect.y)+offY));
-							
-						}
-					}
-					status+="\n";
-				} catch (Exception e ){
-					error = true;
-//					new TextWindow("Plotting Error: Forces", status, 500, 500);
-				}
-			}
-			
-			if (error && track!=null && track.comm!=null) comm.message(status, VerbLevel.verb_error);
-			
+		if (forces && targetBackbones!=null && targetBackbones.size()>0) {
+			displayUtils.drawTargets(im, targetBackbones, expandFac, offX, offY, rect);//TargetBackbones are absolute coords
 		}
 			
 			
@@ -854,6 +828,14 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			return "Empty BackboneTrackPoint";
 		}
 		return "BackboneTrackPoint";
+	}
+
+	public double getGmmClusterVariance() {
+		return gmmClusterVariance;
+	}
+
+	public void setGmmClusterVariance(double gmmClusterVariance) {
+		this.gmmClusterVariance = gmmClusterVariance;
 	}
 	
 }
