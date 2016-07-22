@@ -50,7 +50,7 @@ public class ImTrackPoint extends TrackPoint{
 	 */
 	protected Vector<ImageProcessor> secondaryIms;
 	protected Vector<Rectangle> secondaryRects;
-	protected Vector<Boolean> secondaryValidity;
+	//protected Vector<Boolean> secondaryValidity;
 	
 	@Override
 	public Boolean is2ndValid(int secType) {

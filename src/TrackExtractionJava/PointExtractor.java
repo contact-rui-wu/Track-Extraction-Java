@@ -336,10 +336,14 @@ public class PointExtractor {
 			break;
 		}
 		
-		ddtIm = new ImagePlus();
-		calcAndSetDdtFrameIm(ep.derivMethod);
-		if (ddtIm==null) {
-			if (comm!=null) comm.message("No ddtIm for frame "+frameNum, VerbLevel.verb_warning);
+		if (ep.frameSizeDdt) {
+			ddtIm = new ImagePlus();
+			calcAndSetDdtFrameIm(ep.derivMethod);
+			if (ddtIm==null) {
+				if (comm!=null) comm.message("No ddtIm for frame "+frameNum, VerbLevel.verb_warning);
+			}
+		} else {
+			ddtIm = null;
 		}
 		
 		if (comm!=null) comm.message("Thresholding image to zero...", VerbLevel.verb_debug);
@@ -432,7 +436,13 @@ public class PointExtractor {
 	    	threshIm.show();
 	    }
 
-	    extractedPoints = findPtsInIm(currentFrameNum, currentIm, threshIm, ddtIm, thresh, fl.getStackDims(), analysisRect, ep, showResults, comm);
+	    // handle local ddt calculation here
+	    if (ep.frameSizeDdt) {
+	    	extractedPoints = findPtsInIm(currentFrameNum, currentIm, threshIm, ddtIm, thresh, fl.getStackDims(), analysisRect, ep, showResults, comm);
+	    } else {
+	    	extractedPoints = findPtsInIm(currentFrameNum, currentIm, threshIm, null, thresh, fl.getStackDims(), analysisRect, ep, showResults, comm);
+	    	addDdtImToPoints();
+	    }
 	    
 	    String s = "Frame "+currentFrameNum+": Extracted "+extractedPoints.size()+" new points";
 	    if (comm!=null) comm.message(s, VerbLevel.verb_message);
@@ -484,7 +494,7 @@ public class PointExtractor {
 	 * Proceeds without ddt frame image; handles dependency problem in {@link DistanceMapSplitting}
 	 */
 	/*
-	public Vector<TrackPoint> rt2TrackPoints (ResultsTable rt, int frameNum, Rectangle analysisRect, int[] frameSize, ImagePlus currentIm, ImagePlus threshIm, ExtractionParameters ep, int thresh, Communicator comm) {
+	public static Vector<TrackPoint> rt2TrackPoints (ResultsTable rt, int frameNum, Rectangle analysisRect, int[] frameSize, ImagePlus currentIm, ImagePlus threshIm, ExtractionParameters ep, int thresh, Communicator comm) {
 		return rt2TrackPoints (rt, frameNum, analysisRect, frameSize, currentIm, threshIm, null, ep, thresh, comm);
 	}
 	*/
@@ -544,12 +554,12 @@ public class PointExtractor {
 							currentIm.setRoi(oldRoi);
 							iTPt.setImage(im, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
-							//if(ddtIm!=null) {
+							if(ep.frameSizeDdt) {
 							// note: any error will be caught in ImTrackPoint.set2ndImAndRect() and validity will be set to false
 								//Rectangle ddtRect = (Rectangle)iTPt.rect.clone();
 								//ddtRect.grow(ep.derivPixelPad,ep.derivPixelPad);
 								iTPt.findAndStoreDdtIm(ddtIm,ddtRect);
-							//}
+							}
 							tp.add(iTPt);
 							break;
 						case 2: //MaggotTrackPoint
@@ -578,7 +588,9 @@ public class PointExtractor {
 							
 							mTPt.setImage(im2, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
-							mTPt.findAndStoreDdtIm(ddtIm,ddtRect);
+							if (ep.frameSizeDdt) {
+								mTPt.findAndStoreDdtIm(ddtIm,ddtRect);
+							}
 							
 							mTPt.extractFeatures();
 							tp.add(mTPt);
@@ -744,6 +756,66 @@ public class PointExtractor {
 				ddtIm.getProcessor().drawPixel(i,j);
 			}
 		}
+	}
+	
+	public void addDdtImToPoints() {
+		for (int i=0; i<extractedPoints.size(); i++) {
+			TrackPoint pt = extractedPoints.get(i);
+			Rectangle ddtRect = (Rectangle)pt.rect.clone();
+			ddtRect.grow(ep.derivPixelPad, ep.derivPixelPad);
+			pt.ensure2ndSize(0);
+			try {
+				ImageProcessor ddtPointIm = calcDdtPointIm(ddtRect,ep.derivMethod);
+				pt.set2ndImAndRect(ddtPointIm,ddtRect,0);
+			} catch (Exception e) {
+				pt.secondaryValidity.setElementAt(false, 0);
+			}
+		}
+	}
+	
+	public ImageProcessor calcDdtPointIm(Rectangle rect, int derivMethod) {
+		ImageProcessor ddtPointIm = new ColorProcessor(rect.width, rect.height);
+		ImageProcessor im1;
+		ImageProcessor im2;
+		int dt = increment;
+		switch (derivMethod) {
+		case 1: //forward
+			im1 = cropFrameIm(currentIm.getProcessor(), rect);
+			im2 = cropFrameIm(nextIm.getProcessor(), rect);
+			break;
+		case 2: //backward
+			im1 = cropFrameIm(prevIm.getProcessor(), rect);
+			im2 = cropFrameIm(currentIm.getProcessor(), rect);
+			break;
+		case 3: //central
+			dt = increment*2;
+			im1 = cropFrameIm(prevIm.getProcessor(), rect);
+			im2 = cropFrameIm(nextIm.getProcessor(), rect);
+			break;
+		default:
+			return null;
+		}
+		for(int i=0; i<im1.getWidth(); i++) {
+			for(int j=0; j<im1.getHeight(); j++) {
+				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
+				int ddt = pixDiff/dt;
+				if (pixDiff>0) {
+					ddtPointIm.setColor(new Color(ddt,0,0));
+				} else {
+					ddtPointIm.setColor(new Color(0,0,-ddt));
+				}
+				ddtPointIm.drawPixel(i,j);
+			}
+		}
+		return ddtPointIm;
+	}
+	
+	public ImageProcessor cropFrameIm(ImageProcessor frameIm, Rectangle cropRect) {
+		Rectangle oldRoi = frameIm.getRoi();
+		frameIm.setRoi(cropRect);
+		ImageProcessor croppedIm = frameIm.crop();
+		frameIm.setRoi(oldRoi);
+		return croppedIm;
 	}
 	
 }

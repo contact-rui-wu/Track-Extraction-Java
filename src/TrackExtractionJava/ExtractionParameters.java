@@ -44,6 +44,7 @@ public class ExtractionParameters implements Serializable{
 	static final int DERIV_SYMMETRIC = 3;
 	public int derivMethod = 3; //default: central method
 	public int derivPixelPad = 3;
+	public boolean frameSizeDdt = true;
 
 	public boolean subset = false;
 	public int startFrame = 1;

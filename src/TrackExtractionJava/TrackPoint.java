@@ -73,6 +73,8 @@ public class TrackPoint implements Serializable {
 	
 	////////// Below: secondary image fields //////////
 	
+	protected Vector<Boolean> secondaryValidity;
+	
 	/**
 	 * Checks whether a secondary image is valid
 	 */

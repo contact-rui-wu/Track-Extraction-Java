@@ -21,7 +21,9 @@ public class TestRui {
 	public static void main(String[] args) {
 		// put the testing methods here
 		// uncomment when a test is ready to run
-				
+		
+		test_frameVSPointDdtScheme();
+		
 		//test_frameSizeDdtMovie();
 		
 		//test_vectorSizeAndCapacity(4);
@@ -37,6 +39,40 @@ public class TestRui {
 	}
 	
 	// write each test as a void method so that don't have to write a lot in main
+	
+	public static void test_frameVSPointDdtScheme() {
+		ImageJ ij = new ImageJ();
+		String dir = "/home/data/rw1679/Documents/Gershow_lab_local/ddt_calculation/sampleShortExp/";
+		String mmfname = "sampleShortExp_copy.mmf";
+		TicToc timer = new TicToc();
+		// set parameters
+		ProcessingParameters prParams = new ProcessingParameters();
+		prParams.diagnosticIm = false;
+		prParams.showMagEx = true;
+		prParams.saveMagEx = false;
+		prParams.doFitting = false;
+		prParams.showFitEx = false;
+		prParams.saveFitEx = false;
+		prParams.saveErrors = false;
+		//prParams.saveSysOutToFile = false;
+		ExtractionParameters extrParams = new ExtractionParameters();
+		extrParams.subset = true;
+		extrParams.startFrame = 1;
+		extrParams.endFrame = 1000;
+		extrParams.frameSizeDdt = false;
+		FittingParameters fitParams = new FittingParameters();
+		fitParams.storeEnergies = false;
+		// prepare processor
+		Experiment_Processor ep = new Experiment_Processor();
+		ep.runningFromMain = true;
+		ep.prParams = prParams;
+		ep.extrParams = extrParams;
+		ep.fitParams = fitParams;
+		// first run frame size scheme (default in extrParams)
+		timer.tic();
+		ep.run(dir+mmfname);
+		System.out.println("Runtime: "+timer.tocSec()+" s");
+	}
 	
 	@SuppressWarnings("unused")
 	public static void test_frameSizeDdtMovie() {
@@ -190,18 +226,20 @@ public class TestRui {
 		
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
+		prParams.diagnosticIm = false;
+		prParams.showMagEx = false;
+		prParams.saveMagEx = false;
 		prParams.doFitting = true;
 		prParams.showFitEx = true;
-		//prParams.saveMagEx = false;
-		//prParams.saveFitEx = false;
-		//prParams.saveErrors = false;
+		prParams.saveFitEx = false;
+		prParams.saveErrors = false;
+		//prParams.saveSysOutToFile = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true;
 		extrParams.startFrame = 1;
 		extrParams.endFrame = 1000;
-		//extrParams.trackWindowWidth = 40;
-		//extrParams.trackWindowHeight = 40;
-		//extrParams.derivMethod = 1;
+		FittingParameters fitParams = new FittingParameters();
+		fitParams.storeEnergies = false;
 		
 		String path;
 		switch (whose) {
