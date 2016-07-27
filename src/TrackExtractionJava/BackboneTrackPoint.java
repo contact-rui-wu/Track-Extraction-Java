@@ -32,10 +32,10 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	final static int pointType = 3;
 	 
 	/**
-	 * minimum summed squared shift to call an update on the clustering
-	 * (0.01 = .1^2)
+	 * minimum total movement to call an update on the clustering
+	 * note: uses distance, not squared distance
 	 */
-	private static final double minShiftToUpdateClusters = 0.01;
+	private static final double minShiftToUpdateClusters = 0.1;
 	
 	/**
 	 * The number of pixels in the image considered as part of the maggot
@@ -339,8 +339,8 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	}
 		
 	private void setInitialClusterInfo(){
+		clusterInds = new int[numPix];
 		if (clusterMethod==0){
-			clusterInds = new int[numPix];
 			setVoronoiClusters();
 		} else if (clusterMethod==1){
 			MagPixWold = new double[numBBPts][numPix];
@@ -392,19 +392,19 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	}
 	
 	private void setInitialWeights(){
-		clusterInds = new int[numPix];
-		setVoronoiClusters();
+		//clusterInds = new int[numPix];
+	//	setVoronoiClusters();
 		//Set the initial weights to be the voronoi clusters
 		for (int pix=0; pix<numPix; pix++){
 			MagPixWold[ clusterInds[pix] ][pix] = 1;
 		}
-		clusterInds = null;
+		//clusterInds = null;
 		
 		setGaussianMixtureWeights();//Sets MagPixWnew, which is used for generation of the backbone
 	}
 	
 	private void setGaussianMixtureWeights(){
-		
+		Timer.tic("SetGaussianMixtureWeights");
 		double var = (gmmClusterVariance <= 0) ? calcVariance() : gmmClusterVariance;
 		setVoronoiClusters();
 		for (int pix=0; pix<numPix; pix++){
@@ -414,20 +414,21 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		}
 		for (int pix=0; pix<numPix; pix++){
 			double denom = 0;
-			for (int cl = clusterInds[pix] - 1; cl < numBBPts; cl++ ) {
+			for (int cl = clusterInds[pix] - 1; cl < numBBPts && cl <= clusterInds[pix]+1; cl++ ) {
 				if (cl < 0){
 					continue;
 				}
 				MagPixWnew[cl][pix] = Math.exp(((-0.5)*calcDistSqrBtwnPixAndBBPt(cl, pix))/var);
 				denom += MagPixWnew[cl][pix];
 			}
-			for (int cl = clusterInds[pix] - 1; cl < numBBPts; cl++ ) {
+			for (int cl = clusterInds[pix] - 1; cl < numBBPts&& cl <= clusterInds[pix]+1; cl++ ) {
 				if (cl < 0){
 					continue;
 				}
 				MagPixWnew[cl][pix] /= denom;
 			}
 		}	
+		Timer.toc("SetGaussianMixtureWeights");
 	}
 	
 	private double calcVariance(){
@@ -469,11 +470,18 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			double xs = bbNew.xpoints[i]-bbOld.xpoints[i];
 			double ys = bbNew.ypoints[i]-bbOld.ypoints[i];
 			shift += (xs*xs)+(ys*ys);
-		}
-		cumulativeShift += shift;
-		
+		}		
 		return shift;
 	}
+	private void updateCumulativeShift() {
+		for(int i=0; i<numBBPts; i++){
+			double xs = bbNew.xpoints[i]-bbOld.xpoints[i];
+			double ys = bbNew.ypoints[i]-bbOld.ypoints[i];
+			cumulativeShift += Math.sqrt((xs*xs)+(ys*ys));
+		}
+		
+	}
+	
 	
 
 	protected void setHidden(boolean h){
@@ -500,6 +508,7 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		if (frozen) {
 			return;
 		}
+		updateCumulativeShift();
 		bbOld = bbNew;
 		if (cumulativeShift >= minShiftToUpdateClusters) {
 			cumulativeShift = 0;

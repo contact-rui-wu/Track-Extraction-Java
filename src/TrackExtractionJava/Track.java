@@ -314,6 +314,9 @@ public class Track implements Serializable{
 		double medianLength = HTdist[HTdist.length/2];
 		for (int i=0;i<points.size(); i++) {
 			BackboneTrackPoint btp= (BackboneTrackPoint) points.get(i);
+			if (btp == null) {
+				continue;
+			}
 			btp.setGmmClusterVariance(medianLength*medianLength/(pointSpacingInSigmas*pointSpacingInSigmas*btp.getNumBBPoints()*btp.getNumBBPoints()));
 		}
 	}

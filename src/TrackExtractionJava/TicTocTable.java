@@ -69,21 +69,32 @@ public class TicTocTable {
 	 }
 
 	 public void generateReport(Writer w) throws IOException {
+		 generateReport(w, false);
+	 }
+	 
+	 public void generateReport(Writer w, boolean byTotalTime) throws IOException {
 	    Vector<TicToc> v = new Vector<TicToc>();
 		for (Enumeration<TicToc> e = timers.elements(); e.hasMoreElements();){
 			v.add(e.nextElement());
 		}
-		Collections.sort(v,new alphaSorter());
+		if (byTotalTime) {
+			Collections.sort(v, new totalTimeSorter());
+		} else {
+			Collections.sort(v,new alphaSorter());
+		}
 		for (TicToc t : v) {
 			w.append("--\n");
 			t.writeInfo(w);
 		}
 
 	}
-	public String generateReport () {
+	 public String generateReport () {
+		 return generateReport(false);
+	 }
+	public String generateReport (boolean byTotalTime) {
 		StringWriter sw = new StringWriter();
 		try {
-			generateReport(sw);
+			generateReport(sw, byTotalTime);
 		} catch (IOException e) {
 			return e.toString();
 		}
@@ -139,7 +150,7 @@ class totalTimeSorter implements Comparator<TicToc> {
 
 	@Override
 	public int compare(TicToc o1, TicToc o2) {
-		return Double.compare(o1.getTotaltime(), o2.getTotaltime());
+		return Double.compare(o2.getTotaltime(), o1.getTotaltime()); //sort by descending time
 	}
 	
 }

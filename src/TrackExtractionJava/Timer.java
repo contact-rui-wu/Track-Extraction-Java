@@ -38,6 +38,12 @@ class Timer {
 	public static String generateReport () {
 		return tt.generateReport();
 	}
+	public static void generateReport(Writer w, boolean byTime) throws IOException {
+	    tt.generateReport(w, byTime);
+	}
+	public static String generateReport (boolean byTime) {
+		return tt.generateReport(byTime);
+	}
 	
 	public static TicToc getTicToc (String name) {
 		return tt.getTicToc(name);

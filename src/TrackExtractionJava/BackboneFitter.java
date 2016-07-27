@@ -253,7 +253,10 @@ public class BackboneFitter {
 		//timingInfo = new Vector<Double>();
 		
 		initTrack(t);
-
+		if (params.clusterMethod == 1) {
+			workingTrack.setVarianceFromHTdist();
+		}
+		
 		bplg = new BBFPointListGenerator(this, workingTrack, params, comm);
 		bplg.reset();
 		bplg.generateFullBTPList();
@@ -481,6 +484,7 @@ public class BackboneFitter {
 		bentParams.freezeDiverged = true;
 		bentParams.targetLength = (float) targetLength;
 		bentParams.spineExpansionWeight = 1;
+		
 		resetParams(bentParams);
 		if (userOut!=null) userOut.println("Fitting Bent Subsets: "+bentLarvae.toString());
 		Timer.tic("fitSubsets-bent");
@@ -500,6 +504,7 @@ public class BackboneFitter {
 		divergedParams.leaveBackbonesInPlace = true;
 		divergedParams.targetLength = (float) targetLength;
 		divergedParams.spineExpansionWeight = 1;
+		
 		resetParams(divergedParams); 
 		int initialSize = divergedGaps.size();
 		for (int i = 0; i < divergedGaps.size() && i < 2*initialSize+10; ++i) {
@@ -1175,7 +1180,7 @@ public class BackboneFitter {
 
 			// Do a relaxation step
 			comm.message("Updating " + updater.inds2Update().length+ " backbones", VerbLevel.verb_debug);
-			
+
 			if (params.storeEnergies){
 				if (!firstPass){
 					for (int i=0; i<energyProfiles.size(); i++){
@@ -1192,7 +1197,7 @@ public class BackboneFitter {
 			Timer.tic("runFitter:relaxBackbones");
 			relaxBackbones(updater.inds2Update());
 			Timer.toc("runFitter:relaxBackbones");
-			
+
 			if (params.storeEnergies){
 				for (int i=0; i<energyProfiles.size(); i++){
 					energyProfiles.get(i).storeProfile();
@@ -1205,9 +1210,8 @@ public class BackboneFitter {
 			Timer.toc("runFitter:calcShifts");
 			if (diverged && inchingInwards){
 				// TODO freeze diverged point (singular) 
-			}else 
+			}else if (diverged && params.freezeDiverged){
 				Timer.tic("runFitter:elseBlock");
-				if (diverged && params.freezeDiverged){
 				Gap div = findDivergedGap();
 				int trackIndStart = BTPs.get(div.start).frameNum-bplg.workingTrack.points.firstElement().frameNum;
 				int trackIndEnd = BTPs.get(div.end).frameNum-bplg.workingTrack.points.firstElement().frameNum;
@@ -1217,25 +1221,25 @@ public class BackboneFitter {
 				diverged =false;
 				Timer.toc("runFitter:elseBlock");
 			}
-			
-			
+
+
 			if (doPause){
 				pause();
 			}
-			
+
 			Timer.tic("runFitter:setupForNextRelaxationStep");
 			setupForNextRelaxationStep();
 			Timer.toc("runFitter:setupForNextRelaxationStep");
-			
+
 			// Show the fitting messages, if necessary
 			if (!updater.comm.outString.equals("")) {
 				new TextWindow("TrackFitting Updater, pass "+pass, updater.comm.outString, 500, 500);
 			}
-			
+
 		} while (!diverged && updater.keepGoing(shifts));
-		
+
 		//System.out.println("Number of iterations: "+updater.getIterNum());
-		
+
 		if (!diverged) {
 			finalizeBackbones();
 		}

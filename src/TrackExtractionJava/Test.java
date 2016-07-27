@@ -281,7 +281,7 @@ public class Test {//extends JFrame
 
 
             writer = new BufferedWriter(new FileWriter(logFile));
-            Timer.generateReport(writer);
+            Timer.generateReport(writer, true);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
