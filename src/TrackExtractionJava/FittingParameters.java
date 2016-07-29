@@ -178,7 +178,7 @@ public class FittingParameters {
 				timeSmoothWeight(pass)));
 		
 		if (spineExpansionWeight > 0 && targetLength > 0) {
-			Forces.add(new SpineExpansionForce(spineExpansionWeights, spineExpansionWeight, targetLength));
+			Forces.add(new SpineExpansionForce(spineExpansionWeights, spineExpansionWeight, targetLength, true));
 		}
 		return Forces;
 	}

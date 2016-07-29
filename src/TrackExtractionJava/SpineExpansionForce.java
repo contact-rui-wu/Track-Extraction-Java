@@ -14,20 +14,39 @@ public class SpineExpansionForce extends Force{
 
 	static final String defaultName = "Spine-Expansion";
 	private float targetLength;
+	private boolean comExpansion = false;
 	
-	public SpineExpansionForce(float[] weights, float totalWeight, float targetLength){
+	public SpineExpansionForce(float[] weights, float totalWeight, float targetLength, boolean comExpansion){
 		super(weights, totalWeight, 2, "Spine-Length");
 		this.setTargetLength(targetLength);
+		this.comExpansion = comExpansion;
 	}
 	
 	
-	public FloatPolygon getTargetPoints(int btpInd, Vector<BackboneTrackPoint> allBTPs){
+	private FloatPolygon expandAlongBackbone (BackboneTrackPoint btp) {
+		double x[] = MathUtils.castFloatArray2Double(btp.bbOld.xpoints);
+		double y[] = MathUtils.castFloatArray2Double(btp.bbOld.ypoints);
+		double alpha = targetLength/MathUtils.curveLength(x, y);
 		
+		int mid = x.length/2;
+		float[] targetX = new float[x.length];
+		float[] targetY = new float[x.length];
+		targetX[mid] = (float) x[mid];
+		targetY[mid] = (float) y[mid];
 		
+		for (int j = mid -1; j >= 0; --j) {
+			targetX[j] = targetX[j+1] + (float) (alpha*(x[j] - x[j+1]));
+			targetY[j] = targetY[j+1] + (float) (alpha*(y[j] - y[j+1]));
+		}
+		for (int j = mid+1; j < x.length; ++j) {
+			targetX[j] = targetX[j-1] + (float) (alpha*(x[j] - x[j-1]));
+			targetY[j] = targetY[j-1] + (float) (alpha*(y[j] - y[j-1]));
+		}
+
+		return new FloatPolygon(targetX, targetY);
 		
-		BackboneTrackPoint btp = allBTPs.get(btpInd);
-		
-		
+	}
+	private FloatPolygon expandFromCenterOfMass (BackboneTrackPoint btp){
 		double x[] = MathUtils.castFloatArray2Double(btp.bbOld.xpoints);
 		double y[] = MathUtils.castFloatArray2Double(btp.bbOld.ypoints);
 		
@@ -51,6 +70,20 @@ public class SpineExpansionForce extends Force{
 		
 		
 		return new FloatPolygon(targetX, targetY);
+	}
+	
+	public FloatPolygon getTargetPoints(int btpInd, Vector<BackboneTrackPoint> allBTPs){
+		
+		
+		
+		BackboneTrackPoint btp = allBTPs.get(btpInd);
+		if (comExpansion) {
+			return expandFromCenterOfMass(btp);
+		} else {
+			return expandAlongBackbone(btp);
+		}
+		
+		
 	}
 
 
