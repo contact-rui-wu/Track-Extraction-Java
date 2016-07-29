@@ -253,10 +253,7 @@ public class BackboneFitter {
 		//timingInfo = new Vector<Double>();
 		
 		initTrack(t);
-		if (params.clusterMethod == 1) {
-			workingTrack.setVarianceFromHTdist();
-		}
-		
+
 		bplg = new BBFPointListGenerator(this, workingTrack, params, comm);
 		bplg.reset();
 		bplg.generateFullBTPList();
@@ -305,7 +302,7 @@ public class BackboneFitter {
 	
 	
 	private void clearPrev(){
-		oldTrack = null;
+//		oldTrack = null;
 		errTrack = null;
 		workingTrack = null;
 //		hidePoints = false;
@@ -416,6 +413,8 @@ public class BackboneFitter {
 		
 		Timer.tic("FitTrackNewScheme");
 		Timer.tic("FTNS:Setup");
+		float spineExpansionWeight = 1;
+		
 		//Check input parameters
 		if (straightParams==null){
 			straightParams = new FittingParameters();
@@ -482,9 +481,10 @@ public class BackboneFitter {
 		hideGapPoints = false;
 		bentParams.leaveFrozenBackbonesAlone = true;//This tells the plg not to re-initialize the frozen bb's
 		bentParams.freezeDiverged = true;
-		bentParams.targetLength = (float) targetLength;
-		bentParams.spineExpansionWeight = 1;
-		
+		if (spineExpansionWeight > 0) {
+			bentParams.targetLength = (float) targetLength;
+			bentParams.spineExpansionWeight = spineExpansionWeight;
+		}
 		resetParams(bentParams);
 		if (userOut!=null) userOut.println("Fitting Bent Subsets: "+bentLarvae.toString());
 		Timer.tic("fitSubsets-bent");
@@ -502,9 +502,10 @@ public class BackboneFitter {
 		divergedParams.leaveFrozenBackbonesAlone = true;//This tells the plg not to re-initialize the frozen bb's
 		divergedParams.freezeDiverged = true;
 		divergedParams.leaveBackbonesInPlace = true;
-		divergedParams.targetLength = (float) targetLength;
-		divergedParams.spineExpansionWeight = 1;
-		
+		if (spineExpansionWeight > 0) {
+			divergedParams.targetLength = (float) targetLength;
+			divergedParams.spineExpansionWeight = spineExpansionWeight;
+		}
 		resetParams(divergedParams); 
 		int initialSize = divergedGaps.size();
 		for (int i = 0; i < divergedGaps.size() && i < 2*initialSize+10; ++i) {
@@ -541,8 +542,10 @@ public class BackboneFitter {
 		suspiciousParams.leaveFrozenBackbonesAlone = true;//This tells the plg not to re-initialize the frozen bb's
 		suspiciousParams.freezeDiverged = true;
 		suspiciousParams.leaveBackbonesInPlace = true;
-		suspiciousParams.targetLength = (float) targetLength;
-		suspiciousParams.spineExpansionWeight = 1;
+		if (spineExpansionWeight > 0) {
+			suspiciousParams.targetLength = (float) targetLength;
+			suspiciousParams.spineExpansionWeight = spineExpansionWeight;
+		}
 		resetParams(suspiciousParams); 
 		int count = 0;
 		int maxCount = 5;
@@ -572,8 +575,10 @@ public class BackboneFitter {
 		finalParams.leaveFrozenBackbonesAlone = true;//This tells the plg not to re-initialize the frozen bb's
 		finalParams.freezeDiverged = true;
 		finalParams.leaveBackbonesInPlace = true;
-		finalParams.targetLength = (float) targetLength;
-		finalParams.spineExpansionWeight = 1;
+		if (spineExpansionWeight > 0) {
+			finalParams.targetLength = (float) targetLength;
+			finalParams.spineExpansionWeight = spineExpansionWeight;
+		}
 		resetParams(finalParams);
 		for (int i=0; i<params.numFinalSingleIterations; i++){
 			runSingleIteration();
@@ -1027,6 +1032,8 @@ public class BackboneFitter {
 		boolean noerror=true;
 		try {
 
+			MaggotTrackBuilder.orientMaggotTrack(tr, new ExtractionParameters().framesBtwnContSegs, comm);
+			
 			BTPs = new Vector<BackboneTrackPoint>();
 			
 			if (tr.getStart() instanceof MaggotTrackPoint) {
@@ -1057,6 +1064,7 @@ public class BackboneFitter {
 					btp.bf = this;
 					BTPs.add(btp);
 				} 
+				
 				
 				workingTrack = new Track(BTPs, tr);
 				workingTrack.setTrackID(tr.getTrackID());
@@ -1180,7 +1188,7 @@ public class BackboneFitter {
 
 			// Do a relaxation step
 			comm.message("Updating " + updater.inds2Update().length+ " backbones", VerbLevel.verb_debug);
-
+			
 			if (params.storeEnergies){
 				if (!firstPass){
 					for (int i=0; i<energyProfiles.size(); i++){
@@ -1197,7 +1205,7 @@ public class BackboneFitter {
 			Timer.tic("runFitter:relaxBackbones");
 			relaxBackbones(updater.inds2Update());
 			Timer.toc("runFitter:relaxBackbones");
-
+			
 			if (params.storeEnergies){
 				for (int i=0; i<energyProfiles.size(); i++){
 					energyProfiles.get(i).storeProfile();
@@ -1210,8 +1218,9 @@ public class BackboneFitter {
 			Timer.toc("runFitter:calcShifts");
 			if (diverged && inchingInwards){
 				// TODO freeze diverged point (singular) 
-			}else if (diverged && params.freezeDiverged){
+			}else 
 				Timer.tic("runFitter:elseBlock");
+				if (diverged && params.freezeDiverged){
 				Gap div = findDivergedGap();
 				int trackIndStart = BTPs.get(div.start).frameNum-bplg.workingTrack.points.firstElement().frameNum;
 				int trackIndEnd = BTPs.get(div.end).frameNum-bplg.workingTrack.points.firstElement().frameNum;
@@ -1221,25 +1230,25 @@ public class BackboneFitter {
 				diverged =false;
 				Timer.toc("runFitter:elseBlock");
 			}
-
-
+			
+			
 			if (doPause){
 				pause();
 			}
-
+			
 			Timer.tic("runFitter:setupForNextRelaxationStep");
 			setupForNextRelaxationStep();
 			Timer.toc("runFitter:setupForNextRelaxationStep");
-
+			
 			// Show the fitting messages, if necessary
 			if (!updater.comm.outString.equals("")) {
 				new TextWindow("TrackFitting Updater, pass "+pass, updater.comm.outString, 500, 500);
 			}
-
+			
 		} while (!diverged && updater.keepGoing(shifts));
-
+		
 		//System.out.println("Number of iterations: "+updater.getIterNum());
-
+		
 		if (!diverged) {
 			finalizeBackbones();
 		}
@@ -1659,11 +1668,11 @@ public class BackboneFitter {
 			//Set parameters and show first stack
 			pauseDisplayParams = new MaggotDisplayParameters();
 			pauseDisplayParams.setAllFalse();
-			pauseDisplayParams.newBB = true;
+//			pauseDisplayParams.newBB = true;
 			pauseDisplayParams.initialBB = true;
-			pauseDisplayParams.contour = true;
+//			pauseDisplayParams.contour = true;
 			pauseDisplayParams.mid = true;
-			pauseDisplayParams.forces = true;
+//			pauseDisplayParams.forces = true;
 			
 			pauseStack = bplg.workingTrack.playMovie(bplg.workingTrack.getTrackID(), pauseDisplayParams);
 		}

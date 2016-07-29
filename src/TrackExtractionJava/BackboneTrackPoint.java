@@ -698,20 +698,19 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			reloadMagPix();
 		}
 		
-		
-		imOriginX = (int)x-(trackWindowWidth/2)-1;
-		imOriginY = (int)y-(trackWindowHeight/2)-1;
+		imOriginX = (int)x-(trackWindowWidth/2);
+		imOriginY = (int)y-(trackWindowHeight/2);
 		im.snapshot();
 		
 		ImageProcessor bigIm = im.resize(im.getWidth()*expandFac);
 		
-		int centerX = (int)(x-rect.x)*(expandFac);
-		int centerY = (int)(y-rect.y)*(expandFac);
+		int centerX = (int)((x-rect.x)*(expandFac));
+		int centerY = (int)((y-rect.y)*(expandFac));
 		ImageProcessor pIm = CVUtils.padAndCenter(new ImagePlus("Point "+pointID, bigIm), expandFac*trackWindowWidth, expandFac*trackWindowHeight, centerX, centerY);
-		int windowCenterX = trackWindowWidth*(expandFac/2);
-		int windowCenterY = trackWindowHeight*(expandFac/2);
-		int offX =  windowCenterX - centerX;//((int)x-rect.x)*expandFac;//rect.x-imOriginX;
-		int offY = windowCenterY - centerY;//((int)y-rect.y)*expandFac;//rect.y-imOriginY;
+		int offX = (expandFac*trackWindowWidth)/2-centerX;
+		int offY = (expandFac*trackWindowHeight)/2-centerY;
+//		int offX =  windowCenterX - centerX;//((int)x-rect.x)*expandFac;//rect.x-imOriginX;
+//		int offY = windowCenterY - centerY;//((int)y-rect.y)*expandFac;//rect.y-imOriginY;
 		
 		
 		return drawFeatures(pIm, offX, offY, expandFac, clusters, mid, initialBB, newBB, contour, ht, forces, bb); 
@@ -727,8 +726,8 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	public ImageProcessor getImWithMidline(PolygonRoi mid){
 		int expandFac = 10;//TODO MOVE TO PARAMETERS
 		
-		imOriginX = (int)x-(trackWindowWidth/2)-1;
-		imOriginY = (int)y-(trackWindowHeight/2)-1;
+		imOriginX = (int)(rect.x+rect.width/2)-(trackWindowWidth/2)-1;
+		imOriginY = (int)(rect.y+rect.height/2)-(trackWindowHeight/2)-1;
 		im.snapshot();
 		
 		ImageProcessor bigIm = im.resize(im.getWidth()*expandFac);
@@ -879,7 +878,18 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	public int sizeOnDisk(){
 		
 		int size = super.sizeOnDisk();
-		size += Short.SIZE/Byte.SIZE + (2*backbone.getNCoordinates())*java.lang.Float.SIZE/Byte.SIZE+ Byte.SIZE/Byte.SIZE;
+		size += Short.SIZE/Byte.SIZE;//# backbone pts
+		size += (2*backbone.getNCoordinates())*java.lang.Float.SIZE/Byte.SIZE;//Backbone coords
+		size += Byte.SIZE/Byte.SIZE;//artificialmid flag
+		
+		size += Integer.SIZE/Byte.SIZE;//# energy values
+		if (energies!=null){
+			for(String key : energies.keySet()){
+				size += 2*Byte.SIZE/Byte.SIZE; //UTF metadata
+				size += key.getBytes().length; //UTF representation of energy name
+				size += Double.SIZE/Byte.SIZE; //energy value
+			}
+		}
 		
 		return size;
 	}
