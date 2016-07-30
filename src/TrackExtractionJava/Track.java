@@ -960,9 +960,6 @@ public class Track implements Serializable{
 		message (message, VerbLevel.verb_debug);
 	}
 	
-	private void message (String message) {
-		message(message, VerbLevel.verb_message);
-	}
 	
 	private void message (String message, VerbLevel messVerb) {
 		if (comm != null) {

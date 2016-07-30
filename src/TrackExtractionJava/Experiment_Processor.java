@@ -44,7 +44,7 @@ public class Experiment_Processor implements PlugIn{
 	
 	protected String srcDir;
 	private String srcName;
-	private String exName;
+	//private String exName;
 	private String dstDir;
 	private String dstName;
 	//private PrintWriter processLog;
@@ -132,6 +132,7 @@ public class Experiment_Processor implements PlugIn{
 				if (ex==null){
 					
 					currProcess = "Extracting Tracks";
+					IJ.showStatus("extracting tracks");
 					log("Loaded mmf; Extracting tracks...");
 					if (!extractTracks()) {
 						log("Error extracting tracks; aborting experiment_processor.");
@@ -171,6 +172,7 @@ public class Experiment_Processor implements PlugIn{
 				if (prParams.doFitting){
 					
 					currProcess = "Fitting Tracks";
+					IJ.showStatus ("Fitting "+ex.getNumTracks()+" Tracks...");
 					
 					log("Fitting "+ex.getNumTracks()+" Tracks...");
 										
@@ -234,43 +236,7 @@ public class Experiment_Processor implements PlugIn{
 		
 	}
 	
-	/*
-	private void testFromDisk(boolean btpData, PrintWriter pw){
-		
-//		String[] pathParts;
-		String path;
-		if (btpData){
-			path = prParams.setFitExPath(srcDir, srcName, dstDir, dstName);
-		} else {
-			path = prParams.setMagExPath(srcDir, srcName, dstDir, dstName);
-		}
-		File f = new File(path);
-		IJ.showStatus("Loading Experiment...");
-		System.out.println("Testing fromDisk method on file "+f.getPath());
-		if (pw!=null) pw.println("Loading experiment "+f.getPath());
-		try{
-			 
-			DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
-			Experiment newEx = Experiment.fromDisk(dis, f.getPath(), new ExtractionParameters(), new FittingParameters(), pw);
-			dis.close();
-			IJ.showStatus("...done loading experiment (showing in frame)");
 
-			if (pw!=null) pw.println("Opening frame...");
-			ExperimentFrame exFrame = new ExperimentFrame(newEx);
-			exFrame.run(null);
-
-			if (pw!=null) pw.println("...Frame open");
-			
-			
-		} catch (Exception e){
-			if(pw!=null) pw.println("Error loading experiment");
-			System.out.println("Experiment_Processor.testFromDisk error");
-			return;
-			
-		}
-		
-	}
-	*/
 	protected void setupSysOut(){
 
 		File f = new File(dstDir+"SystemDOTout.txt");
@@ -360,7 +326,7 @@ public class Experiment_Processor implements PlugIn{
 		} else if (dir!=null){
 			//Open the file with the appropriate method
 				
-			IJ.showMessage("entered dir!=null block");
+			//IJ.showMessage("entered dir!=null block");
 			srcDir = dir;
 			srcName = fileName;
 			
@@ -374,10 +340,10 @@ public class Experiment_Processor implements PlugIn{
 				
 			} else if (fileName.substring(fileName.length()-4).equalsIgnoreCase(".jav")){
 				success = openExp(dir, fileName);
-				exName = new File(dir, fileName).getPath();
+			//	exName = new File(dir, fileName).getPath();
 			} else if (fileName.substring(fileName.length()-7).equalsIgnoreCase(".prejav")){
 				success = openExp(dir, fileName);
-				exName = new File(dir, fileName).getPath();
+			//	exName = new File(dir, fileName).getPath();
 				
 			} else{ 
 				
@@ -397,14 +363,18 @@ public class Experiment_Processor implements PlugIn{
 		indentLevel--;
 		return success;
 	}
+	
 	private boolean useCurrentWindow(){
 		mmfWin = WindowManager.getCurrentWindow();
-		srcName = mmfWin.getTitle();
-	//	IJ.showMessage("srcName = " + srcName);
+		//srcName = mmfWin.getTitle();
 		srcDir = IJ.getDirectory("image");
+		//IJ.getImage().getFileInfo().fileName;
+		//srcName = new File(srcDir).getName();
 	//	IJ.showMessage("srcDir = " + srcDir);
 		mmfStack = mmfWin.getImagePlus();
-//		mmfWin.close();
+		srcName = mmfStack.getTitle();
+		//IJ.showMessage("srcName = " + srcName);
+		//		mmfWin.close();
 		return mmfStack!=null;
 	}
 	
@@ -569,13 +539,21 @@ public class Experiment_Processor implements PlugIn{
 				log("Generating diagnostic im");
 				ImagePlus dIm1 = ex.getDiagnIm(mmfStack.getWidth(), mmfStack.getHeight());
 				log("Done Generating diagnostic im; saving...");
-				String ps = File.separator;
-				String diagnPath = (dstDir!=null)? dstDir : srcDir;
-				diagnPath += "diagnostics"+ps;
-				if (!new File(diagnPath).exists()){
-					new File(diagnPath).mkdir();
+				
+				File diagDir = new File((dstDir!=null)? dstDir : srcDir, "diagnostics");
+				if (!diagDir.exists()) {
+					diagDir.mkdir();
 				}
-				diagnPath+= srcName;
+				String diagnPath = new File(diagDir, srcName).toString();
+//				
+//				String ps = File.separator;
+//				String diagnPath = (dstDir!=null)? dstDir : srcDir;
+//				File f = new File
+//				diagnPath += "diagnostics"+ps;
+//				if (!new File(diagnPath).exists()){
+//					new File(diagnPath).mkdir();
+//				}
+//				diagnPath+= srcName;
 				if (diagnPath.lastIndexOf(".") >= 0) {
 					diagnPath = diagnPath.replace(diagnPath.substring(diagnPath.lastIndexOf("."), diagnPath.length()), " diagnostic foreground.bmp");
 				} else{
@@ -692,7 +670,7 @@ public class Experiment_Processor implements PlugIn{
 				}
 				
 				
-				
+				IJ.showProgress(i+1, ex.getNumTracks());
 			} else {
 				toRemove.add(tr);
 				tr.setValid(false);
@@ -730,19 +708,19 @@ public class Experiment_Processor implements PlugIn{
 			}
 			log("Generating diagnostic im (with fit)...", true);
 			ImagePlus dIm1 = ex.getDiagnIm(dim[0], dim[1]);
-			String ps = File.separator;
-			String diagnPath = (dstDir!=null)? dstDir : srcDir;
-			diagnPath += "fit diagnostics"+ps;
-			if (!new File(diagnPath).exists()){
-				new File(diagnPath).mkdir();
+			
+			File diagDir = new File((dstDir!=null)? dstDir : srcDir, "fit diagnostics");
+			if (!diagDir.exists()) {
+				diagDir.mkdir();
 			}
-			diagnPath+= srcName;
+			String diagnPath = new File(diagDir, srcName).toString();
 			if (diagnPath.lastIndexOf(".") >= 0) {
 				diagnPath = diagnPath.replace(diagnPath.substring(diagnPath.lastIndexOf("."), diagnPath.length()), " diagnostic foreground.bmp");
-			}else {
-				diagnPath = diagnPath + " diagnostic foreground.bmp";
+			} else{
+				diagnPath = diagnPath + " diagnostic foreground.bmp";	
 			}
 			IJ.save(dIm1, diagnPath);
+			
 			log("...Done generating diagnostic im", true);
 			
 		}
@@ -781,21 +759,6 @@ public class Experiment_Processor implements PlugIn{
 		
 	}
 	
-	/**
-	 * Fits backbones to a Track of MaggotTrackPoints
-	 * @param tr The track of MaggotTrackPoints to be fit
-	 * @return A track fit by the BackboneFitter
-	 */
-//	private Track fitTrack(Track tr){
-//		indentLevel++;
-//		
-////		bbf = new BackboneFitter(tr, fitParams);
-//		bbf.fitTrack(tr);
-//		indentLevel--;
-//		
-//		return bbf.getTrack();
-//		
-//	}
 
 	
 	/**
@@ -812,7 +775,7 @@ public class Experiment_Processor implements PlugIn{
 			ex.toDisk(dos);
 			status=true;
 			dos.close();
-			exName = f.getPath();
+			//exName = f.getPath();
 			
 		} catch(Exception e){
 			StringWriter sw = new StringWriter();

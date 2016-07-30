@@ -7,7 +7,7 @@ import java.awt.image.BufferedImage;
 import java.util.Vector;
 
 import ij.ImagePlus;
-import ij.gui.Roi;
+//import ij.gui.Roi;
 import ij.measure.Measurements;
 import ij.measure.ResultsTable;
 import ij.plugin.ImageCalculator;

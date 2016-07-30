@@ -117,11 +117,11 @@ public class MathUtils {
 		double[] frame = new double[data.length*scaleFactor];
 		double[] dataScaled = new double[data.length*scaleFactor];
 		double maxY = 0;
-		double maxYi = -1;
+		//double maxYi = -1;
 		for (int i=1;i<=data.length; i++) {
 			if (data[i-1]>maxY){
 				maxY = data[i-1];
-				maxYi = i-1;
+			//	maxYi = i-1;
 			}
 			
  			for (int j=0;j<scaleFactor; j++) {

@@ -47,6 +47,7 @@ public class SampleFunctions {
 	 * @param trackID
 	 */
 	public static void fitTrackFromFile(String exptFileName, int trackID){
+		@SuppressWarnings("unused")
 		ImageJ ij = new ImageJ();
 		
 		
@@ -71,6 +72,7 @@ public class SampleFunctions {
 	 */
 	public static void showFitting(String exptFileName, int trackID){
 		
+		@SuppressWarnings("unused")
 		ImageJ ij = new ImageJ();
 		
 		Experiment ex = new Experiment(exptFileName);

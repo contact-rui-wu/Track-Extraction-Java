@@ -164,8 +164,13 @@ public class TrackBuilder implements Serializable{
 		while ( (!ep.subset && (pe.nextFrameNum()<=pe.fl.getStackSize()) ) || 
 				(ep.subset && (pe.nextFrameNum()<=pe.endFrameNum && pe.nextFrameNum()<=ep.endFrame)) ){
 			frameNum = pe.nextFrameNum();
-			if (frameNum%20 == 0){
+			if (frameNum%100 == 0){
 				IJ.showStatus("Building : Adding Frame "+frameNum+"...");
+				if (ep.subset) {
+					IJ.showProgress(frameNum - ep.startFrame + 1, ep.endFrame-ep.startFrame);
+				} else {
+					IJ.showProgress(frameNum+1,pe.fl.getStackSize());
+				}
 			}
 			double elapsed = Timer.getElapsedTime("buildTracks")/1000;
 	        if (elapsed - lastelapsed > reportEvery){

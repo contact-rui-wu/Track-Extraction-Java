@@ -26,7 +26,7 @@ import javax.swing.event.ChangeListener;
 import ij.ImageStack;
 import ij.WindowManager;
 import ij.plugin.PlugIn;
-import ij.plugin.frame.RoiManager;
+//import ij.plugin.frame.RoiManager;
 import ij.text.TextWindow;
 
 
@@ -250,7 +250,7 @@ class InputPanel extends JPanel{
 	JTextField outputNameFld;
 	
 
-	static String txFldDisplay = "Choose a file... (or type 'current' )";
+	static String txFldDisplay = "Choose a file...";
 	int txFldNColumns = 20;
 	
 	//Constructors

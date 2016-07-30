@@ -18,7 +18,7 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
-import java.util.Set;
+//import java.util.Set;
 import java.util.Vector;
 
 /**
@@ -1131,45 +1131,45 @@ public class BackboneFitter {
 		
 		return true;
 	}
-	
-	private boolean setupForPass(){
-		
-		BTPs.removeAllElements();
-		bplg.reset();
-		boolean noError = bplg.generateBTPList(pass);
-		BTPs = bplg.getBTPs();
-		
-		if (noError){
-			updater = new BBFUpdateScheme(BTPs.size());
-//			if (hidePoints) updater.hidePoints(getHiddenBTPs());
-			
-			shifts = new double[BTPs.size()];
-		} else{
-			comm.message("Error generating backbones at pass "+pass, VerbLevel.verb_error);
-		}
-		
-		return noError;
-	}
-	
-
-	private boolean setupForPass2(){
-		
-		BTPs.removeAllElements();
-		bplg.reset();
-		boolean noError = bplg.generateBTPList(pass);
-		BTPs = bplg.getBTPs();
-		
-		if (noError){
-			//updater = new BBFUpdateScheme(BTPs.size());
-			//if (hidePoints) updater.hidePoints(getHiddenBTPs());
-			
-			shifts = new double[BTPs.size()];
-		} else{
-			comm.message("Error generating backbones at pass "+pass, VerbLevel.verb_error);
-		}
-		
-		return noError;
-	}
+//	
+//	private boolean setupForPass(){
+//		
+//		BTPs.removeAllElements();
+//		bplg.reset();
+//		boolean noError = bplg.generateBTPList(pass);
+//		BTPs = bplg.getBTPs();
+//		
+//		if (noError){
+//			updater = new BBFUpdateScheme(BTPs.size());
+////			if (hidePoints) updater.hidePoints(getHiddenBTPs());
+//			
+//			shifts = new double[BTPs.size()];
+//		} else{
+//			comm.message("Error generating backbones at pass "+pass, VerbLevel.verb_error);
+//		}
+//		
+//		return noError;
+//	}
+//	
+//
+//	private boolean setupForPass2(){
+//		
+//		BTPs.removeAllElements();
+//		bplg.reset();
+//		boolean noError = bplg.generateBTPList(pass);
+//		BTPs = bplg.getBTPs();
+//		
+//		if (noError){
+//			//updater = new BBFUpdateScheme(BTPs.size());
+//			//if (hidePoints) updater.hidePoints(getHiddenBTPs());
+//			
+//			shifts = new double[BTPs.size()];
+//		} else{
+//			comm.message("Error generating backbones at pass "+pass, VerbLevel.verb_error);
+//		}
+//		
+//		return noError;
+//	}
 	
 	
 	/**
@@ -1574,6 +1574,7 @@ public class BackboneFitter {
 		return frozen;
 	}
 	
+	@SuppressWarnings("unused")
 	private boolean[] getHiddenBTPs(){
 	
 	boolean[] hidden = new boolean[BTPs.size()];

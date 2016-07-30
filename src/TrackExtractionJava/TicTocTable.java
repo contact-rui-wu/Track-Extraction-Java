@@ -3,7 +3,6 @@ package TrackExtractionJava;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.*;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;

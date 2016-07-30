@@ -2,8 +2,6 @@ package TrackExtractionJava;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.lang.*;
-import java.util.Hashtable;
 
 public class TicToc {
 

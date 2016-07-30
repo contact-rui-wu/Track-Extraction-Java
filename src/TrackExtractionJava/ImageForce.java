@@ -113,6 +113,7 @@ public class ImageForce extends Force {
 	 * @param targetY
 	 * @return
 	 */
+	/*
 	private int findNearestCluster(BackboneTrackPoint btp, int crdInd, float[] targetX, float[] targetY){
 		
 		float[] crdLoc = {btp.bbOld.xpoints[crdInd], btp.bbOld.ypoints[crdInd]};
@@ -135,6 +136,6 @@ public class ImageForce extends Force {
 		}
 		return nearest;
 	}
-	
+	*/
 	
 }

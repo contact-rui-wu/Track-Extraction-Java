@@ -7,11 +7,8 @@ import ij.gui.Wand;
 import ij.process.ByteProcessor;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
-import ij.text.TextWindow;
-
 import java.awt.Color;
 import java.awt.Point;
-import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
@@ -1105,7 +1102,7 @@ public class MaggotTrackPoint extends ImTrackPoint {
 				
 				//Write the midline
 				FloatPolygon mfp = midline.getFloatPolygon();//Removes the "XBase"/"YBase" crap from PolygonRoi
-				Rectangle bounds = mfp.getBounds();
+			//	Rectangle bounds = mfp.getBounds();
 				for (int i=0; i<midline.getNCoordinates(); i++){
 					dos.writeFloat(mfp.xpoints[i]);
 					dos.writeFloat(mfp.ypoints[i]);

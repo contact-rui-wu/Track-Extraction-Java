@@ -11,8 +11,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Scanner;
@@ -248,6 +246,7 @@ public class Test {//extends JFrame
 		
 	}
 	
+	@SuppressWarnings("unused")
 	public static void testMHG(){
 
 		ImageJ ij = new ImageJ();
@@ -305,6 +304,7 @@ public class Test {//extends JFrame
 //		ij.quit();
 	}
 	
+	@SuppressWarnings("unused")
 	public static void testTailDrag(){
 
 		ImageJ ij = new ImageJ();
@@ -421,6 +421,7 @@ public class Test {//extends JFrame
 		ij.quit();
 	}
 	
+	@SuppressWarnings("unused")
 	public static void testFitterPauseDisplay(){
 		ImageJ ij = new ImageJ();
 		
@@ -484,6 +485,7 @@ public class Test {//extends JFrame
 		ij.quit();
 	}
 	
+	@SuppressWarnings("unused")
 	public static void testTrackFromDisk() throws Exception{
 		
 		ImageJ ij = new ImageJ();
@@ -817,7 +819,7 @@ public class Test {//extends JFrame
 		BackboneFitter bbf = new BackboneFitter(ex.getTrackFromInd(50));
 		bbf.fitTrack();
 		
-		BackboneFitter bbfOld = new BackboneFitter();
+		//BackboneFitter bbfOld = new BackboneFitter();
 		///method no longer exists
 		//bbfOld.fitTrack(ex.getTrackFromInd(50));
 		///
