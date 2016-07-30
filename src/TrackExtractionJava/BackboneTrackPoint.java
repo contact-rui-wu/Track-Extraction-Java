@@ -508,6 +508,7 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		if (frozen) {
 			return;
 		}
+		Timer.tic("setupForNextRelaxationStep");
 		updateCumulativeShift();
 		bbOld = bbNew;
 		if (cumulativeShift >= minShiftToUpdateClusters) {
@@ -515,6 +516,7 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			MagPixWold = MagPixWnew;
 			setClusterInfo();//fills in MagPixWnew using MagPixWold 
 		}
+		Timer.toc("setupForNextRelaxationStep");
 	}
 	
 	/**

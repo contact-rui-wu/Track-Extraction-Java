@@ -55,11 +55,23 @@ public class Experiment_Processor implements PlugIn{
 	private BackboneFitter bbf;
 	protected Experiment ex;
 	
-	protected boolean runningFromMain = false;
+//	protected boolean runningFromMain = false;
 	private TicToc runTime;
 	private int indentLevel;
 	
 	String currProcess = "none";
+	
+	private static void showStatus(String msg) {
+		IJ.showStatus(msg);
+		forceIJUpdate();
+	}
+	
+	private static void forceIJUpdate() {
+		Timer.tic("forcing update");
+		IJ.getInstance().repaint();
+		IJ.wait(1);
+		Timer.toc("forcing update");
+	}
 	
 	public static void main(String[] args){
 		
@@ -67,7 +79,7 @@ public class Experiment_Processor implements PlugIn{
 		ImageJ imj = new ImageJ(ImageJ.NO_SHOW);
 		
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+//		ep.runningFromMain = true;
 		
 		ep.currProcess = "Parsing inputs";
 		if (args!=null && args.length>=1){
@@ -110,8 +122,6 @@ public class Experiment_Processor implements PlugIn{
 		indentLevel=0;
 		runTime = new TicToc();
 		
-		currProcess = "Loading File";
-		boolean success = (loadFile(arg0));
 		
 		currProcess = "Processor setup";
 		if (dstDir==null) dstDir = srcDir;
@@ -119,9 +129,16 @@ public class Experiment_Processor implements PlugIn{
 			IJ.showMessage("no source or destination directory specified");
 			return;
 		}
+		if (!(new File(dstDir).exists())) {
+			new File(dstDir).mkdirs();
+		}
+		
 		setupParams();
 		if (prParams.saveSysOutToFile) setupSysOut();
 
+		currProcess = "Loading File";
+		boolean success = (loadFile(arg0));
+		
 		//IJ.showMessage("setupParams returned");
 		try {
 			runTime.tic();
@@ -132,7 +149,7 @@ public class Experiment_Processor implements PlugIn{
 				if (ex==null){
 					
 					currProcess = "Extracting Tracks";
-					IJ.showStatus("extracting tracks");
+					showStatus("extracting tracks");
 					log("Loaded mmf; Extracting tracks...");
 					if (!extractTracks()) {
 						log("Error extracting tracks; aborting experiment_processor.");
@@ -151,28 +168,16 @@ public class Experiment_Processor implements PlugIn{
 						saveOldTracks();
 						log("...done saving Maggot Tracks", true);
 					}
-					IJ.showStatus("Done Saving MaggotTrackPoint Experiment");
+					showStatus("Done Saving MaggotTrackPoint Experiment");
 				}
-				
-//				if(prParams.testMagFromDisk){
-//					try{
-//						log("Testing MagEx.fromDisk...");
-//						testFromDisk(false, processLog);
-//						log("...MagEx.fromDisk complete");
-//					} catch (Exception exc){
-//						StringWriter sw = new StringWriter();
-//						PrintWriter pw = new PrintWriter(sw);
-//						exc.printStackTrace(pw);
-//						log ("...Error in MTP Experiment fromDisk:\n"+sw.toString());
-//					}
-//				}
 				
 				
 				System.gc();
+				showStatus(IJ.freeMemory());
 				if (prParams.doFitting){
 					
 					currProcess = "Fitting Tracks";
-					IJ.showStatus ("Fitting "+ex.getNumTracks()+" Tracks...");
+					showStatus ("Fitting "+ex.getNumTracks()+" Tracks...");
 					
 					log("Fitting "+ex.getNumTracks()+" Tracks...");
 										
@@ -188,7 +193,7 @@ public class Experiment_Processor implements PlugIn{
 						} else {
 							log("Error saving tracks", true);
 						}
-						IJ.showStatus("Done Saving BackboneTrackPoint Experiment");
+						showStatus("Done Saving BackboneTrackPoint Experiment");
 					}
 					
 				}
@@ -217,7 +222,7 @@ public class Experiment_Processor implements PlugIn{
 			}
 			
 			log("Done Processing");
-			
+			log(Timer.generateReport(true));
 		} catch (Exception e){
 			log("Error Thrown During Processing; Current Step: "+currProcess);
 			log(e.getMessage());
@@ -232,7 +237,7 @@ public class Experiment_Processor implements PlugIn{
 		}
 		
 		
-		IJ.showStatus("Done Processing");
+		showStatus("Done Processing");
 		
 	}
 	
@@ -310,7 +315,7 @@ public class Experiment_Processor implements PlugIn{
 			
 		} else {//...from the passed argument
 			System.out.println("Loading file "+arg0);
-			IJ.showStatus("Loading file "+arg0);
+			showStatus("Loading file "+arg0);
 			File f = new File(arg0);
 			fileName = f.getName();
 			dir = f.getParent();
@@ -331,7 +336,7 @@ public class Experiment_Processor implements PlugIn{
 			srcName = fileName;
 			
 //			System.out.println("Loading file "+fileName);
-			IJ.showStatus("Loading file "+fileName);
+			showStatus("Loading file "+fileName);
 			
 			if (fileName.substring(fileName.length()-4).equalsIgnoreCase(".mmf")){
 //				System.out.println("Recognized as mmf");
@@ -393,29 +398,32 @@ public class Experiment_Processor implements PlugIn{
 	private boolean openMMF(String dir, String filename){
 		indentLevel++;
 		try{
-			IJ.showStatus("Opening MMF...");		
-			
-			if (!runningFromMain){
-				IJ.run("Import MMF", "path=["+new File(dir, filename).getPath()+"]");
-//				useCurrentWindow()
-				
-				mmfWin = WindowManager.getCurrentWindow();
-				mmfStack = mmfWin.getImagePlus();
-			} else {
-				System.out.println("Opening mmf from code..");
-				
-				
-				mmf_Reader mr = new mmf_Reader();
-				String path = new File(dir, filename).getPath();
-				mr.loadStack(path);
-				if (mr.getMmfStack()==null) {
-					System.out.println("null stack");
-					return false;
-				}
-				mmfStack = new ImagePlus(path, mr.getMmfStack());
-				
+			showStatus("Opening MMF...");		
+			//			
+			//			if (!runningFromMain){
+			//				IJ.showMessage("running from main = false");
+			//				IJ.run("Import MMF", "path=["+new File(dir, filename).getPath()+"]");
+			////				useCurrentWindow()
+			//				
+			//				mmfWin = WindowManager.getCurrentWindow();
+			//				mmfStack = mmfWin.getImagePlus();
+			//			} else {
+		//	IJ.showMessage("running from main = true");
+			System.out.println("Opening mmf from code..");
+
+
+			mmf_Reader mr = new mmf_Reader();
+			String path = new File(dir, filename).getPath();
+			mr.loadStack(path);
+			if (mr.getMmfStack()==null) {
+				System.out.println("null stack");
+				return false;
 			}
-			IJ.showStatus("MMF open");
+			mmfStack = new ImagePlus(path, mr.getMmfStack());
+			showStatus("MMF open");
+			IJ.wait(1);
+			IJ.freeMemory();
+			
 			return true;
 		} catch (Exception e){
 			StringWriter sw = new StringWriter();
@@ -437,12 +445,12 @@ public class Experiment_Processor implements PlugIn{
 	private boolean openExp(String dir, String filename){
 		indentLevel++;
 		try {
-			/*IJ.showStatus("Opening Experiment...");
+			/*showStatus("Opening Experiment...");
 			ex = new Experiment(Experiment.deserialize(new File(dir, filename).getPath())); 
-			IJ.showStatus("Experiment open");*/
-			IJ.showStatus("Opening Experiment...");
+			showStatus("Experiment open");*/
+			showStatus("Opening Experiment...");
 			ex = new Experiment(Experiment.fromPath(new File(dir, filename).getPath()));//Experiment.fromPath(new File(dir, filename).getPath());// 
-			IJ.showStatus("Experiment open");
+			showStatus("Experiment open");
 			return true;
 		} catch (Exception e){
 			StringWriter sw = new StringWriter();
@@ -471,9 +479,9 @@ public class Experiment_Processor implements PlugIn{
 //		}
 		
 		indentLevel++;
-		
+		String[] logPathParts = {"not initialized", "not initialized"};
 		try{
-			String[] logPathParts = prParams.setLogPath(srcDir, dstDir);
+			logPathParts = prParams.setLogPath(srcDir, dstDir);
 			String fname = new File(logPathParts[0], logPathParts[1]).getPath();
 			PrintWriter processLog = new PrintWriter(new FileWriter(fname, true));
 			
@@ -488,7 +496,7 @@ public class Experiment_Processor implements PlugIn{
 			comm.setVerbosity(VerbLevel.verb_warning);
 			return fname;
 		} catch (Exception e){
-			new TextWindow("Log error", "Unable to create Processing Log file '"+srcName+"' in '"+srcDir+"'", 500, 500);
+			new TextWindow("Log error", "Unable to create Processing Log file '"+logPathParts[1]+"' in '"+logPathParts[0]+"'", 500, 500);
 			return "";
 		} finally{
 			indentLevel--;
@@ -504,7 +512,7 @@ public class Experiment_Processor implements PlugIn{
 	private boolean extractTracks(){
 		indentLevel++;
 		String status = "";
-		IJ.showStatus("Extracting tracks");
+		showStatus("Extracting tracks");
 		if (mmfStack==null){
 			status+="imageStack null; aborting extraction\n";
 			return false;
@@ -526,7 +534,7 @@ public class Experiment_Processor implements PlugIn{
 			
 			//Show the extracted tracks
 			if(prParams.showMagEx){
-				IJ.showStatus("Showing Experiment");
+				showStatus("Showing Experiment");
 				status+="Showing experiment...\n";
 				ExperimentFrame exFrame = new ExperimentFrame(ex);
 				exFrame.run(null);
@@ -586,7 +594,7 @@ public class Experiment_Processor implements PlugIn{
 	 */
 	private void fitTracks(){
 		indentLevel++;
-		IJ.showStatus("Fitting Tracks...");
+		showStatus("Fitting Tracks...");
 		log("Fitting "+ex.getNumTracks()+" Tracks", true);
 		Track tr;
 		Track newTr = null;
@@ -602,7 +610,7 @@ public class Experiment_Processor implements PlugIn{
 			if (i%fitParams.GCInterval==0){
 				System.gc();
 			}
-			IJ.showStatus("Fitting Track "+(i+1)+"/"+ex.getNumTracks());
+			showStatus("Fitting Track "+(i+1)+"/"+ex.getNumTracks());
 			tr = getTrackFromEx(i);//ex.getTrackFromInd(i);
 			if (tr==null) { 
 				log("Error loading track", true);
@@ -687,7 +695,7 @@ public class Experiment_Processor implements PlugIn{
 		
 		
 		
-		IJ.showStatus("Done fitting tracks");
+		showStatus("Done fitting tracks");
 		log("Done fitting tracks: ", true);
 		log(shortCount+"/"+ex.getNumTracks()+" were too short (minlength="+prParams.minTrackLen+")", true);
 		log(divergedCount+"/"+(ex.getNumTracks()-shortCount)+" remaining diverged", true);
@@ -733,9 +741,9 @@ public class Experiment_Processor implements PlugIn{
 		
 		//Show the fitted tracks
 		if (prParams.showFitEx){
-			IJ.showStatus("Making experiment frame");
+			showStatus("Making experiment frame");
 			ExperimentFrame exFrame = new ExperimentFrame(ex);
-			IJ.showStatus("Experiment shown in frame");
+			showStatus("Experiment shown in frame");
 			exFrame.run(null);
 		} 
 		indentLevel--;
@@ -752,7 +760,8 @@ public class Experiment_Processor implements PlugIn{
 //			
 //			return Experiment.getTrack(ind, exName);
 //		} else {
-			return ex.tracks.get(ind);
+		return ex.getTrackFromInd(ind);
+		//return ex.tracks.get(ind);
 //		}
 		
 		

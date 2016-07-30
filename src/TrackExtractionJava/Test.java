@@ -4,12 +4,12 @@ import ij.ImageJ;
 import ij.ImagePlus;
 
 import java.awt.BorderLayout;
-import java.io.BufferedOutputStream;
+//import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
-import java.io.DataOutputStream;
+//import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+//import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -510,7 +510,7 @@ public class Test {//extends JFrame
 		args[1] = badExDir;
 		args[2] = "badEx_refit_oriented.jav";
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+		//ep.runningFromMain = true;
 		ep.run(args);
 		ep.ex.showEx();
 		
@@ -565,7 +565,7 @@ public class Test {//extends JFrame
 		args[1] = "E:\\testing\\Full Processing\\Speed test\\";
 		
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+		//ep.runningFromMain = true;
 		ExtractionParameters exP = new ExtractionParameters();
 		exP.subset = true;
 		exP.startFrame = 4000;
@@ -846,7 +846,7 @@ public class Test {//extends JFrame
 		prP.diagnosticIm = false;
 		
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+		//ep.runningFromMain = true;
 		ep.prParams = prP;
 		ep.fitParams = fP;
 		
@@ -889,7 +889,7 @@ public class Test {//extends JFrame
 		fitPar.timeSmoothWeights = timeSmoothWeights_m5;
 		
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.fitParams = fitPar;
 		ep.run(args);
 		
@@ -953,149 +953,149 @@ public class Test {//extends JFrame
 	/**
 	 * DEFUNCT: bbf.fitTrack(Track t) method no longer exists
 	 */
-	public static void testTrackBreakdown(){
-		ImageJ imj = new ImageJ(ImageJ.NO_SHOW);
-		
-//		Experiment_Processor ep;
-		
-//		ProcessingParameters prParam = new ProcessingParameters();
-//		prParam.diagnosticIm = false;
-		
-		//Set src and dest
-		String srcName = "E:\\testing\\Java Backbone Fitting\\Fitting Params\\fullExptWithAreaSplit_0.7-1.4_otherPtSplit\\divergedTrackExp.prejav";
-		String dstBaseDir = "E:\\testing\\Java Backbone Fitting\\Track Breakdown\\";
-		
-		Experiment ex = new Experiment(srcName);
-		//Find a long track
-		
-//		int len = 16726;
-		//Find a track that's the length of the experiment
-//		System.out.println("Finding full-experiment track in "+ex.tracks.size()+" tracks...");
-		Track longTrack = null;
-//		int i;
-//		for (i=0; (i<ex.tracks.size() && longTrack==null); i++){
-//			if (ex.getTrackFromInd(i).points.size()==len) longTrack=ex.getTrackFromInd(i);
+//	public static void testTrackBreakdown(){
+//		ImageJ imj = new ImageJ(ImageJ.NO_SHOW);
+//		
+////		Experiment_Processor ep;
+//		
+////		ProcessingParameters prParam = new ProcessingParameters();
+////		prParam.diagnosticIm = false;
+//		
+//		//Set src and dest
+//		String srcName = "E:\\testing\\Java Backbone Fitting\\Fitting Params\\fullExptWithAreaSplit_0.7-1.4_otherPtSplit\\divergedTrackExp.prejav";
+//		String dstBaseDir = "E:\\testing\\Java Backbone Fitting\\Track Breakdown\\";
+//		
+//		Experiment ex = new Experiment(srcName);
+//		//Find a long track
+//		
+////		int len = 16726;
+//		//Find a track that's the length of the experiment
+////		System.out.println("Finding full-experiment track in "+ex.tracks.size()+" tracks...");
+//		Track longTrack = null;
+////		int i;
+////		for (i=0; (i<ex.tracks.size() && longTrack==null); i++){
+////			if (ex.getTrackFromInd(i).points.size()==len) longTrack=ex.getTrackFromInd(i);
+////		}
+////		System.out.println("Found track (ind="+i+")");
+//		
+//		
+//		Vector<Track> fits = new Vector<Track>();
+//		Vector<Track> divs = new Vector<Track>();
+//		BackboneFitter bbf;
+//		for (int j=0; j<ex.tracks.size(); j++){
+//			
+//			longTrack = ex.tracks.get(j);
+//			int len = longTrack.points.size();
+//			int clipLen = 500;
+//			if (len>(clipLen*3)){
+//				Vector<Track> fitTracks = new Vector<Track>();
+//				Vector<Track> divTracks = new Vector<Track>();
+//				
+//				System.out.println("Clipping and Fitting track...");
+//				for (int i=0; i<=len/clipLen; i++){
+//				
+//					bbf = new BackboneFitter();
+//		//			bbf.clipEnds = true;
+//					int sf = 1+i*clipLen;
+//					int ef = (len<((i+1)*clipLen))? len-1: (i+1)*clipLen;
+//					
+//					Track clipTrack = new Track(longTrack.getPoints().subList(sf, ef), i);
+//						
+//					///method no longer exists
+//					//bbf.fitTrack(clipTrack);
+//					///
+//					
+//					if (bbf.getTrack()!=null){
+//						fitTracks.add(bbf.getTrack());				
+//					} else {
+//						divTracks.add(clipTrack);
+//					}
+//					
+//				}
+//				fits.addAll(fitTracks);
+//				divs.addAll(divTracks);
+//				
+//				System.out.println("...Done fitting: "+fitTracks.size()+"/"+(fitTracks.size()+divTracks.size()+" were fit properly"));
+//				
+//				Experiment fitEx = new Experiment();
+//				fitEx.tracks = fitTracks;
+//				Experiment divEx = new Experiment();
+//				divEx.tracks = divTracks;
+//				
+//				try {
+//					File f = new File(dstBaseDir+"tracks\\track"+j+"\\");
+//					if (!f.exists()) f.mkdirs();
+//					
+//					
+//					f = new File(dstBaseDir+"tracks\\track"+j+"\\"+"fitTrackExp.jav");
+//					System.out.println("Saving fit track experiment to "+f.getPath());
+//					try{
+//						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
+//								
+//						fitEx.toDisk(dos);
+//						dos.close();
+//						System.out.println("Done saving fit tracks");
+//					} catch(Exception e){
+//						System.out.println("Save error");
+//					}
+//					
+//					f = new File(dstBaseDir+"tracks\\track"+j+"\\"+"divergedTrackExp.prejav");
+//					System.out.println("Saving error track experiment to "+f.getPath());
+//					try{
+//						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
+//								
+//						divEx.toDisk(dos);
+//						dos.close();
+//						System.out.println("Done saving diverged tracks");
+//					} catch(Exception e){
+//						System.out.println("Save error");
+//					}
+//		
+//				} catch (Exception e){
+//					
+//				}
+//			} else {
+//			}
 //		}
-//		System.out.println("Found track (ind="+i+")");
-		
-		
-		Vector<Track> fits = new Vector<Track>();
-		Vector<Track> divs = new Vector<Track>();
-		BackboneFitter bbf;
-		for (int j=0; j<ex.tracks.size(); j++){
-			
-			longTrack = ex.tracks.get(j);
-			int len = longTrack.points.size();
-			int clipLen = 500;
-			if (len>(clipLen*3)){
-				Vector<Track> fitTracks = new Vector<Track>();
-				Vector<Track> divTracks = new Vector<Track>();
-				
-				System.out.println("Clipping and Fitting track...");
-				for (int i=0; i<=len/clipLen; i++){
-				
-					bbf = new BackboneFitter();
-		//			bbf.clipEnds = true;
-					int sf = 1+i*clipLen;
-					int ef = (len<((i+1)*clipLen))? len-1: (i+1)*clipLen;
-					
-					Track clipTrack = new Track(longTrack.getPoints().subList(sf, ef), i);
-						
-					///method no longer exists
-					//bbf.fitTrack(clipTrack);
-					///
-					
-					if (bbf.getTrack()!=null){
-						fitTracks.add(bbf.getTrack());				
-					} else {
-						divTracks.add(clipTrack);
-					}
-					
-				}
-				fits.addAll(fitTracks);
-				divs.addAll(divTracks);
-				
-				System.out.println("...Done fitting: "+fitTracks.size()+"/"+(fitTracks.size()+divTracks.size()+" were fit properly"));
-				
-				Experiment fitEx = new Experiment();
-				fitEx.tracks = fitTracks;
-				Experiment divEx = new Experiment();
-				divEx.tracks = divTracks;
-				
-				try {
-					File f = new File(dstBaseDir+"tracks\\track"+j+"\\");
-					if (!f.exists()) f.mkdirs();
-					
-					
-					f = new File(dstBaseDir+"tracks\\track"+j+"\\"+"fitTrackExp.jav");
-					System.out.println("Saving fit track experiment to "+f.getPath());
-					try{
-						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
-								
-						fitEx.toDisk(dos);
-						dos.close();
-						System.out.println("Done saving fit tracks");
-					} catch(Exception e){
-						System.out.println("Save error");
-					}
-					
-					f = new File(dstBaseDir+"tracks\\track"+j+"\\"+"divergedTrackExp.prejav");
-					System.out.println("Saving error track experiment to "+f.getPath());
-					try{
-						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
-								
-						divEx.toDisk(dos);
-						dos.close();
-						System.out.println("Done saving diverged tracks");
-					} catch(Exception e){
-						System.out.println("Save error");
-					}
-		
-				} catch (Exception e){
-					
-				}
-			} else {
-			}
-		}
-		
-		
-		Experiment fitEx = new Experiment();
-		fitEx.tracks = fits;
-		Experiment divEx = new Experiment();
-		divEx.tracks = divs;
-		
-		try {
-			File f = new File(dstBaseDir+"allFitTracks.jav");
-			System.out.println("Saving fit track experiment to "+f.getPath());
-			try{
-				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
-						
-				fitEx.toDisk(dos);
-				dos.close();
-				System.out.println("Done saving fit tracks");
-			} catch(Exception e){
-				System.out.println("Save error");
-			}
-			
-			f = new File(dstBaseDir+"allDivTracks.prejav");
-			System.out.println("Saving error track experiment to "+f.getPath());
-			try{
-				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
-						
-				divEx.toDisk(dos);
-				dos.close();
-				System.out.println("Done saving diverged tracks");
-			} catch(Exception e){
-				System.out.println("Save error");
-			}
-
-		} catch (Exception e){
-			
-		}
-		
-		
-		imj.quit();
-	}
+//		
+//		
+//		Experiment fitEx = new Experiment();
+//		fitEx.tracks = fits;
+//		Experiment divEx = new Experiment();
+//		divEx.tracks = divs;
+//		
+//		try {
+//			File f = new File(dstBaseDir+"allFitTracks.jav");
+//			System.out.println("Saving fit track experiment to "+f.getPath());
+//			try{
+//				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
+//						
+//				fitEx.toDisk(dos);
+//				dos.close();
+//				System.out.println("Done saving fit tracks");
+//			} catch(Exception e){
+//				System.out.println("Save error");
+//			}
+//			
+//			f = new File(dstBaseDir+"allDivTracks.prejav");
+//			System.out.println("Saving error track experiment to "+f.getPath());
+//			try{
+//				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
+//						
+//				divEx.toDisk(dos);
+//				dos.close();
+//				System.out.println("Done saving diverged tracks");
+//			} catch(Exception e){
+//				System.out.println("Save error");
+//			}
+//
+//		} catch (Exception e){
+//			
+//		}
+//		
+//		
+//		imj.quit();
+//	}
 	
 	public static void runDefaultFitting(){
 		
@@ -1234,7 +1234,7 @@ public class Test {//extends JFrame
 //		prP.showFitEx = true;
 		
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.prParams = prP;
 		ep.extrParams = exP;
 		ep.fitParams = fP;
@@ -1264,7 +1264,7 @@ public class Test {//extends JFrame
 		
 		
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		exParam.subset = false;
 		FittingParameters fp = new FittingParameters();
 		fp.spineLengthWeight = 0.5f;
@@ -1277,7 +1277,7 @@ public class Test {//extends JFrame
 		System.out.println("DONE fitting tracks");
 		
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		exParam.subset = false;
 		fp = new FittingParameters();
 		int[] gr = {8,4,1};
@@ -1423,7 +1423,7 @@ public class Test {//extends JFrame
 
 		*/
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		exParam.subset = false;
 		exParam.splitMatchesByAreaFrac = true;
 		exParam.lowerAreaFrac = 0.7;
@@ -1477,7 +1477,7 @@ public class Test {//extends JFrame
 		fitPar = new FittingParameters();
 
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.fitParams = fitPar;
 		ep.run(args);
 		
@@ -1502,7 +1502,7 @@ public class Test {//extends JFrame
 		fitPar.timeSmoothWeights = timeSmoothWeights;
 		
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.fitParams = fitPar;
 		ep.run(args);
 		
@@ -1533,7 +1533,7 @@ public class Test {//extends JFrame
 		fitPar.timeSmoothWeights = timeSmoothWeights_m;
 		
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.fitParams = fitPar;
 		ep.run(args);
 		
@@ -1564,7 +1564,7 @@ public class Test {//extends JFrame
 		fitPar.timeSmoothWeights = timeSmoothWeights_m5;
 		
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.fitParams = fitPar;
 		ep.run(args);
 		
@@ -1625,7 +1625,7 @@ public class Test {//extends JFrame
 		exParams.pointSplittingMethod = 1;
 		args[1] = baseDir+threshDir;
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.extrParams = exParams;
 		ep.run(args);
 		
@@ -1633,7 +1633,7 @@ public class Test {//extends JFrame
 		exParams.pointSplittingMethod = 2;
 		args[1] = baseDir+DMDir;
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.extrParams = exParams;
 		ep.run(args);
 		

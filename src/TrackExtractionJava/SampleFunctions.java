@@ -15,7 +15,7 @@ public class SampleFunctions {
 	public static void runExperimentProcessorFromCode(String exptFileName, String dstFolderName){
 		
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+//		ep.runningFromMain = true;
 
 		ProcessingParameters pp = new ProcessingParameters();
 //		pp.doFitting = true;

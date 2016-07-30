@@ -147,6 +147,8 @@ public class ProcessingParameters {
 		return dir+File.separator+name;
 	}
 	
+	
+	
 	public String setMagExPath(String srcDir, String srcName, String dstDir, String dstName){
 		return setExPath(srcDir, srcName, dstDir, dstName, ".prejav");
 	}

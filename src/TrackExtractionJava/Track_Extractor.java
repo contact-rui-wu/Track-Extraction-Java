@@ -195,7 +195,7 @@ class ExtractorFrame extends JFrame{
 		
 		
 		//Set params from input
-		ep.runningFromMain = false;
+	//	ep.runningFromMain = false;
 		ep.prParams = params.procParams;
 		ep.extrParams = params.extrParams;
 		ep.fitParams = params.fitParams;

@@ -1307,6 +1307,7 @@ public class BackboneFitter {
 
 		// IJ.showStatus("Getting target backbones in frame "+btpInd);
 		// Get the lower-energy backbones for each individual force
+		Timer.tic("bbRelaxationStep");
 		if (scaleFactor > 0) {
 			Vector<FloatPolygon> targetBackbones = getTargetBackbones(btpInd);
 			
@@ -1332,6 +1333,7 @@ public class BackboneFitter {
 				}
 			}
 		}
+		Timer.toc("bbRelaxationStep");
 		
 	}
 

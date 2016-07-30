@@ -52,7 +52,7 @@ public class Experiment implements Serializable{
 	/**
 	 * List of tracks contained within the experiment
 	 */
-	Vector<Track> tracks;
+	private Vector<Track> tracks;
 	
 	/**
 	 * Default Constructor
