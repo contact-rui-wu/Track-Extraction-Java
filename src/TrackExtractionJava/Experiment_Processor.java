@@ -115,6 +115,10 @@ public class Experiment_Processor implements PlugIn{
 		
 		currProcess = "Processor setup";
 		if (dstDir==null) dstDir = srcDir;
+		if (dstDir == null) {
+			IJ.showMessage("no source or destination directory specified");
+			return;
+		}
 		setupParams();
 		if (prParams.saveSysOutToFile) setupSysOut();
 
@@ -330,7 +334,7 @@ public class Experiment_Processor implements PlugIn{
 		String fileName=null;
 		String dir=null;
 		
-		boolean success;
+		boolean success = false;
 		
 		//Get the path name...
 		if (arg0==null || arg0.equals("")){ //...from a dialog
@@ -351,10 +355,12 @@ public class Experiment_Processor implements PlugIn{
 //				dir = sb.substring(0, sep-1);
 //			}
 		}
-		
-		//Open the file with the appropriate method
-		if (dir!=null || fileName.equals("current")){
-			
+		if (fileName.equalsIgnoreCase("current")) {
+			success = useCurrentWindow();	
+		} else if (dir!=null){
+			//Open the file with the appropriate method
+				
+			IJ.showMessage("entered dir!=null block");
 			srcDir = dir;
 			srcName = fileName;
 			
@@ -373,9 +379,6 @@ public class Experiment_Processor implements PlugIn{
 				success = openExp(dir, fileName);
 				exName = new File(dir, fileName).getPath();
 				
-			} else if (fileName.equalsIgnoreCase("current")) {
-				success = useCurrentWindow();
-				//IJ.showMessage("use current window returned");
 			} else{ 
 				
 				success = openWithIJ(dir, fileName);
@@ -386,7 +389,7 @@ public class Experiment_Processor implements PlugIn{
 				}
 			}
 		} else {
-//			IJ.showMessage("Could not load file; null directory");
+			IJ.showMessage("Could not load file; null directory");
 			System.out.println("Experiment_Processor.loadFile error: could not parse file name"); 
 			success = false;
 		}
@@ -396,6 +399,10 @@ public class Experiment_Processor implements PlugIn{
 	}
 	private boolean useCurrentWindow(){
 		mmfWin = WindowManager.getCurrentWindow();
+		srcName = mmfWin.getTitle();
+	//	IJ.showMessage("srcName = " + srcName);
+		srcDir = IJ.getDirectory("image");
+	//	IJ.showMessage("srcDir = " + srcDir);
 		mmfStack = mmfWin.getImagePlus();
 //		mmfWin.close();
 		return mmfStack!=null;
@@ -561,7 +568,7 @@ public class Experiment_Processor implements PlugIn{
 			if (prParams.diagnosticIm){
 				log("Generating diagnostic im");
 				ImagePlus dIm1 = ex.getDiagnIm(mmfStack.getWidth(), mmfStack.getHeight());
-				log("Dont Generating diagnostic im; saving...");
+				log("Done Generating diagnostic im; saving...");
 				String ps = File.separator;
 				String diagnPath = (dstDir!=null)? dstDir : srcDir;
 				diagnPath += "diagnostics"+ps;
@@ -569,7 +576,11 @@ public class Experiment_Processor implements PlugIn{
 					new File(diagnPath).mkdir();
 				}
 				diagnPath+= srcName;
-				diagnPath = diagnPath.replace(diagnPath.substring(diagnPath.lastIndexOf("."), diagnPath.length()), " diagnostic foreground.bmp");
+				if (diagnPath.lastIndexOf(".") >= 0) {
+					diagnPath = diagnPath.replace(diagnPath.substring(diagnPath.lastIndexOf("."), diagnPath.length()), " diagnostic foreground.bmp");
+				} else{
+					diagnPath = diagnPath + " diagnostic foreground.bmp";	
+				}
 				IJ.save(dIm1, diagnPath);
 				log("Done saving diagnostic im");
 			}
@@ -726,7 +737,11 @@ public class Experiment_Processor implements PlugIn{
 				new File(diagnPath).mkdir();
 			}
 			diagnPath+= srcName;
-			diagnPath = diagnPath.replace(diagnPath.substring(diagnPath.lastIndexOf("."), diagnPath.length()), " diagnostic foreground.bmp");
+			if (diagnPath.lastIndexOf(".") >= 0) {
+				diagnPath = diagnPath.replace(diagnPath.substring(diagnPath.lastIndexOf("."), diagnPath.length()), " diagnostic foreground.bmp");
+			}else {
+				diagnPath = diagnPath + " diagnostic foreground.bmp";
+			}
 			IJ.save(dIm1, diagnPath);
 			log("...Done generating diagnostic im", true);
 			
@@ -1265,8 +1280,9 @@ public class Experiment_Processor implements PlugIn{
 		log(message, false);
 	}
 	
-	private void log(String message, boolean print){
-		if (print) System.out.println(message);
+	
+	private void log(String message, boolean echo){
+		if (echo) System.out.println(message);
 		
 		String indent = "";
 		for (int i=0;i<indentLevel; i++) indent+="----";

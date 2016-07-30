@@ -1203,9 +1203,12 @@ public class BackboneFitter {
 				}
 			}
 			Timer.toc("runFitter:loopA");
+			
+			// <----- fitting step here ---->
 			Timer.tic("runFitter:relaxBackbones");
 			relaxBackbones(updater.inds2Update());
 			Timer.toc("runFitter:relaxBackbones");
+			//<------------------------------->
 			
 			if (params.storeEnergies){
 				for (int i=0; i<energyProfiles.size(); i++){

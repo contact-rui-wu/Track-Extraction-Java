@@ -203,9 +203,9 @@ class ExtractorFrame extends JFrame{
 		
 		//Set src and dest
 		String[] epArgs = new String[3];
-		epArgs[0] = input.txFld.getText();
-		epArgs[1] = output.dirTxFld.getText();
-		epArgs[2] = output.nameTxFld.getText();
+		epArgs[0] = input.txFld.getText(); //src - "current"
+		epArgs[1] = output.dirTxFld.getText(); //dstdir
+		epArgs[2] = output.nameTxFld.getText(); //dstname
 		
 		ep.run(epArgs);
 
@@ -336,7 +336,12 @@ class InputPanel extends JPanel{
 		
 		if (outputNameFld.getText().equals(OutputPanel.nameTxFldDisplay)){
 			int i = name.lastIndexOf(".");
-			outputNameFld.setText(name.substring(0, i));
+			if ( i > 0) {
+				outputNameFld.setText(name.substring(0, i));
+			}else {
+				outputNameFld.setText(name);
+			}
+					
 		}
 	}
 	

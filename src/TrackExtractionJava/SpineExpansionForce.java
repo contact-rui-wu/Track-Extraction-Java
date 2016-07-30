@@ -15,10 +15,13 @@ public class SpineExpansionForce extends Force{
 	static final String defaultName = "Spine-Expansion";
 	private float targetLength;
 	private boolean comExpansion = false;
-	
+	public SpineExpansionForce(float[] weights, float totalWeight, float targetLength) {
+		this (weights, totalWeight, targetLength, true);
+	}
 	public SpineExpansionForce(float[] weights, float totalWeight, float targetLength, boolean comExpansion){
 		super(weights, totalWeight, 2, "Spine-Length");
-		this.setTargetLength(targetLength);
+		this.targetLength = targetLength;
+//		this.setTargetLength(targetLength);
 		this.comExpansion = comExpansion;
 	}
 	
