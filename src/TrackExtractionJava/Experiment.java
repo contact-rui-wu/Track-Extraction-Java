@@ -47,6 +47,8 @@ public class Experiment implements Serializable{
 	 */
 	//Vector<Integer> collisionTrackIDs;
 	
+	private Communicator comm = null;
+	
 	/**
 	 * List of tracks contained within the experiment
 	 */
@@ -83,7 +85,11 @@ public class Experiment implements Serializable{
 		init("", tb.ep,tb.finishedTracks);
 	}
 	
-	
+	private void message (String message, VerbLevel messVerb) {
+		if (comm != null) {
+			comm.message("Expt: " + message, messVerb);
+		}
+	}
 	
 	/**
 	 * A private initializer
@@ -156,56 +162,46 @@ public class Experiment implements Serializable{
 		return badEx;
 	}
 	
-	/**
-	 * Writes this experiment to an output stream, sending status updates to a printwriter
-	 * This function is the same as experiment.toDisk(dos, pw, false)
-	 * @param dos The output stream
-	 * @param pw The message-recieving print writer. To skip all status recording, set this to null
-	 * @return A status code; 0 means success, above zero indicates an error  
-	 */
-	public int toDisk(DataOutputStream dos, PrintWriter pw){
-		return toDisk(dos, pw, false);
-	}
+
 	
 	/**
 	 * Writes this experiment to an output stream, sending status updates to a printwriter
 	 * @param dos The output stream
-	 * @param pw The message-recieving print writer. To skip all status recording, set this to null
-	 * @param verbose Setting this flag true turns on detailed statuses that are fed to the PrintWriter
+	 * outputs status messages through communicator
 	 * @return A status code; 0 means success, above zero indicates an error  
 	 */
-	public int toDisk(DataOutputStream dos, PrintWriter pw, boolean verbose){
+	public int toDisk(DataOutputStream dos){
 		
 		
 		if (tracks.size()==0){
-			if (pw!=null) pw.println("No tracks in experiment; save aborted"); 
+			message ("No tracks in experiment; save aborted", VerbLevel.verb_error);
 			return 4;
 		}
 		
-		if (pw!=null) pw.println("Saving experiment to disk...");
+		message("Saving experiment to disk...", VerbLevel.verb_message);
 		
 		
 		//Write the Experiment Type
 		try {
 			int code = getTypeCode();
 			if (code>=0){
-				if (verbose && pw!=null) pw.println("Writing type code ("+code+")");
+				message("Writing type code ("+code+")", VerbLevel.verb_verbose);
 				dos.writeInt(code);
 			} else {
-				if (pw!=null) pw.println("Invalid experiment code; save aborted");
+				message("Invalid experiment code; save aborted", VerbLevel.verb_error);
 				return 3;
 			}
 		} catch (Exception e) {
-			if (pw!=null) pw.println("...Error writing experiment type code; save aborted");
+			message("...Error writing experiment type code; save aborted", VerbLevel.verb_error);
 			return 3;
 		}
 		
 		//Write the # of tracks
 		try {
-			if (verbose && pw!=null) pw.println("Writing # of tracks ("+tracks.size()+")");
+			message("Writing # of tracks ("+tracks.size()+")", VerbLevel.verb_verbose);
 			dos.writeInt(tracks.size());
 		} catch (Exception e) {
-			if (pw!=null) pw.println("...Error writing # of tracks; save aborted");
+			message("...Error writing # of tracks; save aborted", VerbLevel.verb_error);
 			return 2;
 		}
 		
@@ -213,33 +209,34 @@ public class Experiment implements Serializable{
 		int trID = -1;
 		int trNum = -1;
 		try {
-			if (pw!=null) pw.println("Writing Tracks");
+			message("Writing Tracks", VerbLevel.verb_message);
 			
 			for (int j=0; j<tracks.size(); j++){
 				Track tr = tracks.get(j);
 				trNum = j;
 				trID = tr.getTrackID();
 				
-				if (verbose && pw!=null) pw.println("Writing track number "+j+"("+tr.getTrackID()+")");
-				if(tr.toDisk(dos,(verbose)?pw:null)!=0) {
-					if (pw!=null) pw.println("...Error writing track "+tr.getTrackID()+"; save aborted");
+				message("Writing track number "+j+"("+tr.getTrackID()+")", VerbLevel.verb_verbose);
+				tr.setComm(comm);
+				if(tr.toDisk(dos)!=0) {
+					message("...Error writing track "+tr.getTrackID()+"; save aborted", VerbLevel.verb_error);
 					return 1; 
 				}
 			}
 			
 		} catch (Exception e) {
-			if (pw!=null) pw.println("\n...Error (exception thrown) writing track (#"+trNum+" , ID="+trID+"); save aborted");
+			message("...Error (exception thrown) writing track (#"+trNum+" , ID="+trID+"); save aborted", VerbLevel.verb_error);
 			return 1;
 		}
 		
 		try{
 			dos.writeInt(0);
 		} catch (Exception e){
-			if (pw!=null) pw.println("\n...Error writing end of file; save aborted");
+			message("\n...Error writing end of file; save aborted", VerbLevel.verb_error);
 			return 1;
 		}
 		
-		if (pw!=null) pw.println("\n...Experiment Saved!");
+		message("\n...Experiment Saved!", VerbLevel.verb_message);
 		return 0;
 	}
 	
@@ -748,6 +745,14 @@ public class Experiment implements Serializable{
 		meanStdDev[0] = MathUtils.mean(energies);
 		meanStdDev[1] = MathUtils.stdDev(energies, meanStdDev[0]);
 		return meanStdDev;
+	}
+
+	public Communicator getCommunicator() {
+		return comm;
+	}
+
+	public void setCommunicator(Communicator comm) {
+		this.comm = comm;
 	}
 	
 }

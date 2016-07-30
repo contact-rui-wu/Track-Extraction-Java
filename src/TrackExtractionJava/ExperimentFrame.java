@@ -407,7 +407,7 @@ class TrackPanel extends JPanel {
 				if (dir!=null && dir !=""){
 					File f = new File(dir+name+ext);
 					DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
-					ex.toDisk(dos, null);
+					ex.toDisk(dos);
 					dos.close();
 				}
 				

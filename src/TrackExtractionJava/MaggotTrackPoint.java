@@ -1278,14 +1278,21 @@ public class MaggotTrackPoint extends ImTrackPoint {
 	public static Vector<TrackPoint> splitPt2NPts(MaggotTrackPoint mtp, int nPts, int targetArea, PointExtractor pe, ExtractionParameters ep, Communicator comm){
 		
 		//try to find a threshold that gives the right # of pts
-		int thr = 1+CVUtils.findThreshforNumPts(new ImagePlus("",mtp.getRawIm().duplicate()), ep, nPts, (int)ep.minArea, (int)ep.maxArea, targetArea, mtp.thresh, 255);
+		if (comm != null) comm.message("entered splitPt2NPts", VerbLevel.verb_debug);
+		ImagePlus imp = new ImagePlus("",mtp.getRawIm().duplicate());
+		if (comm != null) comm.message("made new image plus", VerbLevel.verb_debug);
 		
+		int thr = 1+CVUtils.findThreshforNumPts(imp, ep, nPts, (int)ep.minArea, (int)ep.maxArea, targetArea, mtp.thresh, 255);
 		
+		if (comm != null) comm.message("returned from findThreshforNumpPts", VerbLevel.verb_debug);
+
 		Vector<TrackPoint> splitPts=null;
 		if (thr>0){
 			
 			switch(ep.pointSplittingMethod){
 				case 1:
+					if (comm != null) comm.message("ep switch 1", VerbLevel.verb_debug);
+					
 					//Extract new points using rethresholded im
 					Rectangle ar = pe.getAnalysisRect();
 					pe.setAnalysisRect(mtp.rect);
@@ -1295,6 +1302,8 @@ public class MaggotTrackPoint extends ImTrackPoint {
 					break;
 					
 				case 2:
+					if (comm != null) comm.message("ep switch 2", VerbLevel.verb_debug);
+					
 					//Distribute pixels between larvae using distance maps of pixels to each contour
 					splitPts = DistanceMapSplitter.splitPoint(mtp, nPts, thr, targetArea, ep, pe.fl.getStackDims(), comm);
 					

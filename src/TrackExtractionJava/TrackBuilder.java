@@ -100,19 +100,21 @@ public class TrackBuilder implements Serializable{
 	/**
 	 * Constructs a TrackBuilder object
 	 */
-	public TrackBuilder(ImageStack IS, ExtractionParameters ep){
-		
+	public TrackBuilder(ImageStack IS, ExtractionParameters ep, Communicator comm){
+		this.comm = comm;
+		trackMessage = comm;
 		this.ep = ep;
 		init(ep.startFrame, IS);
 	}
-	
+	public TrackBuilder(ImageStack IS, ExtractionParameters ep) {
+		this(IS,ep, new Communicator());
+	}
 	/**
 	 * Initialization of objects
 	 */
 	private void init(int frameNum, ImageStack IS){
 		
 		//Set Auxillary objects
-		comm = new Communicator();
 		pe = new PointExtractor(IS, comm, ep);
 		
 		//Set track-building objects
@@ -126,7 +128,7 @@ public class TrackBuilder implements Serializable{
 		
 		
 		matchSpills = new Vector<Communicator>();
-		trackMessage = new Communicator();
+	//	trackMessage = new Communicator();
 		
 		
 	}
@@ -178,9 +180,9 @@ public class TrackBuilder implements Serializable{
 		}
 		
 		//Debug Output
-		trackMessage.message("There are "+activeColIDs.size()+"+"+finishedColIDs.size()+" collisions", VerbLevel.verb_message);
+		trackMessage.message("There are "+activeColIDs.size()+"+"+finishedColIDs.size()+" collisions", VerbLevel.verb_verbose);
 		for (int i=0; i<activeTracks.size(); i++){
-			trackMessage.message(activeTracks.get(i).infoString(), VerbLevel.verb_message);
+			trackMessage.message(activeTracks.get(i).infoString(), VerbLevel.verb_debug);
 		}
 		
 		//Move all active tracks to finished
@@ -874,7 +876,7 @@ public class TrackBuilder implements Serializable{
 			if (match.getTopMatchPoint()==null) {
 				//End the match/track
 				finishedTracks.addElement(match.track);
-				trackMessage.message(match.track.infoString(), VerbLevel.verb_message);
+				trackMessage.message(match.track.infoString(), VerbLevel.verb_debug);
 				activeTracks.remove(match.track);
 				
 			} else if (match.track.getNumPoints()==0) {
@@ -1038,19 +1040,19 @@ public class TrackBuilder implements Serializable{
 		
 		return exp;
 	}
-	
-	public void showCommOutput(){
-		if (ep.dispTrackInfo){
-			if (!trackMessage.outString.equals("")){
-				new TextWindow("Track info", trackMessage.outString, 500, 500);
-			}
-			if (!comm.outString.equals("")){
-				new TextWindow("Builder info", comm.outString, 500, 500);
-			}
-				
-		}
-		
-	}
+//	
+//	public void showCommOutput(){
+//		if (ep.dispTrackInfo){
+//			if (!trackMessage.outString.equals("")){
+//				new TextWindow("Track info", trackMessage.outString, 500, 500);
+//			}
+//			if (!comm.outString.equals("")){
+//				new TextWindow("Builder info", comm.outString, 500, 500);
+//			}
+//				
+//		}
+//		
+//	}
 	
 
 }

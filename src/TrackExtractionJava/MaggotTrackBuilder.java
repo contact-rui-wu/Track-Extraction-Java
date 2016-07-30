@@ -13,8 +13,12 @@ public class MaggotTrackBuilder extends TrackBuilder {
 	 */
 	private static final long serialVersionUID = 1L;
 
+	public MaggotTrackBuilder(ImageStack IS, ExtractionParameters ep, Communicator comm) {
+		super(IS, ep, comm);
+		comm.message("track builder created", VerbLevel.verb_message);
+	}
 	public MaggotTrackBuilder(ImageStack IS, ExtractionParameters ep) {
-		super(IS, ep);
+		super(IS,ep);
 	}
 	
 	/**

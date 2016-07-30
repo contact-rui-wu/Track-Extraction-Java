@@ -47,8 +47,8 @@ public class Experiment_Processor implements PlugIn{
 	private String exName;
 	private String dstDir;
 	private String dstName;
-	private PrintWriter processLog;
-	
+	//private PrintWriter processLog;
+	private Communicator comm;
 	
 	private ImageWindow mmfWin;
 	private ImagePlus mmfStack;
@@ -118,7 +118,7 @@ public class Experiment_Processor implements PlugIn{
 		setupParams();
 		if (prParams.saveSysOutToFile) setupSysOut();
 
-		IJ.showMessage("setupParams returned");
+		//IJ.showMessage("setupParams returned");
 		try {
 			runTime.tic();
 			String logpathname = setupLog();
@@ -217,7 +217,7 @@ public class Experiment_Processor implements PlugIn{
 			log(e.getMessage());
 		} finally {
 			
-			if (processLog!=null) processLog.close();
+			//if (processLog!=null) processLog.close();
 			if (prParams.closeMMF && mmfWin!=null) {
 				mmfWin.close();
 				mmfWin=null;
@@ -375,7 +375,7 @@ public class Experiment_Processor implements PlugIn{
 				
 			} else if (fileName.equalsIgnoreCase("current")) {
 				success = useCurrentWindow();
-				IJ.showMessage("use current window returned");
+				//IJ.showMessage("use current window returned");
 			} else{ 
 				
 				success = openWithIJ(dir, fileName);
@@ -498,7 +498,7 @@ public class Experiment_Processor implements PlugIn{
 		try{
 			String[] logPathParts = prParams.setLogPath(srcDir, dstDir);
 			String fname = new File(logPathParts[0], logPathParts[1]).getPath();
-			processLog = new PrintWriter(new FileWriter(fname, true));
+			PrintWriter processLog = new PrintWriter(new FileWriter(fname, true));
 			
 			processLog.println();
 			processLog.println("----------------------------------------------");
@@ -507,6 +507,8 @@ public class Experiment_Processor implements PlugIn{
 			processLog.println("----------------------------------------------");
 			processLog.println();
 			
+			comm = new FileWriterCommunicator(processLog);
+			comm.setVerbosity(VerbLevel.verb_warning);
 			return fname;
 		} catch (Exception e){
 			new TextWindow("Log error", "Unable to create Processing Log file '"+srcName+"' in '"+srcDir+"'", 500, 500);
@@ -531,9 +533,10 @@ public class Experiment_Processor implements PlugIn{
 			return false;
 		}
 		status+="Running trackbuilder...\n";
-		MaggotTrackBuilder tb = new MaggotTrackBuilder(mmfStack.getImageStack(), extrParams);
-
-		IJ.showMessage("trackbuilder made");
+		//comm.setVerbosity(VerbLevel.verb_debug);
+		MaggotTrackBuilder tb = new MaggotTrackBuilder(mmfStack.getImageStack(), extrParams, comm);
+		
+		//IJ.showMessage("trackbuilder made");
 		try {
 			log("Extracting tracks", true);
 			//Extract the tracks
@@ -584,7 +587,7 @@ public class Experiment_Processor implements PlugIn{
 			new TextWindow("Error extracting tracks", status+"\n"+sw.toString(), 500, 500);
 			return false;
 		} finally{
-			tb.showCommOutput();
+		//	tb.showCommOutput();
 			indentLevel--;
 		}
 		return true;
@@ -790,7 +793,8 @@ public class Experiment_Processor implements PlugIn{
 		boolean status;
 		try{
 			DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
-			ex.toDisk(dos, processLog);
+			ex.setCommunicator(comm);
+			ex.toDisk(dos);
 			status=true;
 			dos.close();
 			exName = f.getPath();
@@ -817,7 +821,8 @@ public class Experiment_Processor implements PlugIn{
 		boolean status;
 		try{
 			DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
-			ex.toDisk(dos, processLog);
+			ex.setCommunicator(comm);
+			ex.toDisk(dos);
 			status=true;
 			dos.close();
 			log("Done saving LarvaTrack experiment", true);
@@ -839,8 +844,8 @@ public class Experiment_Processor implements PlugIn{
 		try{
 			DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
 			Experiment errEx = new Experiment(ex, errTracks);
-			
-			errEx.toDisk(dos, processLog);
+			errEx.setCommunicator(comm);
+			errEx.toDisk(dos);
 			dos.close();
 			log("Done saving error track experiment", true);
 		} catch(Exception e){
@@ -1265,8 +1270,10 @@ public class Experiment_Processor implements PlugIn{
 		
 		String indent = "";
 		for (int i=0;i<indentLevel; i++) indent+="----";
-		processLog.println(runTime.getElapsedTime()*0.001+" sec: "+indent+" "+message);
-		processLog.flush();
+		VerbLevel vb = comm.verbosity;
+		comm.verbosity = VerbLevel.verb_message;
+		comm.message(runTime.getElapsedTime()*0.001+" sec: "+indent+" "+message, VerbLevel.verb_message);
+		comm.verbosity = vb;
 	}
 	
 }

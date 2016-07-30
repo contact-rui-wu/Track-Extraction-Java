@@ -82,7 +82,7 @@ public class Track implements Serializable{
 	 */
 	Experiment exp;
 	
-	transient Communicator comm;
+	private transient Communicator comm;
 	
 	String otherInfo = "";
 	
@@ -669,29 +669,29 @@ public class Track implements Serializable{
 		return bbf.workingTrack;
 	}
 	
-	public int toDisk(DataOutputStream dos, PrintWriter pw){
+	public int toDisk(DataOutputStream dos){
 		
-		if (pw!=null) pw.println("Writing track "+trackID+"...");
+		message("Writing track "+trackID+"...", VerbLevel.verb_verbose);
 		
 		//Write the size in bytes in this track to disk
 		try {
-			if (pw!=null) pw.println("Getting track size");
-			int nBytes = sizeOnDisk(pw);
-			if (pw!=null) pw.println("Size on disk: "+nBytes+" bytes");
+			message("Getting track size", VerbLevel.verb_debug);
+			int nBytes = sizeOnDisk();
+			message("Size on disk: "+nBytes+" bytes", VerbLevel.verb_debug);
 			if (nBytes>=0){
-				if (pw!=null) pw.println("Writing Track size");
+				message("Writing Track size", VerbLevel.verb_debug);
 				dos.writeInt(nBytes);
 				dos.writeInt(trackID);
 			} else {
-				if (pw!=null) pw.println("...Error getting size of track "+trackID+"; aborting save");
+				message("...Error getting size of track "+trackID+"; aborting save", VerbLevel.verb_error);
 				return 3;
 			}
 		} catch (Exception e) {
 			StringWriter sw = new StringWriter();
 			PrintWriter pw2 = new PrintWriter(sw);
 			e.printStackTrace(pw2);
-			if (pw!=null) pw.println(sw.toString());
-			if (pw!=null) pw.println("...Error writing size of track "+trackID+"; aborting save");
+			message (sw.toString(), VerbLevel.verb_error);
+			message ("...Error writing size of track "+trackID+"; aborting save", VerbLevel.verb_error);
 			return 3;
 		}
 
@@ -703,7 +703,7 @@ public class Track implements Serializable{
 			} else{
 				v="false";
 			}
-			if (pw!=null) pw.println("Writing valid flag ("+v+")");
+			message("Writing valid flag ("+v+")", VerbLevel.verb_debug);
 			dos.writeBoolean(valid);
 			
 			if (diverged){
@@ -711,51 +711,51 @@ public class Track implements Serializable{
 			} else{
 				v="false";
 			}
-			if (pw!=null) pw.println("Writing diverged flag ("+v+")");
+			message("Writing diverged flag ("+v+")", VerbLevel.verb_debug);
 			dos.writeBoolean(diverged);
 		} catch(Exception e){
-			if (pw!=null) pw.println("...Error writing valid flag in track "+trackID+"; aborting save");
+			message("...Error writing valid flag in track "+trackID+"; aborting save", VerbLevel.verb_error);
 			return 4;
 		}
 		
 		//Write the # of points in this track to disk
 		try {
-			if (pw!=null) pw.println("Writing #pts ("+points.size()+")");
+			debugMessage("Writing #pts ("+points.size()+")");
 			if (points.size()>=0){
 				dos.writeInt(points.size());
 			} else {
-				if (pw!=null) pw.println("...Error getting # of points in track "+trackID+"; aborting save");
+				message("...Error getting # of points in track "+trackID+"; aborting save", VerbLevel.verb_error);
 				return 2;
 			}
 		} catch (Exception e) {
-			if (pw!=null) pw.println("...Error writing # of points in track "+trackID+"; aborting save");
+			message("...Error writing # of points in track "+trackID+"; aborting save", VerbLevel.verb_error);
 			return 2;
 		}
 		
 		//Write the points to disk
 		try {
-			if (pw!=null) pw.println("Writing points...");
+			message("Writing points...", VerbLevel.verb_verbose);
 			for (int i=0; i<points.size(); i++){
-				if (points.get(i).toDisk(dos,pw)!=0){
-					if (pw!=null) pw.println("...Error writing TrackPoint "+points.get(i).pointID+"; aborting save");
+				if (points.get(i).toDisk(dos,null)!=0){ //todo set communicator and use it
+					message("...Error writing TrackPoint "+points.get(i).pointID+"; aborting save", VerbLevel.verb_error);
 					return 1;
 				}
 				if (i==(points.size()-1)){
-					if (pw!=null) pw.println("Last point in track "+trackID+" written");
+					debugMessage("Last point in track "+trackID+" written");
 				}
 			}
-			if (pw!=null) pw.println("...done writing points");
+			debugMessage("...done writing points");
 		} catch (Exception e) {
-			if (pw!=null) pw.println("...Error writing points; aborting save");
+			message("...Error writing points; aborting save", VerbLevel.verb_error);
 			return 1;
 		}
 		
-		if (pw!=null) pw.println("...Track Saved!");
+		message("...Track Saved!", VerbLevel.verb_verbose);
 		return 0;
 	}
 
 	
-	private int sizeOnDisk(PrintWriter pw){
+	private int sizeOnDisk(){
 		
 		int size =Integer.SIZE/Byte.SIZE;//trackID
 		size += 1;//Boolean.SIZE/Byte.SIZE;//valid
@@ -954,6 +954,28 @@ public class Track implements Serializable{
 	
 	public static String emptyDescription(){
 		return makeDescription("X", null, "");
+	}
+
+	private void debugMessage (String message) {
+		message (message, VerbLevel.verb_debug);
+	}
+	
+	private void message (String message) {
+		message(message, VerbLevel.verb_message);
+	}
+	
+	private void message (String message, VerbLevel messVerb) {
+		if (comm != null) {
+			comm.message("Track: " + message, messVerb);
+		}
+	}
+
+	public Communicator getComm() {
+		return comm;
+	}
+
+	public void setComm(Communicator comm) {
+		this.comm = comm;
 	}
 	
 	/*

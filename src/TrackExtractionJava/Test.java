@@ -1030,7 +1030,7 @@ public class Test {//extends JFrame
 					try{
 						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
 								
-						fitEx.toDisk(dos, null);
+						fitEx.toDisk(dos);
 						dos.close();
 						System.out.println("Done saving fit tracks");
 					} catch(Exception e){
@@ -1042,7 +1042,7 @@ public class Test {//extends JFrame
 					try{
 						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
 								
-						divEx.toDisk(dos, null);
+						divEx.toDisk(dos);
 						dos.close();
 						System.out.println("Done saving diverged tracks");
 					} catch(Exception e){
@@ -1068,7 +1068,7 @@ public class Test {//extends JFrame
 			try{
 				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
 						
-				fitEx.toDisk(dos, null);
+				fitEx.toDisk(dos);
 				dos.close();
 				System.out.println("Done saving fit tracks");
 			} catch(Exception e){
@@ -1080,7 +1080,7 @@ public class Test {//extends JFrame
 			try{
 				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
 						
-				divEx.toDisk(dos, null);
+				divEx.toDisk(dos);
 				dos.close();
 				System.out.println("Done saving diverged tracks");
 			} catch(Exception e){
