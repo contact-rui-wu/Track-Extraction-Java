@@ -5,6 +5,7 @@ import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Rectangle;
 import java.util.Vector;
 
@@ -134,6 +135,7 @@ public class displayUtils {
 	
 	public static void drawBackbone(ImageProcessor im, FloatPolygon bbNew, int expandFac, int offX, int offY, Rectangle rect, Color color){
 		im.setColor(color);
+		im.setFont(new Font (im.getFont().getName(), im.getFont().getStyle(), 8));
 		if (bbNew!=null && bbNew.npoints>0){
 			for (int i=0; i<bbNew.npoints; i++){
 				int x = (int)(expandFac*(bbNew.xpoints[i]-rect.x));
@@ -144,7 +146,7 @@ public class displayUtils {
 					int dotY = offY + y;
 					int circWid = 8;
 					im.drawOval(dotX-(circWid/2), dotY-(circWid/2), circWid, circWid);
-					
+					im.drawString(""+i, dotX, dotY-(circWid/2));
 					if (i==0){
 						im.drawOval(dotX-(circWid), dotY-(circWid), circWid*2, circWid*2);
 					}

@@ -7,7 +7,7 @@ import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 
 //TODO: incorporate convergence critieria and iteration counts
-public class FittingParameters {
+public class FittingParameters implements Cloneable{
 	
 	int GCInterval = 5;
 	
@@ -55,10 +55,10 @@ public class FittingParameters {
 	public int divergenceConstant = 1;//
 	
 	public float imageWeight = 1.0f;
-	public float spineLengthWeight = 0.4f;
-	public float spineSmoothWeight = 1.0f;
-	public float[] timeLengthWeight = {0.5f};
-	public float[] timeSmoothWeight = {0.5f}; 
+	public float spineLengthWeight = 0.5f; //0.4
+	public float spineSmoothWeight = .25f; //1.0
+	public float[] timeLengthWeight = {0.5f}; //.5
+	public float[] timeSmoothWeight = {0.25f}; //.5
 	public float spineExpansionWeight = 0;
 	
 	//Head=0, Tail=end
@@ -91,12 +91,26 @@ public class FittingParameters {
 	
 	
 	
-	fittingParamTableModel fpTableModel;
+	fittingParamTableModel fpTableModel = null;
 	
-	JPanel fpPanel;
+	JPanel fpPanel = null;
 	
 	public FittingParameters(){	}
 	
+	protected FittingParameters clone() throws CloneNotSupportedException {
+		FittingParameters fp = (FittingParameters)super.clone();
+		fp.grains = grains.clone();
+		fp.timeLengthWeight = timeLengthWeight.clone();
+		fp.timeSmoothWeight = timeSmoothWeight.clone(); 
+		fp.imageWeights = imageWeights.clone();
+		fp.spineLengthWeights = spineLengthWeights.clone();
+		fp.spineSmoothWeights = spineSmoothWeights.clone();
+		fp.timeLengthWeights = timeLengthWeights.clone();
+		fp.timeSmoothWeights = timeSmoothWeights.clone();
+		fp.spineExpansionWeights = spineExpansionWeights.clone();
+		//table model not cloneable -- worry about this later if at all
+		return fp;
+	}
 
 	public static FittingParameters getSinglePassParams(){
 		return new FittingParameters();

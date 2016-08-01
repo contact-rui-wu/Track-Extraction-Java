@@ -204,7 +204,9 @@ public class BackboneFitter {
 	 */
 	MaggotDisplayParameters pauseDisplayParams = null;
 	
-	
+	private boolean recordHistory = false;
+
+	private String stageMessage;
 	
 	/**
 	 * Constructs a backbone fitter
@@ -342,6 +344,24 @@ public class BackboneFitter {
 		Forces = params.getForces(pass);
 	}
 	
+	public void recordHistory() {
+		recordHistory = true;
+		for (BackboneTrackPoint btp : BTPs) {
+			btp.recordHistory();
+		}
+	}
+	public void noHistory() {
+		recordHistory = false;
+		for (BackboneTrackPoint btp : BTPs) {
+			btp.noHistory();
+		}
+	}
+	private void markHistory() {
+		if (!recordHistory){return;}
+		for (BackboneTrackPoint btp : BTPs) {
+			btp.storeBackbone(stageMessage);
+		}
+	}
 	
 	/**
 	 * Fits backbones to the points in the given track.
@@ -400,6 +420,15 @@ public class BackboneFitter {
 		fitTrackNewScheme(null, null, null, null, null);
 	}
 	
+	public void fitTrackNewScheme(FittingParameters fp) {
+			try {
+				fitTrackNewScheme(fp.clone(), fp.clone(), fp.clone(), fp.clone(), fp.clone());
+			} catch (CloneNotSupportedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		
+	}
 	/**
 	 * Runs the track fitter according to the straight-bent-diverged-suspicious-all scheme with the given parameters
 	 * @param straightParams
@@ -456,6 +485,7 @@ public class BackboneFitter {
 		//Fit the straight larvae
 		straightParams.freezeDiverged = true;
 		resetParams(straightParams);
+		stageMessage = "fitStraight";
 		boolean hideGapPoints = true;
 		if (userOut!=null) userOut.println("Fitting Straight Subsets: "+straightLarvae.toString());
 		Timer.tic("fitSubsets-straight");
@@ -479,6 +509,7 @@ public class BackboneFitter {
 		
 		//Fit the bent larvae
 		Timer.tic("FTNS:fit-bent");
+		stageMessage = "fitBent";
 		hideGapPoints = false;
 		bentParams.leaveFrozenBackbonesAlone = true;//This tells the plg not to re-initialize the frozen bb's
 		bentParams.freezeDiverged = true;
@@ -498,7 +529,7 @@ public class BackboneFitter {
 		Timer.toc("FTNS:fit-bent");
 		
 		Timer.tic("FTNS:fix-diverged");
-
+		stageMessage = "fixDiverged";
 		//Patch diverged sections 
 		//NOTE: artificial midlines have been added to this list (see above)
 		divergedParams.leaveFrozenBackbonesAlone = true;//This tells the plg not to re-initialize the frozen bb's
@@ -540,6 +571,7 @@ public class BackboneFitter {
 		Timer.toc("FTNS:fix-diverged");
 		
 		Timer.tic("FTNS:inch-inward");
+		stageMessage = "inchInward";
 		//Inch inwards on the remaining bad gaps
 		Vector<Gap> badGaps = findBadGaps();
 		suspiciousParams.leaveFrozenBackbonesAlone = true;//This tells the plg not to re-initialize the frozen bb's
@@ -574,6 +606,7 @@ public class BackboneFitter {
 		Timer.toc("FTNS:inch-inward");
 		
 		Timer.tic("FTNS:final-fit");
+		stageMessage = "finalFit";
 		//Do final iterations on the whole track for continuity
 		finalParams.leaveFrozenBackbonesAlone = true;//This tells the plg not to re-initialize the frozen bb's
 		finalParams.freezeDiverged = true;
@@ -584,9 +617,13 @@ public class BackboneFitter {
 		}
 		resetParams(finalParams);
 		for (int i=0; i<params.numFinalSingleIterations; i++){
+			double sf = (1-((double) i)) / params.numFinalSingleIterations; //damp oscillations
+			for (BackboneTrackPoint btp : BTPs) {
+				btp.scaleFactor = sf;
+			}
 			runSingleIteration();
 		}
-		//finalizeBackbones();//TODO This wasn't being done. Test number of iterations
+		finalizeBackbones();//TODO This wasn't being done. Test number of iterations
 		
 		Timer.toc("FTNS:final-fit");
 		
@@ -622,9 +659,9 @@ public class BackboneFitter {
 			}
 		}
 		
-		updater = new BBFUpdateScheme(BTPs.size());
+		updater = new BBFUpdateScheme(BTPs.size()); //default is to update all
 		shifts = new double[BTPs.size()];
-		
+		markHistory();
 		relaxBackbones(updater.inds2Update());
 		
 		if (params.storeEnergies){
@@ -1184,6 +1221,7 @@ public class BackboneFitter {
 		Timer.tic("runFitter");
 		boolean firstPass=true;
 		do {
+			markHistory();
 			Timer.tic("runFitter:loopA");
 			comm.message("Iteration number " + updater.getIterNum(), VerbLevel.verb_debug);
 
@@ -1316,9 +1354,10 @@ public class BackboneFitter {
 					energyProfiles.get(i).addEnergyEntry(btpInd, Force.getEnergy(targetBackbones.get(i), BTPs.get(btpInd)));
 				}
 			}
-			
-			
 			FloatPolygon newBB = CVUtils.fPolyAdd(CVUtils.fPolyMult(generateNewBackbone(targetBackbones), scaleFactor), CVUtils.fPolyMult(BTPs.get(btpInd).bbOld, 1-scaleFactor));//scaleFactor * generateNewBackbone(targetBackbones) + (1-scaleFactor) * BTPs.get(btpInd).bbOld;
+			
+			//prevent overly large jumps
+			newBB = enforceMaximumMove(newBB, BTPs.get(btpInd).bbOld);
 			
 			if (params.storeEnergies){
 				energyProfiles.lastElement().addEnergyEntry(btpInd, Force.getEnergy(newBB, BTPs.get(btpInd))/params.grains[pass]);
@@ -1335,6 +1374,23 @@ public class BackboneFitter {
 		}
 		Timer.toc("bbRelaxationStep");
 		
+	}
+
+	private FloatPolygon enforceMaximumMove(FloatPolygon newBB, FloatPolygon oldBB) {
+		double l1 = MathUtils.curveLength(MathUtils.castFloatArray2Double(newBB.xpoints), MathUtils.castFloatArray2Double(newBB.ypoints));
+		double l2 = MathUtils.curveLength(MathUtils.castFloatArray2Double(oldBB.xpoints), MathUtils.castFloatArray2Double(oldBB.ypoints));
+		double maxMove = (l1 + l2)/(8 * oldBB.npoints);
+		maxMove = maxMove > 1 ? maxMove : 0.5; //always allow at least 0.5 pixel of movement
+		for (int i = 0; i < newBB.npoints ; ++i) {
+			double d = Math.sqrt((newBB.xpoints[i] - oldBB.xpoints[i])*(newBB.xpoints[i] - oldBB.xpoints[i]) + (newBB.ypoints[i] - oldBB.ypoints[i])*(newBB.ypoints[i] - oldBB.ypoints[i]));
+			if (d > maxMove) {
+				double r = maxMove/d;
+				newBB.xpoints[i] = (float) (oldBB.xpoints[i] * (1-r) + newBB.xpoints[i]*r);
+				newBB.ypoints[i] = (float) (oldBB.ypoints[i] * (1-r) + newBB.ypoints[i]*r);			
+			}
+		}
+			
+		return newBB;
 	}
 
 	/**

@@ -536,13 +536,15 @@ public class Track implements Serializable{
 		//return getMovieStack(labelInd, mdp, true);
 	}
 	
-	
-	public TrackMovieVirtualStack getVirtualMovieStack (MaggotDisplayParameters mdp){
+	public TrackMovieVirtualStack getVirtualMovieStack (MaggotDisplayParameters mdp) {
+		return getVirtualMovieStack(mdp, false);
+	}
+	public TrackMovieVirtualStack getVirtualMovieStack (MaggotDisplayParameters mdp, boolean showFitHistory){
 		if (mdp ==null) {
 			mdp = new MaggotDisplayParameters();
 		}
 		updateTrackImageSize(true);
-		return new TrackMovieVirtualStack(this, mdp);
+		return new TrackMovieVirtualStack(this, mdp, showFitHistory);
 		
 	}
 	
@@ -1051,6 +1053,18 @@ public class Track implements Serializable{
 	
 	public int getPointIndexFromID (int pointID) {
 		return (getPointIndexFromID(points, pointID));
+	}
+	
+	public int getBackboneHistoryLength () {
+		int length = 0;
+		for (TrackPoint tp : points) {
+			BackboneTrackPoint btp = (BackboneTrackPoint) tp;
+			if (btp == null) {
+				return 0;
+			}
+			length = length > btp.getHistoryLength() ? length : btp.getHistoryLength();
+		}
+		return length;
 	}
 	
 	public String description(){

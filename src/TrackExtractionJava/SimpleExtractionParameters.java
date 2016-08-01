@@ -30,7 +30,7 @@ public class SimpleExtractionParameters {
 		return ep;
 	}
 	
-	public FittingParameters getStraightFittingParameters() {
+	public FittingParameters getFittingParameters() {
 		FittingParameters fp = new FittingParameters();
 		fp.imageWeight = imageWeight;
 		fp.spineExpansionWeight = -1;
@@ -38,8 +38,6 @@ public class SimpleExtractionParameters {
 		fp.spineSmoothWeight = spineSmoothWeight;
 		fp.timeLengthWeight = new float[] {(float) (timeLengthScaleFactor*frameRate/15)};
 		fp.timeSmoothWeight = new float[] {(float) (timeSmoothScaleFactor*frameRate/15)};
-		
-		
 		return fp;
 	}
 

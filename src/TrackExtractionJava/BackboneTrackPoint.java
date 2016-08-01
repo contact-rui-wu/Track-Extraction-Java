@@ -5,6 +5,7 @@ import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Rectangle;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -107,13 +108,13 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	 * In the backbone-fitting algorithm, bbOld stores the previous iteration's backbone, and 
 	 * is used for all calculations of new backbones  
 	 */
-	protected transient FloatPolygon bbOld;
+	protected transient FloatPolygon bbOld = null;
 	/**
 	 * Temporary backbone used to fit the final backbone. Absolute coordinates.
 	 * <p>
 	 * In the backbone fitting algorithm, bbNew stores the current iteration's backbone
 	 */
-	protected transient FloatPolygon bbNew;
+	protected transient FloatPolygon bbNew  = null;
 	
 	/**
 	 * The target backbones used to generate the last backbone. Absolute coordinates. Used in track.showFitting.
@@ -163,9 +164,11 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	
 	
 	
+	private Vector<FloatPolygon> bbHistory = null;
+	private Vector<String> historyLabel = null;
 	
-	
-	
+	private boolean inHistory = false; //to say whether we are displaying images back in time
+	private String historyMessage;
 	
 	
 	
@@ -746,15 +749,22 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		
 		if (mdp.newBB) displayUtils.drawBackbone(im, bbNew, mdp.expandFac, offX, offY, rect, Color.blue);
 		
+		FloatPolygon bbpoly = inHistory ? bbOld : backbone.getFloatPolygon();
+		
 		
 		//FORCES
 		if (mdp.forces && targetBackbones!=null && targetBackbones.size()>0) {
-			displayUtils.drawTargets(im, targetBackbones, mdp.showForce, mdp.expandFac, offX, offY, rect, backbone.getFloatPolygon());//TargetBackbones are absolute coords
+			displayUtils.drawTargets(im, targetBackbones, mdp.showForce, mdp.expandFac, offX, offY, rect, bbpoly);//TargetBackbones are absolute coords
 		}
 			
 			
 		//BACKBONE
-		if (mdp.backbone) displayUtils.drawBackbone(im, backbone.getFloatPolygon(), mdp.expandFac, offX, offY, rect, Color.RED);
+		if (mdp.backbone) displayUtils.drawBackbone(im, bbpoly, mdp.expandFac, offX, offY, rect, Color.RED);
+		
+		if (inHistory) {
+			im.setFont(new Font(im.getFont().getFontName(), Font.PLAIN, 14));
+			im.drawString(historyMessage, 5, im.getFont().getSize()+5);
+		}
 		
 		return im;
 	}
@@ -934,12 +944,45 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
         
 	}
 
+	public void recordHistory() {
+		if (null == bbHistory) {
+			bbHistory = new Vector<FloatPolygon>();
+			historyLabel = new Vector<String>();
+		}
+	}
+	public void noHistory() {
+		if (null == bbHistory) { return;}
+		bbHistory.clear();
+		bbHistory = null;
+		historyLabel.clear();
+		historyLabel = null;
+	}
+	public void storeBackbone(String s) {
+		if (null == bbHistory) { return; }
+		bbHistory.add(bbOld);
+		if (frozen) {
+			historyLabel.add(s + " frozen" );
+		} else if (hidden) {
+			historyLabel.add(s + " hidden");
+		} else {
+			historyLabel.add(s + " active");
+		}
+	}
+	public void storeBackbone() {
+		storeBackbone("");
+	}
+	public int getHistoryLength() {
+		if (null == bbHistory) { return 0; }
+		return bbHistory.size();
+	}
+	
+	
 	/**
 	 * setTargetBackbones
 	 * intended to be used only for display purposes
 	 * changes state of BackboneTrackPoint, so WILL interfere with fitting
 	 */
-	public void setTargetBackbones (Vector<Force> Forces, Vector<BackboneTrackPoint> points) {
+	public void setTargetBackbones (Vector<Force> Forces, Vector<BackboneTrackPoint> points, int history) {
 		try{	
 			int ind = track.getPointIndexFromID(points, pointID);
 			if (ind < 0 || ind >= points.size()){
@@ -950,7 +993,22 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			}
 			targetBackbones.clear();
 			//bbOld = CVUtils.fPolyAddOffset(backbone.getFloatPolygon(), rect.x, rect.y);
-			bbOld = backbone.getFloatPolygon();
+			if (null == bbHistory || history < 0 || history >= bbHistory.size()) {
+				for (BackboneTrackPoint btp : points) {
+					btp.bbOld = btp.backbone.getFloatPolygon();
+				}
+				inHistory = false;
+			} else {
+				for (BackboneTrackPoint btp : points) {
+					btp.bbOld = btp.bbHistory.get(history);
+				}
+//				bbOld = bbHistory.get(history);
+				if (null == bbOld) {
+					bbOld = backbone.getFloatPolygon();
+				}
+				inHistory = true;
+				historyMessage = historyLabel.get(history);
+			}
 			setMagPix();
 			setInitialClusterInfo();
 			for (int i=0; i<Forces.size(); i++){						
@@ -964,20 +1022,25 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			comm.message("Error getting target backbones: \n"+sw.toString()+"\n", VerbLevel.verb_error);
 		}
 	}
-	
+	public void setTargetBackbones (Vector<Force> Forces, Vector<BackboneTrackPoint> points) {
+		setTargetBackbones(Forces, points, -1);
+	}
 	/**
 	 * setTargetBackbones
 	 * slow, intended to be used only for display purposes
 	 * changes state of BackboneTrackPoint, so WILL interfere with fitting
 	 */
-	public void setTargetBackbones (Vector<Force> Forces) {
+	public void setTargetBackbones (Vector<Force> Forces, int history) {
 		Vector<BackboneTrackPoint> btps = new Vector<BackboneTrackPoint>();
 		for (TrackPoint tp : track.points) {
 			BackboneTrackPoint btp = (BackboneTrackPoint) tp;
 			if (btp == null) { return; }
 			btps.add(btp);
 		}
-		setTargetBackbones(Forces, btps);
+		setTargetBackbones(Forces, btps, history);
+	}
+	public void setTargetBackbones (Vector<Force> Forces) {
+		setTargetBackbones(Forces,-1);
 	}
 	
 	public int getPointType(){

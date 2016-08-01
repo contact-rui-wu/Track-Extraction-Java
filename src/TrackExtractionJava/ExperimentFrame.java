@@ -137,7 +137,7 @@ public class ExperimentFrame extends JFrame{
 		
 		//Build the trackPanel
 		trackPanel = new TrackPanel(mdp, this);
-		trackPanel.setSize(500, 500);
+		trackPanel.setSize(700, 500);
 		
 		//Build the trackList 
 		buildExPanel();
@@ -151,6 +151,7 @@ public class ExperimentFrame extends JFrame{
 		add(exPanel, BorderLayout.WEST);
 		add(playPanel, BorderLayout.EAST);
 //		add(new JScrollPane(trackList), BorderLayout.WEST);
+		setSize(1024, 768);
 		pack();
 		
 		addWindowListener(new java.awt.event.WindowAdapter() {
@@ -309,6 +310,7 @@ class TrackPanel extends JPanel {
 	JButton playButton;
 	JButton saveToExButton;
 	JButton saveToCSVButton;
+	JButton fitButton;
 	JPanel buttonPanel;
 	
 	public TrackPanel(MaggotDisplayParameters mdp, ExperimentFrame ef){
@@ -341,6 +343,14 @@ class TrackPanel extends JPanel {
 			}
 		});
 		
+		fitButton = new JButton("Fit Track");
+		fitButton.setSize(100, 40);
+		fitButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				fitCurrentTrack();
+			}
+		});
 		
 		saveToExButton = new JButton("Save Track to Experiment");
 		saveToExButton.setSize(100, 40);
@@ -369,7 +379,8 @@ class TrackPanel extends JPanel {
 		buttonPanel.add(playButton);
 		buttonPanel.add(saveToCSVButton);
 		buttonPanel.add(saveToExButton);
-		
+		buttonPanel.add(fitButton);
+		buttonPanel.setSize(700, 60);
 		
 		add(descriptionPanel, BorderLayout.CENTER);
 		add(buttonPanel, BorderLayout.SOUTH);
@@ -393,6 +404,31 @@ class TrackPanel extends JPanel {
 				TrackMovieVirtualStack vs = track.getVirtualMovieStack(mdp);
 				vs.getImagePlus().show();
 				ef.addMovie(vs);
+			}
+		} catch(Exception e){
+			StringWriter sw = new StringWriter();
+			PrintWriter prw = new PrintWriter(sw);
+			e.printStackTrace(prw);
+			new TextWindow("PlayMovie Error", "Could not play track "+track.getTrackID()+" movie\n"+sw.toString()+"\n", 500, 500);
+		}
+	}
+	public void fitCurrentTrack(){
+		try{
+			if (track!=null){
+				new Thread () {
+					public void run() {
+						BackboneFitter bbf = new BackboneFitter(track); 
+						bbf.recordHistory();
+						IJ.showStatus("fitting track");
+						bbf.fitTrackNewScheme( new FittingParameters());//TODO adjust fitting parameters
+						TrackMovieVirtualStack vs = bbf.getTrack().getVirtualMovieStack(mdp, true);
+						vs.setForces(bbf.Forces);
+						vs.getImagePlus().show();
+						ef.addMovie(vs);
+						IJ.showStatus("done fitting track");
+					}
+				}.start();
+				
 			}
 		} catch(Exception e){
 			StringWriter sw = new StringWriter();
@@ -506,7 +542,7 @@ class DisplayOpPanel extends JPanel{
 		setLayout(new GridLayout(7, 1));
 		
 		buildCheckBoxes();
-//		add(clusterBox);
+		add(clusterBox);
 //		add(initialBBBox);
 		add(htBox);
 		add(contourBox);
@@ -519,8 +555,8 @@ class DisplayOpPanel extends JPanel{
 	}
 	
 	private void buildCheckBoxes(){
-//		paramNames.put(clusterBox, "clusters");
-//		buildCheckBox(clusterBox, "Clusters");
+		//paramNames.put(clusterBox, "clusters");
+	//	buildCheckBox(clusterBox, "Clusters");
 		clusterBox = new JCheckBox("Clusters");
 		clusterBox.setSelected(mdp.getParam("clusters"));
 		clusterBox.addActionListener(new ActionListener() {
