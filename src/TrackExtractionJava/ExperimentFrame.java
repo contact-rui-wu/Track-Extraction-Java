@@ -87,27 +87,40 @@ public class ExperimentFrame extends JFrame{
 	 */
 	JPanel playPanel;
 	
+	Vector<TrackMovieVirtualStack> movies;
 	/**
 	 * 
 	 */
 	public ExperimentFrame(TrackBuilder tb){
-		ex = tb.toExperiment();
+		this(tb.toExperiment());
 	}
 	
 	public ExperimentFrame(Experiment ex){
 		this.ex = ex;
+		init();
+	}
+	void init () {
+		movies = new Vector<TrackMovieVirtualStack>();
 	}
 	
-	/**
-	 * @throws Exception 
-	 */
-	public ExperimentFrame(String fname) throws Exception{
-		//TODO check file name
-//		ex = Experiment.deserialize(fname);
+	protected void addMovie (TrackMovieVirtualStack vs) {
+		movies.addElement(vs);
+		cleanClosedMovies();
 	}
 	
+	protected void updateMDP () {
+		for (TrackMovieVirtualStack vs : movies) {
+			vs.setMaggotDisplayParameters(mdp); //triggers redraw
+		}
+	}
 	
-	
+	private void cleanClosedMovies () {
+		Vector <TrackMovieVirtualStack> closedMovies = new Vector<TrackMovieVirtualStack>();
+		for (TrackMovieVirtualStack vs : movies) {
+			if (vs.windowClosed()) {closedMovies.add(vs);}
+		}
+		movies.removeAll(closedMovies);
+	}
 	
 	public void run(String args){
 
@@ -123,7 +136,7 @@ public class ExperimentFrame extends JFrame{
 		mdp = new MaggotDisplayParameters();
 		
 		//Build the trackPanel
-		trackPanel = new TrackPanel(mdp);
+		trackPanel = new TrackPanel(mdp, this);
 		trackPanel.setSize(500, 500);
 		
 		//Build the trackList 
@@ -237,7 +250,7 @@ public class ExperimentFrame extends JFrame{
 		label.setFont(new Font(label.getFont().getName(), Font.BOLD, label.getFont().getSize()*2));
 		label.setAlignmentX(CENTER_ALIGNMENT);
 		
-		DisplayOpPanel dop = new DisplayOpPanel(mdp);
+		DisplayOpPanel dop = new DisplayOpPanel(mdp, this);
 		JPanel ops = new JPanel();
 		ops.setAlignmentX(CENTER_ALIGNMENT);
 		ops.add(dop);
@@ -285,7 +298,7 @@ class TrackPanel extends JPanel {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	
+	private ExperimentFrame ef;
 	
 	Track track;
 	JTextArea trackDescription;
@@ -298,8 +311,9 @@ class TrackPanel extends JPanel {
 	JButton saveToCSVButton;
 	JPanel buttonPanel;
 	
-	public TrackPanel(MaggotDisplayParameters mdp){
+	public TrackPanel(MaggotDisplayParameters mdp, ExperimentFrame ef){
 		this.mdp = mdp;
+		this.ef = ef;
 		buildTrackPanel();
 	}
 	
@@ -376,7 +390,9 @@ class TrackPanel extends JPanel {
 	public void playCurrentTrack(){
 		try{
 			if (track!=null){
-				track.playMovie(mdp);
+				TrackMovieVirtualStack vs = track.getVirtualMovieStack(mdp);
+				vs.getImagePlus().show();
+				ef.addMovie(vs);
 			}
 		} catch(Exception e){
 			StringWriter sw = new StringWriter();
@@ -466,18 +482,23 @@ class DisplayOpPanel extends JPanel{
 	HashMap<JCheckBox, String> paramNames;
 	private JCheckBox clusterBox;
 	private JCheckBox midBox;
-	private JCheckBox initialBBBox;
+//	private JCheckBox initialBBBox;
 	private JCheckBox contourBox;
 	private JCheckBox htBox;
-//	private JCheckBox forcesBox;
+	private JCheckBox forcesBox;
 	private JCheckBox backboneBox;
 	
+	private ExperimentFrame ef;
+
+	Vector <JCheckBox> indivForces;
 	/**
 	 * Constructs a Display option panel with the given display parameters
 	 * @param mdp
 	 */
-	public DisplayOpPanel(MaggotDisplayParameters mdp){
+	public DisplayOpPanel(MaggotDisplayParameters mdp, ExperimentFrame ef){
 		this.mdp = mdp;//new MaggotDisplayParameters();
+		mdp.initialBB = false;
+		this.ef = ef;
 		buildDisplayOpPanel();
 	}
 	
@@ -486,12 +507,15 @@ class DisplayOpPanel extends JPanel{
 		
 		buildCheckBoxes();
 //		add(clusterBox);
-		add(initialBBBox);
+//		add(initialBBBox);
 		add(htBox);
 		add(contourBox);
 		add(midBox);
 		add(backboneBox);
-//		add(forcesBox);
+		add(forcesBox);
+		for (JCheckBox b : indivForces) {
+			add(b);
+		}
 	}
 	
 	private void buildCheckBoxes(){
@@ -503,6 +527,7 @@ class DisplayOpPanel extends JPanel{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				mdp.setParam("clusters", clusterBox.isSelected());
+				ef.updateMDP();
 			}
 		});
 		
@@ -514,19 +539,21 @@ class DisplayOpPanel extends JPanel{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				mdp.setParam("mid", midBox.isSelected());
+				ef.updateMDP();
 			}
 		});
 		
 //		paramNames.put(initialBBBox, "initialBB");
 //		buildCheckBox(initialBBBox, "Initial Backbone Guess");
-		initialBBBox = new JCheckBox("Initial Backbone Guess");
-		initialBBBox.setSelected(mdp.getParam("initialBB"));
-		initialBBBox.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				mdp.setParam("initialBB", initialBBBox.isSelected());
-			}
-		});
+	//	initialBBBox = new JCheckBox("Initial Backbone Guess");
+	//	initialBBBox.setSelected(mdp.getParam("initialBB"));
+	//	initialBBBox.addActionListener(new ActionListener() {
+	//		@Override
+	//		public void actionPerformed(ActionEvent e) {
+	//			mdp.setParam("initialBB", initialBBBox.isSelected());
+	//			ef.updateMDP();
+	//		}
+	//	});
 		
 //		paramNames.put(contourBox, "contour");
 //		buildCheckBox(clusterBox, "Contour");clusterBox = new JCheckBox("Clusters");
@@ -536,6 +563,7 @@ class DisplayOpPanel extends JPanel{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				mdp.setParam("contour", contourBox.isSelected());
+				ef.updateMDP();
 			}
 		});
 
@@ -548,20 +576,22 @@ class DisplayOpPanel extends JPanel{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				mdp.setParam("ht", htBox.isSelected());
+				ef.updateMDP();
 			}
 		});
 
-//		
-////		paramNames.put(forcesBox, "forces");
-////		buildCheckBox(forcesBox, "Forces");
-//		forcesBox = new JCheckBox("Forces");
-//		forcesBox.setSelected(mdp.getParam("forces"));
-//		forcesBox.addActionListener(new ActionListener() {
-//			@Override
-//			public void actionPerformed(ActionEvent e) {
-//				mdp.setParam("forces", forcesBox.isSelected());
-//			}
-//		});
+		
+//		paramNames.put(forcesBox, "forces");
+//		buildCheckBox(forcesBox, "Forces");
+		forcesBox = new JCheckBox("Forces");
+		forcesBox.setSelected(mdp.getParam("forces"));
+		forcesBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				mdp.setParam("forces", forcesBox.isSelected());
+				ef.updateMDP();
+			}
+		});
 
 		
 //		paramNames.put(backboneBox, "backbone");
@@ -572,10 +602,16 @@ class DisplayOpPanel extends JPanel{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				mdp.setParam("backbone", backboneBox.isSelected());
+				ef.updateMDP();
 			}
 		});
 
+		indivForces = new Vector<JCheckBox>();
+		for (int i = 0; i < mdp.showForce.length; ++i) {
+			indivForces.add(new FCheckBox(i, mdp, ef));
+		}
 	}
+	
 	
 //	private void buildCheckBox(JCheckBox box, String title){
 //		
@@ -593,6 +629,34 @@ class DisplayOpPanel extends JPanel{
 //	}
 	
 	
+}
+
+class FCheckBox extends JCheckBox {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3914619681299717774L;
+	private MaggotDisplayParameters mdp;
+	private int whichForce;
+	ExperimentFrame ef;
+	public FCheckBox(int whichForce, MaggotDisplayParameters mdp, ExperimentFrame ef) {
+		super (new FittingParameters().getForceNames().get(whichForce));
+		this.whichForce = whichForce;
+		this.mdp = mdp;
+		this.ef = ef;
+		init();
+	}
+	void init() {
+		setSelected(mdp.showForce[whichForce]);
+		addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				mdp.showForce[whichForce] = isSelected();
+				ef.updateMDP();
+			}
+		});
+	}
 }
 
 

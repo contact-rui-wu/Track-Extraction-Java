@@ -49,6 +49,7 @@ public class Experiment_Processor implements PlugIn{
 	private String dstName;
 	//private PrintWriter processLog;
 	private Communicator comm;
+	private VerbLevel verbosity = VerbLevel.verb_warning;
 	
 	private ImageWindow mmfWin;
 	private ImagePlus mmfStack;
@@ -98,6 +99,10 @@ public class Experiment_Processor implements PlugIn{
 	public Experiment_Processor(){
 		runTime = new TicToc();
 		runTime.tic();
+	}
+	
+	public void run(String srcFileName, String dstDir, String dstName){
+		run(new String[] {srcFileName, dstDir, dstName});
 	}
 	
 	public void run(String[] args){
@@ -198,18 +203,6 @@ public class Experiment_Processor implements PlugIn{
 					
 				}
 				
-//				if(prParams.testFitFromDisk){
-//					try{
-//						log("Testing FitEx.fromDisk...");
-//						testFromDisk(true, processLog);
-//						log("...FitEx.fromDisk complete");
-//					} catch (Exception exc){
-//						StringWriter sw = new StringWriter();
-//						PrintWriter pw = new PrintWriter(sw);
-//						exc.printStackTrace(pw);
-//						log ("...Error in BTP Experiment fromDisk:\n"+sw.toString());
-//					}
-//				}
 				
 				if(prParams.savetoCSV){
 					currProcess = "Saving Params to CSV";
@@ -411,13 +404,22 @@ public class Experiment_Processor implements PlugIn{
 		//	IJ.showMessage("running from main = true");
 			System.out.println("Opening mmf from code..");
 
-
-			mmf_Reader mr = new mmf_Reader();
 			String path = new File(dir, filename).getPath();
-			mr.loadStack(path);
+			mmf_Reader mr = new mmf_Reader(path);
 			if (mr.getMmfStack()==null) {
 				System.out.println("null stack");
 				return false;
+			}
+			
+			String mdatname;
+			if (dstName.lastIndexOf(".") <=0) {
+				mdatname = dstName + ".mdat";
+			} else {
+				mdatname = dstName.replace(dstName.substring(dstName.lastIndexOf("."), dstName.length()), ".mdat");
+			}
+			File mdatfile = new File(dstDir, mdatname);
+			if (!mdatfile.exists()) {
+				mr.saveMetaData(mdatfile.getPath());
 			}
 			mmfStack = new ImagePlus(path, mr.getMmfStack());
 			showStatus("MMF open");
@@ -493,7 +495,7 @@ public class Experiment_Processor implements PlugIn{
 			processLog.println();
 			
 			comm = new FileWriterCommunicator(processLog);
-			comm.setVerbosity(VerbLevel.verb_warning);
+			comm.setVerbosity(verbosity);
 			return fname;
 		} catch (Exception e){
 			new TextWindow("Log error", "Unable to create Processing Log file '"+logPathParts[1]+"' in '"+logPathParts[0]+"'", 500, 500);
@@ -1262,6 +1264,17 @@ public class Experiment_Processor implements PlugIn{
 		comm.verbosity = VerbLevel.verb_message;
 		comm.message(runTime.getElapsedTime()*0.001+" sec: "+indent+" "+message, VerbLevel.verb_message);
 		comm.verbosity = vb;
+	}
+
+	public VerbLevel getVerbosity() {
+		return verbosity;
+	}
+
+	public void setVerbosity(VerbLevel verbosity) {
+		this.verbosity = verbosity;
+		if (comm != null) {
+			comm.setVerbosity(verbosity);
+		}
 	}
 	
 }

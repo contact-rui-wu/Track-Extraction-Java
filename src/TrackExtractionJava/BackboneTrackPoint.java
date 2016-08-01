@@ -1,6 +1,5 @@
 package TrackExtractionJava;
 
-import ij.ImagePlus;
 import ij.gui.PolygonRoi;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
@@ -10,6 +9,7 @@ import java.awt.Rectangle;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Vector;
@@ -675,49 +675,51 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		}
 		return false;
 	}
-	
-	public ImageProcessor getIm(){
-
-		return getIm(MaggotDisplayParameters.DEFAULTexpandFac, MaggotDisplayParameters.DEFAULTclusters,MaggotDisplayParameters.DEFAULTmid, MaggotDisplayParameters.DEFAULTinitialBB, MaggotDisplayParameters.DEFAULTnewBB, 	
-				MaggotDisplayParameters.DEFAULTcontour, MaggotDisplayParameters.DEFAULTht, MaggotDisplayParameters.DEFAULTforces, MaggotDisplayParameters.DEFAULTbackbone);
-		
-	}
-	
-	public ImageProcessor getIm(MaggotDisplayParameters mdp){
-		
-		if (mdp==null){
-			return getIm();
-		} else {
-			return getIm(mdp.expandFac, mdp.clusters, mdp.mid, mdp.initialBB, mdp.newBB, 	
-				mdp.contour, mdp.ht, mdp.forces, mdp.backbone);
-		}
-	}
-	
-	
-	public ImageProcessor getIm(int expandFac, boolean clusters, boolean mid, boolean initialBB, boolean newBB, boolean contour, boolean ht, boolean forces, boolean bb){
-
-		if (mid && MagPixX==null){
-			reloadMagPix();
-		}
-		
-		imOriginX = (int)x-(trackWindowWidth/2);
-		imOriginY = (int)y-(trackWindowHeight/2);
-		im.snapshot();
-		
-		ImageProcessor bigIm = im.resize(im.getWidth()*expandFac);
-		
-		int centerX = (int)((x-rect.x)*(expandFac));
-		int centerY = (int)((y-rect.y)*(expandFac));
-		ImageProcessor pIm = CVUtils.padAndCenter(new ImagePlus("Point "+pointID, bigIm), expandFac*trackWindowWidth, expandFac*trackWindowHeight, centerX, centerY);
-		int offX = (expandFac*trackWindowWidth)/2-centerX;
-		int offY = (expandFac*trackWindowHeight)/2-centerY;
-//		int offX =  windowCenterX - centerX;//((int)x-rect.x)*expandFac;//rect.x-imOriginX;
-//		int offY = windowCenterY - centerY;//((int)y-rect.y)*expandFac;//rect.y-imOriginY;
-		
-		
-		return drawFeatures(pIm, offX, offY, expandFac, clusters, mid, initialBB, newBB, contour, ht, forces, bb); 
-		
-	}
+//	
+//	public ImageProcessor getIm(){
+//
+//		return getIm(new MaggotDisplayParameters());
+//	//	return getIm(MaggotDisplayParameters.DEFAULTexpandFac, MaggotDisplayParameters.DEFAULTclusters,MaggotDisplayParameters.DEFAULTmid, MaggotDisplayParameters.DEFAULTinitialBB, MaggotDisplayParameters.DEFAULTnewBB, 	
+//		//		MaggotDisplayParameters.DEFAULTcontour, MaggotDisplayParameters.DEFAULTht, MaggotDisplayParameters.DEFAULTforces, MaggotDisplayParameters.DEFAULTbackbone);
+//		
+//	}
+//	
+//	public ImageProcessor getIm(MaggotDisplayParameters mdp){
+//		
+//		if (mdp==null){
+//			return getIm();
+//		} 
+//		ImageProcessor ip = super.getIm(mdp);
+//		
+////		return drawFeatures(ip, mdp); 
+//
+//	}
+//	
+//	
+//	public ImageProcessor getIm(int expandFac, boolean clusters, boolean mid, boolean initialBB, boolean newBB, boolean contour, boolean ht, boolean forces, boolean bb){
+//
+//		if (mid && MagPixX==null){
+//			reloadMagPix();
+//		}
+//		
+//		imOriginX = (int)x-(getTrackWindowWidth()/2);
+//		imOriginY = (int)y-(getTrackWindowHeight()/2);
+//		im.snapshot();
+//		
+//		ImageProcessor bigIm = im.resize(im.getWidth()*expandFac);
+//		
+//		int centerX = (int)((x-rect.x)*(expandFac));
+//		int centerY = (int)((y-rect.y)*(expandFac));
+//		ImageProcessor pIm = CVUtils.padAndCenter(new ImagePlus("Point "+pointID, bigIm), expandFac*getTrackWindowWidth(), expandFac*getTrackWindowHeight(), centerX, centerY);
+//		int offX = (expandFac*getTrackWindowWidth())/2-centerX;
+//		int offY = (expandFac*getTrackWindowHeight())/2-centerY;
+////		int offX =  windowCenterX - centerX;//((int)x-rect.x)*expandFac;//rect.x-imOriginX;
+////		int offY = windowCenterY - centerY;//((int)y-rect.y)*expandFac;//rect.y-imOriginY;
+//		
+//		
+//		return drawFeatures(pIm, offX, offY, expandFac, clusters, mid, initialBB, newBB, contour, ht, forces, bb); 
+//		
+//	}
 
 	public void reloadMagPix(){
 		setInitialBB(backbone, numBBPts);
@@ -725,73 +727,34 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		setInitialClusterInfo();
 	}
 	
-	public ImageProcessor getImWithMidline(PolygonRoi mid){
-		int expandFac = 10;//TODO MOVE TO PARAMETERS
-		
-		imOriginX = (int)(rect.x+rect.width/2)-(trackWindowWidth/2)-1;
-		imOriginY = (int)(rect.y+rect.height/2)-(trackWindowHeight/2)-1;
-		im.snapshot();
-		
-		ImageProcessor bigIm = im.resize(im.getWidth()*expandFac);
-		
-		int centerX = (int)(x-rect.x)*(expandFac);
-		int centerY = (int)(y-rect.y)*(expandFac);
-		ImageProcessor pIm = CVUtils.padAndCenter(new ImagePlus("Point "+pointID, bigIm), expandFac*trackWindowWidth, expandFac*trackWindowHeight, centerX, centerY);
-		int offX = trackWindowWidth*(expandFac/2) - ((int)x-rect.x)*expandFac;//rect.x-imOriginX;
-		int offY = trackWindowHeight*(expandFac/2) - ((int)y-rect.y)*expandFac;//rect.y-imOriginY;
-		
-		ImageProcessor im = pIm.convertToRGB();
-		Vector<PolygonRoi> mids = new Vector<PolygonRoi>();	mids.add(midline); mids.add(mid);
-		Vector<Color> colors = new Vector<Color>(); colors.add(Color.YELLOW); colors.add(Color.RED);
-		displayUtils.drawMidlines(im, mids, offX, offY, expandFac, colors);
-//		displayUtils.drawMidline(im, mid, offX, offY, expandFac, Color.RED);
-
-		
-		return im;
-	}
-	
-	protected ImageProcessor drawFeatures(ImageProcessor grayIm, int offX, int offY, int expandFac, boolean clusters, boolean mid, boolean initialBB, boolean newBB, boolean contour, boolean ht, boolean forces, boolean bb){
-		
-		ImageProcessor im = grayIm.convertToRGB();
-		
+	protected ImageProcessor drawFeatures(ImageProcessor grayIm, MaggotDisplayParameters mdp){
+		ImageProcessor im = super.drawFeatures(grayIm, mdp);
+		if (im.isGrayscale()) {
+			im = im.convertToRGB();
+		} 
+		int centerX = (int)((x-rect.x)*(mdp.expandFac));
+		int centerY = (int)((y-rect.y)*(mdp.expandFac));
+		int offX = (mdp.expandFac*getTrackWindowWidth())/2-centerX;
+		int offY = (mdp.expandFac*getTrackWindowHeight())/2-centerY;
 		
 		//PIXEL CLUSTERS
-		if (clusters) displayUtils.drawClusters(im, numPix, MagPixX, MagPixY, clusterInds, expandFac, offX, offY, rect);
+		if (mdp.clusters) displayUtils.drawClusters(im, numPix, MagPixX, MagPixY, clusterInds, mdp.expandFac, offX, offY, rect);
 		
-		//MIDLINE
-		if (mid) displayUtils.drawMidline(im, midline, offX, offY, expandFac, artificialMid ? Color.CYAN : Color.YELLOW);
 		
-		//LR SEGS: TEMP
-//		if (initialBB) displayUtils.drawMidline(im, leftSeg, offX, offY, expandFac, Color.BLUE);
-//		if (initialBB) displayUtils.drawMidline(im, rightSeg, offX, offY, expandFac, Color.BLUE);
-//		if (initialBB) displayUtils.drawBBInit(im, bbInit, offX, offY, rect, expandFac, Color.YELLOW);
-//		if (initialBB) displayUtils.drawSegLines(im, new PolygonRoi(bbInit, PolygonRoi.POLYLINE), backbone, expandFac, offX, offY, Color.GREEN);
-
 		//INITIAL SPINE
-		if (initialBB) displayUtils.drawBBInit(im, bbInit, offX, offY, rect, expandFac, Color.MAGENTA);
+		if (mdp.initialBB) displayUtils.drawBBInit(im, bbInit, offX, offY, rect, mdp.expandFac, Color.MAGENTA);
 		
-		if (newBB) displayUtils.drawBackbone(im, bbNew, expandFac, offX, offY, rect, Color.blue);
+		if (mdp.newBB) displayUtils.drawBackbone(im, bbNew, mdp.expandFac, offX, offY, rect, Color.blue);
 		
-		
-		//CONTOUR
-		if (contour) displayUtils.drawContour(im, contourX, contourY, expandFac, offX, offY, Color.BLUE);
-		
-		 
-		//HEAD AND TAIL
-		if (ht){
-			displayUtils.drawPoint(im, head, expandFac, offX, offY, Color.MAGENTA);
-			displayUtils.drawPoint(im, tail, expandFac, offX, offY, Color.GREEN);
-			displayUtils.drawPoint(im, midpoint, expandFac, offX, offY, Color.BLUE);
-		}
 		
 		//FORCES
-		if (forces && targetBackbones!=null && targetBackbones.size()>0) {
-			displayUtils.drawTargets(im, targetBackbones, expandFac, offX, offY, rect);//TargetBackbones are absolute coords
+		if (mdp.forces && targetBackbones!=null && targetBackbones.size()>0) {
+			displayUtils.drawTargets(im, targetBackbones, mdp.showForce, mdp.expandFac, offX, offY, rect, backbone.getFloatPolygon());//TargetBackbones are absolute coords
 		}
 			
 			
 		//BACKBONE
-		if (bb) displayUtils.drawBackbone(im, backbone.getFloatPolygon(), expandFac, offX, offY, rect, Color.RED);
+		if (mdp.backbone) displayUtils.drawBackbone(im, backbone.getFloatPolygon(), mdp.expandFac, offX, offY, rect, Color.RED);
 		
 		return im;
 	}
@@ -971,6 +934,52 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
         
 	}
 
+	/**
+	 * setTargetBackbones
+	 * intended to be used only for display purposes
+	 * changes state of BackboneTrackPoint, so WILL interfere with fitting
+	 */
+	public void setTargetBackbones (Vector<Force> Forces, Vector<BackboneTrackPoint> points) {
+		try{	
+			int ind = track.getPointIndexFromID(points, pointID);
+			if (ind < 0 || ind >= points.size()){
+				return;
+			}	
+			if (targetBackbones == null) {
+				targetBackbones = new Vector<FloatPolygon>();
+			}
+			targetBackbones.clear();
+			//bbOld = CVUtils.fPolyAddOffset(backbone.getFloatPolygon(), rect.x, rect.y);
+			bbOld = backbone.getFloatPolygon();
+			setMagPix();
+			setInitialClusterInfo();
+			for (int i=0; i<Forces.size(); i++){						
+				FloatPolygon tb = Forces.get(i).getTargetPoints(ind, points);
+				targetBackbones.add(tb);
+			}
+		} catch(Exception e){
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter(sw);
+			e.printStackTrace(pw);
+			comm.message("Error getting target backbones: \n"+sw.toString()+"\n", VerbLevel.verb_error);
+		}
+	}
+	
+	/**
+	 * setTargetBackbones
+	 * slow, intended to be used only for display purposes
+	 * changes state of BackboneTrackPoint, so WILL interfere with fitting
+	 */
+	public void setTargetBackbones (Vector<Force> Forces) {
+		Vector<BackboneTrackPoint> btps = new Vector<BackboneTrackPoint>();
+		for (TrackPoint tp : track.points) {
+			BackboneTrackPoint btp = (BackboneTrackPoint) tp;
+			if (btp == null) { return; }
+			btps.add(btp);
+		}
+		setTargetBackbones(Forces, btps);
+	}
+	
 	public int getPointType(){
 		return BackboneTrackPoint.pointType;
 	}

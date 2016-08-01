@@ -6,7 +6,7 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 
-
+//TODO: incorporate convergence critieria and iteration counts
 public class FittingParameters {
 	
 	int GCInterval = 5;
@@ -180,6 +180,17 @@ public class FittingParameters {
 		if (spineExpansionWeight > 0 && targetLength > 0) {
 			Forces.add(new SpineExpansionForce(spineExpansionWeights, spineExpansionWeight, targetLength, true));
 		}
+		return Forces;
+	}
+public Vector<String> getForceNames() {
+		
+		Vector<String> Forces = new Vector<String>();
+		Forces.add("image force");
+		Forces.add("spine length force");
+		Forces.add("spine smooth force");
+		Forces.add("time length force");
+		Forces.add("time smooth force");
+		Forces.add("spine expansion force");
 		return Forces;
 	}
 	

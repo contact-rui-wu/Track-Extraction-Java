@@ -161,7 +161,7 @@ public class TrackBuilder implements Serializable{
 	    
 	    
 	    
-		while ( (!ep.subset && (pe.nextFrameNum()<=pe.fl.getStackSize()) ) || 
+		while ( (!ep.subset && (pe.nextFrameNum()< pe.fl.getStackSize()) ) || 
 				(ep.subset && (pe.nextFrameNum()<=pe.endFrameNum && pe.nextFrameNum()<=ep.endFrame)) ){
 			frameNum = pe.nextFrameNum();
 			if (frameNum%100 == 0){
@@ -179,22 +179,27 @@ public class TrackBuilder implements Serializable{
 	        }
 			if (addFrame(frameNum)>0) {
 				comm.message("Error adding frame "+pe.nextFrameNum(), VerbLevel.verb_error);
-				return;
-			}
-			
+				break; //was return - cleanup code never called!
+			}	
 		}
+		comm.message("finished extracting tracks at frame " + pe.currentFrameNum, VerbLevel.verb_message);
+		IJ.showProgress(1,1); //close progress bar
 		
 		//Debug Output
 		trackMessage.message("There are "+activeColIDs.size()+"+"+finishedColIDs.size()+" collisions", VerbLevel.verb_verbose);
-		for (int i=0; i<activeTracks.size(); i++){
-			trackMessage.message(activeTracks.get(i).infoString(), VerbLevel.verb_debug);
-		}
-		
+		//for (int i=0; i<activeTracks.size(); i++){
+	//		trackMessage.message(activeTracks.get(i).infoString(), VerbLevel.verb_debug);
+	//	}
+		finishTracks();
 		//Move all active tracks to finished
-		finishedTracks.addAll(activeTracks);
-		activeTracks.removeAll(activeTracks);
-		
+//		finishedTracks.addAll(activeTracks);
+		//activeTracks.removeAll(activeTracks);
+	//	activeTracks.removeAllElements();
 
+		//resolveCollisions();
+		//finishedColIDs.addAll(activeColIDs);
+		//activeColIDs.removeAll(finishedColIDs);
+		/*
 		if (ep.matchSpill.length>0) {
 			for (int i=0;i<ep.matchSpill.length;i++){
 				
@@ -211,11 +216,9 @@ public class TrackBuilder implements Serializable{
 			}
 			new TextWindow("Abnormal matches", sb.toString(), 600, 500);
 		}
+		*/
 		
 		
-		//resolveCollisions();
-		finishedColIDs.addAll(activeColIDs);
-		activeColIDs.removeAll(finishedColIDs);
 
 		Timer.toc("buildTracks");
 	}
@@ -1018,7 +1021,13 @@ public class TrackBuilder implements Serializable{
 		return totalA/num; 
 	}
 	
-	
+	protected void finishTracks() {
+		comm.message("finishing tracks", VerbLevel.verb_message);
+		finishedTracks.addAll(activeTracks);
+		activeTracks.clear();
+		finishedColIDs.addAll(activeColIDs);
+		activeColIDs.clear();
+	}
 	
 	public Experiment toExperiment(){
 		//Clean up the TrackBuilder

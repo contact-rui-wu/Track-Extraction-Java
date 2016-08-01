@@ -67,6 +67,18 @@ public class CVUtils {
 		
 		return new FloatPolygon(x, y);
 	}
+	public static FloatPolygon fPolyAddOffset (FloatPolygon fp1, float offX, float offY){
+		
+		float[] x = new float[fp1.npoints];
+		float[] y = new float[fp1.npoints];
+		
+		for (int i=0; i<fp1.npoints; i++){
+			x[i] = fp1.xpoints[i] + offX;
+			y[i] = fp1.ypoints[i] + offY;
+		}
+		
+		return new FloatPolygon(x, y);
+	}
 	
 	//rethreshold to a specified number of regions
 	
@@ -291,8 +303,10 @@ public class CVUtils {
 		ImagePlus retIm = new ImagePlus("Padded "+image.getTitle(), newIm);
 		
 		return retIm.getProcessor();
+	}
+	public static ImageProcessor padAndCenter(ImageProcessor image, int newWidth, int newHeight, int centerX, int centerY){
 		
-		
+		return (padAndCenter(new ImagePlus("foobar", image), newWidth, newHeight, centerX, centerY));
 		
 	}
 	

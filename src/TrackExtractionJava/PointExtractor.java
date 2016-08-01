@@ -202,7 +202,7 @@ public class PointExtractor {
 	public int loadFrame(int frameNum){
 		
 		if (frameNum==currentFrameNum && (analysisRect==null ||(fl.returnIm.getWidth()==analysisRect.getWidth() && fl.returnIm.getHeight()==analysisRect.getHeight()))){
-			if (comm!=null) comm.message("Frame already loaded in Frameloader", VerbLevel.verb_message);
+			if (comm!=null) comm.message("Frame already loaded in Frameloader", VerbLevel.verb_verbose);
 			return 0;
 		}
 		
@@ -295,7 +295,7 @@ public class PointExtractor {
 //		ep.excludeEdges = excl;
 		
 //		if (showResults) {
-		if (comm!=null) comm.message("Frame "+frameNum+": "+pointTable.getCounter()+" points in ResultsTable", VerbLevel.verb_message);
+		if (comm!=null) comm.message("Frame "+frameNum+": "+pointTable.getCounter()+" points in ResultsTable", VerbLevel.verb_verbose);
 //	    }
 
 			//ResultsTable rt, int frameNum, Rectangle analysisRect, int[] frameSize, ImagePlus currentIm, ImagePlus threshIm, ExtractionParameters ep, int thresh, Communicator comm
@@ -415,7 +415,7 @@ public class PointExtractor {
 					if (comm!=null) comm.message("Point was not proper size: not made into a point", VerbLevel.verb_debug);
 				}
 			} else {
-				if (comm!=null) comm.message("Point "+row+" from ResultsTable in frame "+frameNum+" was clipped", VerbLevel.verb_message);
+				if (comm!=null) comm.message("Point "+row+" from ResultsTable in frame "+frameNum+" was clipped", VerbLevel.verb_verbose);
 			}
 			
 		}

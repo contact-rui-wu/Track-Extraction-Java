@@ -41,7 +41,7 @@ public class Track_Extractor implements PlugIn{
 	// Build the tracks TRACKBUILDER
 	TrackBuilder tb;
 	//ep= new ExtractionParameters()
-	ExperimentFrame ef;
+	//ExperimentFrame ef;
 	
 	public void run(String arg) {
 				
@@ -207,7 +207,10 @@ class ExtractorFrame extends JFrame{
 		epArgs[1] = output.dirTxFld.getText(); //dstdir
 		epArgs[2] = output.nameTxFld.getText(); //dstname
 		
-		ep.run(epArgs);
+		//run in a different thread so as not to block UI execution
+		new Thread(new EPRunner(ep, epArgs)).start();
+		
+		//ep.run(epArgs);
 
 //		imj.quit();
 	}
@@ -548,6 +551,23 @@ class ParamPanel extends JPanel{
 		cPrefFrame.setVisible(true);
 	}
 	
+	
+}
+
+class EPRunner implements Runnable {
+
+	Experiment_Processor ep;
+	String[] epArgs;
+	
+	public EPRunner (Experiment_Processor ep, String[] epArgs) {
+		this.ep = ep;
+		this.epArgs = epArgs;
+	}
+	@Override
+	public void run() {
+		this.ep.run(epArgs);
+		
+	}
 	
 }
 

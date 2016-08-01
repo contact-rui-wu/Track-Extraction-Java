@@ -114,8 +114,9 @@ public class ExtractionParameters implements Serializable{
     
     /**
      * Whether or not to globally threshold the image
+     * not used in current code - removed
      */
-    boolean useGlobalThresh = true;
+    //boolean useGlobalThresh = true;
     /**
      * The global threshold value
      */

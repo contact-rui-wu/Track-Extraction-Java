@@ -27,8 +27,24 @@ public class ImTrackPoint extends TrackPoint{
 	protected int imOriginX;
 	protected int imOriginY;
 	
-	protected int trackWindowWidth;
-	protected int trackWindowHeight;
+	private int trackWindowWidth;
+	protected int getTrackWindowWidth() {
+		return trackWindowWidth;
+	}
+
+	protected void setTrackWindowWidth(int trackWindowWidth) {
+		this.trackWindowWidth = trackWindowWidth;
+	}
+
+	protected int getTrackWindowHeight() {
+		return trackWindowHeight;
+	}
+
+	protected void setTrackWindowHeight(int trackWindowHeight) {
+		this.trackWindowHeight = trackWindowHeight;
+	}
+
+	private int trackWindowHeight;
 	
 	/**
 	 * Identitfies the point as an IMTRACKPOINT

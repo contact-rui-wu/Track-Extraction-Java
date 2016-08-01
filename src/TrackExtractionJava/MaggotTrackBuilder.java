@@ -2,6 +2,7 @@ package TrackExtractionJava;
 
 import java.util.Vector;
 
+import ij.IJ;
 import ij.ImageStack;
 import ij.text.TextWindow;
 
@@ -28,21 +29,53 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		
 		ep.trackPointType=2;//Make sure the track is loaded as MaggotTrackPoints
 		buildTracks();
+		comm.message("MTB: build tracks completed", VerbLevel.verb_message);
+		finishTracks();
+		removeDeadMaggots();
+		comm.message("MTB: dead maggots pruned", VerbLevel.verb_message);
 		orientMaggots();
 		if (ep.calcDerivs){
 			calcImDerivs();
 		}
 	}
-
+	
+	/**
+	 * removes tracks whose center of mass does not move more than minDistInBodyLengths head-tail distances 
+	 * from start
+	 * @param minDistInBodyLengths
+	 */
+	protected void removeDeadMaggots(double minDistInBodyLengths) {
+		Vector<Track> goodTracks = new Vector<Track> ();
+		for (Track ft : finishedTracks) {
+			if (ft.maxExcursion() >= minDistInBodyLengths*ft.getMeanHTdist() && ft.getFractionHTValid() > 0.5){
+				goodTracks.add(ft);
+			}
+		}
+		finishedTracks.clear();
+		finishedTracks.addAll(goodTracks);
+	}
+	/**
+	 * removes tracks whose center of mass does not move much
+	 */
+	protected void removeDeadMaggots(){
+		removeDeadMaggots(3);
+	}
+	
 	/**
 	 * Orients all the tracks so that all maggots have their head in the direction of motion
 	 */
 	protected void orientMaggots(){
 
+		if (comm!=null) comm.message("orienting maggots", VerbLevel.verb_message);
 		Communicator c = new Communicator();
 		c.setVerbosity(VerbLevel.verb_off);
 		for (int i=0; i<finishedTracks.size(); i++){
+			IJ.showStatus("Aligning maggots: " + (i+1) +"/" + finishedTracks.size());
+			Timer.tic("OrientMaggotTrack");
 			orientMaggotTrack(finishedTracks.get(i), ep.framesBtwnContSegs, c);  
+			Timer.toc("OrientMaggotTrack");
+			IJ.showProgress(i+1,finishedTracks.size());
+			
 		}
 		if (!c.outString.equals("")) new TextWindow("Orientation debugging output", c.outString, 500, 500);
 	}

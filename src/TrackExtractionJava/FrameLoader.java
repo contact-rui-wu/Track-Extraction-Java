@@ -155,7 +155,7 @@ public class FrameLoader {
 		
 		//crop the image to the ROI
 		returnIm = convertedIm.crop();
-		if (comm!=null && ar.width>0) comm.message("FrameLoader: Return im size = "+returnIm.getWidth()+"x"+returnIm.getHeight(), VerbLevel.verb_message);
+		if (comm!=null && ar.width>0) comm.message("FrameLoader: Return im size = "+returnIm.getWidth()+"x"+returnIm.getHeight(), VerbLevel.verb_verbose);
 		return 0; 
 	}
 	

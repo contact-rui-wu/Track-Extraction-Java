@@ -497,7 +497,7 @@ public class Experiment implements Serializable{
 	private void loadFromDisk(DataInputStream dis, PrintWriter pw){
 		int progress = -2;
 		try{
-
+			
 			//Read the Experiment Type
 			int tpType = dis.readInt();
 			if (pw!=null) pw.println("==> trackpoint type "+tpType);

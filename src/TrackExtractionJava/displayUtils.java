@@ -161,8 +161,10 @@ public class displayUtils {
 		}
 	}
 	
-	
-	public static void drawTargets(ImageProcessor im, Vector<FloatPolygon> targetBackbones, int expandFac, int offX, int offY, Rectangle rect){
+	public static void drawTargets(ImageProcessor im, Vector<FloatPolygon> targetBackbones, boolean[] showForces, int expandFac, int offX, int offY, Rectangle rect) {
+		drawTargets(im, targetBackbones, showForces, expandFac, offX, offY, rect, null);
+	}
+	public static void drawTargets(ImageProcessor im, Vector<FloatPolygon> targetBackbones, boolean[] showForces, int expandFac, int offX, int offY, Rectangle rect, FloatPolygon oldBB){
 		
 		if(targetBackbones==null){
 			return;
@@ -170,7 +172,10 @@ public class displayUtils {
 		
 		Vector<Color> colors = getColorList();
 		
-		for (int j=0; j<targetBackbones.size(); j++){
+		for (int j=0; j<targetBackbones.size() && j < showForces.length; j++){
+			if (!showForces[j]) {
+				continue;
+			}
 			Color color = colors.get(j%colors.size());
 			FloatPolygon bbNew = targetBackbones.get(j);
 			
@@ -194,6 +199,11 @@ public class displayUtils {
 						im.setColor(Color.RED);
 						im.drawOval(1, 1, 6, 6);
 						im.setColor(color);
+					}
+					if (oldBB != null) {
+						int x0 = (int)(expandFac*(oldBB.xpoints[i]-rect.x));
+						int y0 = (int)(expandFac*(oldBB.ypoints[i]-rect.y));
+						im.drawLine(offX + x0, offY + y0, offX + x, offY + y);
 					}
 				}
 			}else {

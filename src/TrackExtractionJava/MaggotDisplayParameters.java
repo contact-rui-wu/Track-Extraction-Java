@@ -14,7 +14,7 @@ public class MaggotDisplayParameters {
 	static boolean DEFAULTforces = false;
 	static boolean DEFAULTbackbone = true;
 	//Image, SpineLength, SpineSmooth, TimeLength, TimeSmooth
-	static boolean[] DEFAULTshowForce = {true, true, true, true, true};
+	static boolean[] DEFAULTshowForce = {true, true, true, true, true, true};
 	
 	int expandFac;
 	boolean clusters;

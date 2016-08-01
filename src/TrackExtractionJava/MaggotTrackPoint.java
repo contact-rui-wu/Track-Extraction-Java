@@ -814,142 +814,51 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		
 		int expandFac = mdp.expandFac;
 		
-		imOriginX = (int)x-(trackWindowWidth/2);
-		imOriginY = (int)y-(trackWindowHeight/2);
+		imOriginX = (int)x-(getTrackWindowWidth()/2);
+		imOriginY = (int)y-(getTrackWindowHeight()/2);
 //		im.snapshot();
 		
 		ImageProcessor bigIm = im.resize(im.getWidth()*expandFac);
 		
-		int centerX = (int)(x-rect.x)*(expandFac);
-		int centerY = (int)(y-rect.y)*(expandFac);
-		ImageProcessor pIm = CVUtils.padAndCenter(new ImagePlus("Point "+pointID, bigIm), expandFac*trackWindowWidth, expandFac*trackWindowHeight, centerX, centerY);
-		int offX = trackWindowWidth*(expandFac/2) - ((int)x-rect.x)*expandFac;//rect.x-imOriginX;
-		int offY = trackWindowHeight*(expandFac/2) - ((int)y-rect.y)*expandFac;//rect.y-imOriginY;
+		int centerX = (int)((x-rect.x)*(expandFac));
+		int centerY = (int)((y-rect.y)*(expandFac));
+		ImageProcessor pIm = CVUtils.padAndCenter(new ImagePlus("Point "+pointID, bigIm), expandFac*getTrackWindowWidth(), expandFac*getTrackWindowHeight(), centerX, centerY);
 		
-		
-		return drawFeatures(pIm, offX, offY, expandFac, mdp.mid, mdp.contour, mdp.ht); 
+		return drawFeatures(pIm, mdp); 
 		
 	}
 	
-	public ImageProcessor getImOLD() {
-		imOriginX = (int)x-(trackWindowWidth/2)-1;
-		imOriginY = (int)y-(trackWindowHeight/2)-1;
-//		im.snapshot();
-//		ImageProcessor cIm = drawFeatures(im);
-		ImageProcessor pIm = CVUtils.padAndCenter(new ImagePlus("Point "+pointID, im), trackWindowWidth, trackWindowHeight, (int)x-rect.x, (int)y-rect.y);
-		int offX = rect.x-imOriginX;
-		int offY = rect.y-imOriginY;
-		return drawFeaturesOLD(pIm, offX, offY); 
-		
-	}
 	
-	/**
-	 * Returns an imageProcessor of trackPoint features drawn in color over a gray image
-	 * @param grayIm A grayscale image to be displayed
-	 * @param offX X offset of the TrackPoint coordinates compared to the origin of grayIm 
-	 * @param offY Y offset of the TrackPoint coordinates compared to the origin of grayIm
-	 * @return The trackpoint features drawn atop the grayscale image
-	 */
-	protected ImageProcessor drawFeaturesOLD(ImageProcessor grayIm, int offX, int offY){
-		
-		ImageProcessor im = grayIm.convertToRGB();
-				
-		im.setColor(Color.WHITE);
-		//im.drawDot(offX, offY);//Top Right
-		im.drawLine(offX-1, offY-1, offX+rect.width, offY-1);//TL to TR
-		im.drawLine(offX-1, offY+rect.height, offX+rect.width, offY+rect.height);//BL to BR
-		im.drawLine(offX-1, offY-1, offX-1, offY+rect.height);//TL to BL
-		im.drawLine(offX+rect.width, offY-1, offX+rect.width, offY+rect.height);//TR to BR
-		//im.drawDot(rect.width-1+offX, rect.height-1+offY);//Bottom Right
-		
-		im.setColor(Color.YELLOW);
-		for (int i=0; i<(contourX.length-1); i++){
-			im.drawLine(contourX[i]+offX, contourY[i]+offY, contourX[i+1]+offX, contourY[i+1]+offY);
-		}
-		im.drawLine(contourX[contourX.length-1]+offX, contourY[contourX.length-1]+offY, contourX[0]+offX, contourY[0]+offY);
-
-		/*
-		im.setColor(Color.BLUE);
-		im.drawDot((int)x-rect.x+offX, (int)y-rect.y+offY);//Center
-		im.drawDot(getStart().x-rect.x+offX, getStart().y-rect.y+offY);//First pt in contour algorithm
-		
-		if (leftX!=null){
-			im.setColor(Color.BLUE);
-			for (int i=0; i<leftX.length; i++){
-				im.drawDot(leftX[i]+offX, leftY[i]+offY);
-			}
-			im.setColor(Color.YELLOW);
-			for (int i=0; i<leftSeg.getNCoordinates(); i++){
-				im.drawDot(leftSeg.getXCoordinates()[i]+offX+(int)leftSeg.getXBase(), leftSeg.getYCoordinates()[i]+offY+(int)leftSeg.getYBase());
-			}
+	
+	protected ImageProcessor drawFeatures(ImageProcessor grayIm, MaggotDisplayParameters mdp) {
+		int centerX = (int)((x-rect.x)*(mdp.expandFac));
+		int centerY = (int)((y-rect.y)*(mdp.expandFac));
+		int offX = (mdp.expandFac*getTrackWindowWidth())/2-centerX;
+		int offY = (mdp.expandFac*getTrackWindowHeight())/2-centerY;
 			
-			im.setColor(Color.CYAN);
-			for (int i=0; i<rightX.length; i++){
-				im.drawDot(rightX[i]+offX, rightY[i]+offY);
-			}
-			im.setColor(Color.ORANGE);
-			for (int i=0; i<rightSeg.getNCoordinates(); i++){
-				im.drawDot(rightSeg.getXCoordinates()[i]+offX+(int)rightSeg.getXBase(), rightSeg.getYCoordinates()[i]+offY+(int)rightSeg.getYBase());
-			}
-		}
-		*/
-		
-		im.setColor(Color.MAGENTA);
-		if (midline!=null){
-			for (int i=0; i<midline.getNCoordinates(); i++){
-				im.drawDot(midline.getXCoordinates()[i]+offX+(int)midline.getXBase(), midline.getYCoordinates()[i]+offY+(int)midline.getYBase());
-				
-				if (i==(midline.getNCoordinates()/2)){
-					im.setColor(Color.CYAN);
-				}
-				
-			}
-		}
-		
-		im.setColor(Color.RED);
-		if (head!=null){
-			im.drawDot((int)head.x+offX, (int)head.y+offY);
-		}
-		im.setColor(Color.GREEN);
-		if (tail!=null){
-			im.drawDot((int)tail.x+offX, (int)tail.y+offY);
-		}
-		
-		return im;
-	}
-	
-	protected ImageProcessor drawFeatures(ImageProcessor grayIm, int offX, int offY, int expandFac, boolean mid, boolean contour, boolean ht){
-		
 		
 		
 		ImageProcessor im = grayIm.convertToRGB();
 		
 		//MIDLINE
-		if (mid) displayUtils.drawMidline(im, midline, offX, offY, expandFac, Color.YELLOW);
+		if (mdp.mid) displayUtils.drawMidline(im, midline, offX, offY, mdp.expandFac, Color.YELLOW);
 		
 		//CONTOUR
-		if (contour) displayUtils.drawContour(im, contourX, contourY, expandFac, offX, offY, Color.BLUE);
+		if (mdp.contour) displayUtils.drawContour(im, contourX, contourY, mdp.expandFac, offX, offY, Color.BLUE);
 		
 		 
 		//HEAD AND TAIL
-		if (ht){
-			displayUtils.drawPoint(im, head, expandFac, offX, offY, Color.MAGENTA);		
-			displayUtils.drawPoint(im, tail, expandFac, offX, offY, Color.GREEN);
-			displayUtils.drawPoint(im, midpoint, expandFac, offX, offY, Color.BLUE);	
+		if (mdp.ht){
+			displayUtils.drawPoint(im, head, mdp.expandFac, offX, offY, Color.MAGENTA);		
+			displayUtils.drawPoint(im, tail, mdp.expandFac, offX, offY, Color.GREEN);
+			displayUtils.drawPoint(im, midpoint, mdp.expandFac, offX, offY, Color.BLUE);	
 		}
 		
 			
 		return im;
 	}
 	
-//	public String infoSpill(){
-//		String s = super.infoSpill();
-//		for (int i=0; i<contourX.length; i++){
-//			s +="\n\t"+"Contour point "+i+": ("+contourX[i]+","+contourY[i]+")";
-//		}
-//		return s;
-//	}
-	
+
 	
 	protected void copyInfoIntoBTP(BackboneTrackPoint btp){
 		
@@ -985,8 +894,8 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		btp.serializableIm = serializableIm;
 		btp.imOriginX = imOriginX;
 		btp.imOriginY = imOriginY;
-		btp.trackWindowHeight = trackWindowHeight;
-		btp.trackWindowWidth = trackWindowWidth;
+		btp.setTrackWindowHeight(getTrackWindowHeight());
+		btp.setTrackWindowWidth(getTrackWindowWidth());
 		} catch(Exception e){
 			if(comm!=null){
 				comm.message(e.getMessage(), VerbLevel.verb_error);

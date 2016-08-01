@@ -297,6 +297,21 @@ public class Track implements Serializable{
 		}
 		return HTdist;
 	}
+	
+	public double getFractionHTValid() {
+		if (points==null || points.firstElement().getPointType()<MaggotTrackPoint.pointType) return 0;
+		double nval = 0;
+		for (int i=0;i<points.size(); i++) {
+			MaggotTrackPoint mtp = (MaggotTrackPoint)points.get(i);
+			if (mtp.htValid) nval++;
+		}
+		return nval/points.size();
+	}
+	
+	public double getMeanHTdist() {
+		return MathUtils.mean(getHTdists(), true);
+	}
+	
 	/**
 	 * sets the clustering variance as a fraction of the median HT distance of the maggots
 	 * the variance is set to the square of (median distance/(num backbone points * pointSpacingInSigmas))
@@ -443,8 +458,14 @@ public class Track implements Serializable{
 		return points;
 	}
 	
+	public TrackPoint getPointCoerced(int index) {
+		if (index < 0) index = 0;
+		if (index >= points.size()) index = points.size()-1;
+		return getPoint(index);
+	}
+	
 	public TrackPoint getPoint(int index){
-		if (index<0|| index>points.size()){
+		if (index<0|| index>=points.size()){
 			return null;
 		} else {
 			return points.get(index);
@@ -466,27 +487,63 @@ public class Track implements Serializable{
 		return points.lastElement();
 	}
 	
-	public void playMovie() {
+	public ImagePlus playMovie() {
 		comm = new Communicator();
-		playMovie(trackID, null);
-		
+		ImagePlus imp = playMovie(trackID, null);
 		if (!comm.outString.equals("")) new TextWindow("PlayMovie Error", comm.outString, 500, 500); 
+		return imp;
 	}
 	
-	public void playMovie(MaggotDisplayParameters mdp) {
-		playMovie(trackID, mdp);
+	public ImagePlus playMovie(MaggotDisplayParameters mdp) {
+		return playMovie(trackID, mdp);
 	}
 	
-	public void playBlankMovie(){
+	public ImagePlus playBlankMovie(){
 		MaggotDisplayParameters mdp = new MaggotDisplayParameters();
 		mdp.setAllFalse();
-		playMovie(trackID, mdp);
+		return playMovie(trackID, mdp);
 
 	}
 	
 	
+	private void updateTrackImageSize (boolean square) {
+		int w = 0;
+		int h = 0;
+		for (TrackPoint tp : points) {
+			w = w > tp.getRect()[2] ? w : tp.getRect()[2];
+			h = h > tp.getRect()[3] ? w : tp.getRect()[3];
+		}
+		if (square) {
+			w = w > h ? w : h;
+			h = w;
+		}
+		for (TrackPoint tp : points) {
+			ImTrackPoint itp = (ImTrackPoint) tp;
+			if (itp == null) { continue; }
+			itp.setTrackWindowWidth(w);
+			itp.setTrackWindowHeight(h);
+		}
+		
+	}
+	
 	public ImagePlus playMovie(int labelInd, MaggotDisplayParameters mdp){
-		return getMovieStack(labelInd, mdp, true); 
+		
+		TrackMovieVirtualStack vs = getVirtualMovieStack(mdp); 
+
+		ImagePlus trackPlus = vs.getImagePlus();//new ImagePlus("Track "+trackID+": frames "+points.firstElement().frameNum+"-"+points.lastElement().frameNum ,vs);
+		trackPlus.show();
+		return trackPlus;
+		//return getMovieStack(labelInd, mdp, true);
+	}
+	
+	
+	public TrackMovieVirtualStack getVirtualMovieStack (MaggotDisplayParameters mdp){
+		if (mdp ==null) {
+			mdp = new MaggotDisplayParameters();
+		}
+		updateTrackImageSize(true);
+		return new TrackMovieVirtualStack(this, mdp);
+		
 	}
 	
 	public ImagePlus getMovieStack(int labelInd, MaggotDisplayParameters mdp, boolean showMovie){
@@ -571,11 +628,11 @@ public class Track implements Serializable{
 		if (points.size()!=0){
 			info += " frames "+points.firstElement().frameNum+"-"+points.lastElement().frameNum;
 		}
-		
-		for (int i=0; i<points.size(); i++){
-			info += "\n Point "+i+": "+points.get(i).infoSpill();
-		}
-		
+//		can take extraordinarily long for long tracks
+//		for (int i=0; i<points.size(); i++){
+//			info += "\n Point "+i+": "+points.get(i).infoSpill();
+//		}
+//		
 		return info;
 		
 	}
@@ -789,7 +846,6 @@ public class Track implements Serializable{
 		points = new Vector<TrackPoint>();
 		exp = experiment;
 		trackID=nextIDNum++;
-		
 		//advance past size on disk
 		try {
 			int size = dis.readInt();
@@ -931,6 +987,8 @@ public class Track implements Serializable{
 			d += (pointList.size()>0) ? pointList.firstElement().frameNum+"-"+pointList.lastElement().frameNum+lb+lb : "X-X"+lb+lb;
 		}
 		
+		
+		 
 		if(!addInfo.equals("")) d += addInfo+lb+lb;
 		
 		if (pointList!=null){d += "Points("+pointList.firstElement().getTypeName()+"; "+pointList.size()+"):"+lb;
@@ -948,8 +1006,55 @@ public class Track implements Serializable{
 		return d;
 	}
 	
+	public String description(boolean decimate) {
+		int maxLength = 2000;
+		String htInfo;
+		String lb = "\n";
+		htInfo = "Mean HT-dist = " + getMeanHTdist() + lb;
+		htInfo += "Max Excursion = " + maxExcursion() + lb;
+		htInfo += "Fraction HT Valid = " + getFractionHTValid() + lb + lb;
+		
+		if (decimate && points.size() > maxLength) {
+			Vector<TrackPoint> pv = new Vector<TrackPoint> (maxLength);
+			for (int j = 0; j < maxLength; ++j) {
+				pv.add(points.get((int) j * (points.size()/maxLength)));
+			}
+			return makeDescription("" + trackID, pv, otherInfo + lb + htInfo);
+		} else {
+			return makeDescription(""+trackID, points, otherInfo + lb + htInfo);
+		}
+	}
+	/**
+	 * @return: the largest distance traveled from the starting point
+	 */
+	public double maxExcursion() {
+		double dist = 0;
+		double x0 = points.firstElement().x;
+		double y0 = points.firstElement().y;
+		double ds;
+		for (TrackPoint p : points) {
+			ds = (p.x - x0)*(p.x - x0) + (p.y-y0)*(p.y - y0);
+			dist = ds > dist ? ds : dist;
+		}
+		return Math.sqrt(dist);
+		
+	}
+	
+	public int getPointIndexFromID (Vector<? extends TrackPoint>points, int pointID) {
+		for (int i = 0; i < points.size(); ++i) {
+			if (points.get(i).pointID == pointID) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	
+	public int getPointIndexFromID (int pointID) {
+		return (getPointIndexFromID(points, pointID));
+	}
+	
 	public String description(){
-		return makeDescription(""+trackID, points, otherInfo);
+		return description(true); //enable decimation to 2000 points by default
 	}
 	
 	public static String emptyDescription(){

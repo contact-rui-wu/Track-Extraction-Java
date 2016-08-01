@@ -32,7 +32,7 @@ public class Test {//extends JFrame
 	public static void main(String[] args) {
 		
 		try {
-			testTrackFromDisk();
+			testMHG2();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -482,6 +482,23 @@ public class Test {//extends JFrame
 		}
 		
 		
+		ij.quit();
+	}
+	
+	public static void testMHG2 () {
+		String srcdir = "E:\\Example Data\\CO2 triangle waves\\CS@CS\\T_Od_CO2_Tr_0to5pct_200\\201606101638\\";
+		String srcname = "CS@CS_T_Od_CO2_Tr_0to5pct_200_201606101638.mmf";
+		String dstdir = "E:\\Example Extracted\\CO2 triangle waves\\CS@CS\\T_Od_CO2_Tr_0to5pct_200\\201606101638\\";
+		String dstname = "foobar.java";
+	//	@SuppressWarnings("unused")
+		ImageJ ij = new ImageJ();
+		Experiment_Processor ep = new Experiment_Processor();
+		ep.setVerbosity(VerbLevel.verb_message);
+//		ep.extrParams = new ExtractionParameters();
+//		ep.extrParams.subset = true;
+//		ep.extrParams.startFrame = 1;
+//		ep.extrParams.endFrame = 1000;
+		ep.run(new File(srcdir, srcname).getAbsolutePath(), dstdir, dstname);
 		ij.quit();
 	}
 	
