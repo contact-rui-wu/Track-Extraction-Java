@@ -1,15 +1,15 @@
 package TrackExtractionJava;
 
-import java.awt.BorderLayout;
+//import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+//import java.beans.PropertyChangeEvent;
+//import java.beans.PropertyChangeListener;
 import java.io.File;
 //import java.nio.file.Path;
 //import java.nio.file.Paths;
-import java.text.NumberFormat;
+//import java.text.NumberFormat;
 
 import javax.swing.JCheckBox;
 import javax.swing.JFormattedTextField;
@@ -23,8 +23,9 @@ public class ProcessingParameters {
 	
 	/**
 	 * Min length that the fitter can handle
+	 * just use fitparams.mintracklen?
 	 */
-	public int minTrackLen = 200;//NOTE: SHOULD BE SAME AS FITTINGPARAMS.MINTRACKLEN
+//	public int minTrackLen = 200;//NOTE: SHOULD BE SAME AS FITTINGPARAMS.MINTRACKLEN
 	
 	
 	
@@ -222,20 +223,20 @@ class ProcPanel extends JPanel {
 		});
 		
 		
-		minTrackLenField = new JFormattedTextField(NumberFormat.getIntegerInstance());
-		minTrackLenField.setValue(prPs.minTrackLen); 
-		minTrackLenField.addPropertyChangeListener( new PropertyChangeListener() {
-			
-			@Override
-			public void propertyChange(PropertyChangeEvent evt) {
-				Integer mtl = ((Number)minTrackLenField.getValue()).intValue();
-				prPs.minTrackLen = mtl.intValue();
-			}
-		}); 
-		minTrackLenLabel = new JLabel(minTrackLengthName);
-		minTrackLenPanel = new JPanel(new BorderLayout());
-		minTrackLenPanel.add(minTrackLenField, BorderLayout.WEST);
-		minTrackLenPanel.add(minTrackLenLabel);
+//		minTrackLenField = new JFormattedTextField(NumberFormat.getIntegerInstance());
+//		minTrackLenField.setValue(prPs.minTrackLen); 
+//		minTrackLenField.addPropertyChangeListener( new PropertyChangeListener() {
+//			
+//			@Override
+//			public void propertyChange(PropertyChangeEvent evt) {
+//				Integer mtl = ((Number)minTrackLenField.getValue()).intValue();
+//				prPs.minTrackLen = mtl.intValue();
+//			}
+//		}); 
+//		minTrackLenLabel = new JLabel(minTrackLengthName);
+//		minTrackLenPanel = new JPanel(new BorderLayout());
+//		minTrackLenPanel.add(minTrackLenField, BorderLayout.WEST);
+//		minTrackLenPanel.add(minTrackLenLabel);
 		
 		toCSVBox = new  JCheckBox(toCSVName, prPs.savetoCSV);
 		toCSVBox.addActionListener(new ActionListener() {

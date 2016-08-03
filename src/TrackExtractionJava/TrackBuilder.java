@@ -153,24 +153,25 @@ public class TrackBuilder implements Serializable{
 		Timer.tic("buildTracks");
 		double lastelapsed = 0;
 		double reportEvery = 60;
-	    if (!ep.subset){
-	    	System.out.println("Building tracks for frames 1-"+pe.fl.getStackSize());
-	    } else {
+//	    if (!ep.subset){
+//	    	System.out.println("Building tracks for frames 1-"+pe.fl.getStackSize());
+//	    } else {
 	    	System.out.println("Building tracks for frames "+ep.startFrame+"-"+ep.endFrame);
-	    }
+	    //}
 	    
 	    
 	    
-		while ( (!ep.subset && (pe.nextFrameNum()< pe.fl.getStackSize()) ) || 
-				(ep.subset && (pe.nextFrameNum()<=pe.endFrameNum && pe.nextFrameNum()<=ep.endFrame)) ){
+		//while ( (!ep.subset && (pe.nextFrameNum()< pe.fl.getStackSize()) ) || 
+			//	(ep.subset && (pe.nextFrameNum()<=pe.endFrameNum && pe.nextFrameNum()<=ep.endFrame)) ){
+	    while (pe.nextFrameNum() <= pe.endFrameNum && pe.nextFrameNum() <= ep.endFrame) {
 			frameNum = pe.nextFrameNum();
 			if (frameNum%100 == 0){
 				IJ.showStatus("Building : Adding Frame "+frameNum+"...");
-				if (ep.subset) {
+				//if (ep.subset) {
 					IJ.showProgress(frameNum - ep.startFrame + 1, ep.endFrame-ep.startFrame);
-				} else {
-					IJ.showProgress(frameNum+1,pe.fl.getStackSize());
-				}
+				//} else {
+				//	IJ.showProgress(frameNum+1,pe.fl.getStackSize());
+				//}
 			}
 			double elapsed = Timer.getElapsedTime("buildTracks")/1000;
 	        if (elapsed - lastelapsed > reportEvery){

@@ -149,11 +149,15 @@ public class PointExtractor {
 	 * @param ep
 	 */
 	private void init(int startFrame, ImageStack stack, Communicator comm, ExtractionParameters ep){
+		startFrame = startFrame < 1 ? 1 : startFrame; //imagej stacks start at 1
 		this.startFrameNum = startFrame;
 //		imageStack = stack;
 		this.comm = comm;
 		this.ep = ep;
-		endFrameNum = stack.getSize()-1;
+		endFrameNum = stack.getSize(); //imagej stacks end at num frames
+		if (ep.endFrame > endFrameNum) {
+			ep.endFrame = endFrameNum;
+		}
 //		endFrameNum = imageStack.getSize()-1;//.getNFrames()-1;// 
 		increment = ep.increment;
 		lastFrameExtracted=-1;
@@ -202,7 +206,7 @@ public class PointExtractor {
 	public int loadFrame(int frameNum){
 		
 		if (frameNum==currentFrameNum && (analysisRect==null ||(fl.returnIm.getWidth()==analysisRect.getWidth() && fl.returnIm.getHeight()==analysisRect.getHeight()))){
-			if (comm!=null) comm.message("Frame already loaded in Frameloader", VerbLevel.verb_verbose);
+			//if (comm!=null) comm.message("Frame already loaded in Frameloader", VerbLevel.verb_verbose);
 			return 0;
 		}
 		

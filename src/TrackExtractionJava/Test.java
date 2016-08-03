@@ -584,7 +584,7 @@ public class Test {//extends JFrame
 		Experiment_Processor ep = new Experiment_Processor();
 		//ep.runningFromMain = true;
 		ExtractionParameters exP = new ExtractionParameters();
-		exP.subset = true;
+		//exP.subset = true;
 		exP.startFrame = 4000;
 		exP.endFrame = 6000;
 
@@ -1242,7 +1242,7 @@ public class Test {//extends JFrame
 		fP.storeEnergies = true;
 		fP.refitDiverged = true;
 		ExtractionParameters exP = new ExtractionParameters();
-		exP.subset = true;
+//		exP.subset = true;
 		exP.startFrame = 1;
 		exP.endFrame = 2000;
 		
@@ -1282,7 +1282,7 @@ public class Test {//extends JFrame
 		
 		ep = new Experiment_Processor();
 	//	ep.runningFromMain = true;
-		exParam.subset = false;
+//		exParam.subset = false;
 		FittingParameters fp = new FittingParameters();
 		fp.spineLengthWeight = 0.5f;
 		ep.extrParams = exParam;
@@ -1295,7 +1295,7 @@ public class Test {//extends JFrame
 		
 		ep = new Experiment_Processor();
 	//	ep.runningFromMain = true;
-		exParam.subset = false;
+//		exParam.subset = false;
 		fp = new FittingParameters();
 		int[] gr = {8,4,1};
 		fp.grains = gr;
@@ -1323,7 +1323,7 @@ public class Test {//extends JFrame
 		ProcessingParameters prParam = new ProcessingParameters();
 		prParam.diagnosticIm = false;
 		ExtractionParameters exParam = new ExtractionParameters();
-		exParam.subset = true;
+//		exParam.subset = true;
 		exParam.startFrame = 1;
 		exParam.endFrame = 1000;
 		
@@ -1441,7 +1441,7 @@ public class Test {//extends JFrame
 		*/
 		ep = new Experiment_Processor();
 	//	ep.runningFromMain = true;
-		exParam.subset = false;
+//		exParam.subset = false;
 		exParam.splitMatchesByAreaFrac = true;
 		exParam.lowerAreaFrac = 0.7;
 		exParam.upperAreaFrac = 1.4;
@@ -1609,7 +1609,7 @@ public class Test {//extends JFrame
 		
 		Experiment_Processor ep = new Experiment_Processor();
 		ExtractionParameters exParams = new ExtractionParameters();
-		exParams.subset = true;
+//		exParams.subset = true;
 		exParams.endFrame = 2000;
 		ep.extrParams = exParams;
 		ProcessingParameters prParams= new ProcessingParameters();
@@ -1631,7 +1631,7 @@ public class Test {//extends JFrame
 		String mmfName = "Or42a@Chrimson(3)_N_Bl_B0to159s13_120Hz_50W_S1-3#T_Bl_Sq_0to96_30#C_Re_400uW_201603081647.mmf";
 		
 		ExtractionParameters exParams = new ExtractionParameters();
-		exParams.subset = true;
+//		exParams.subset = true;
 		exParams.endFrame = 2000;
 		
 		String[] args = new String[3]; //Name-of-mmf; dstdir; dstname

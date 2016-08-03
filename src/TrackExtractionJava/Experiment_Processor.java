@@ -101,7 +101,15 @@ public class Experiment_Processor implements PlugIn{
 		runTime.tic();
 	}
 	
-	public void run(String srcFileName, String dstDir, String dstName){
+	public void run(String srcFileName, String dstDir, String dstName) {
+		run(srcFileName, dstDir, dstName, null);
+	}
+	public void run(String srcFileName, String dstDir, String dstName, SimpleExtractionParameters sep){
+		if (sep != null) {
+			prParams = sep.getProcessingParameters();
+			extrParams = sep.getExtractionParameters();
+			fitParams = sep.getFittingParameters();
+		}
 		run(new String[] {srcFileName, dstDir, dstName});
 	}
 	
@@ -519,6 +527,7 @@ public class Experiment_Processor implements PlugIn{
 			status+="imageStack null; aborting extraction\n";
 			return false;
 		}
+		extrParams.adjustBoundsForStack(mmfStack.getStack());
 		status+="Running trackbuilder...\n";
 		//comm.setVerbosity(VerbLevel.verb_debug);
 		MaggotTrackBuilder tb = new MaggotTrackBuilder(mmfStack.getImageStack(), extrParams, comm);
@@ -619,7 +628,7 @@ public class Experiment_Processor implements PlugIn{
 				break;
 			}
 			String trStr = "Track "+tr.getTrackID();
-			if (tr.getNumPoints()>prParams.minTrackLen) {//Check track length
+			if (tr.getNumPoints()>fitParams.minTrackLen) {//Check track length
 				
 //				bbf = new BackboneFitter(bbf.params);
 //				newTr = fitTrack(tr);
@@ -686,7 +695,7 @@ public class Experiment_Processor implements PlugIn{
 				tr.setValid(false);
 				shortCount++;
 				log(trStr+": too short to fit", true);
-				toRemove.add(tr);
+			//	toRemove.add(tr);
 			}
 			
 			// TODO
@@ -699,7 +708,7 @@ public class Experiment_Processor implements PlugIn{
 		
 		showStatus("Done fitting tracks");
 		log("Done fitting tracks: ", true);
-		log(shortCount+"/"+ex.getNumTracks()+" were too short (minlength="+prParams.minTrackLen+")", true);
+		log(shortCount+"/"+ex.getNumTracks()+" were too short (minlength="+fitParams.minTrackLen+")", true);
 		log(divergedCount+"/"+(ex.getNumTracks()-shortCount)+" remaining diverged", true);
 		log((ex.getNumTracks()-toRemove.size()+shortCount)+"/"+(ex.getNumTracks()-shortCount-divergedCount)+" remaining were fit successfully", true);
 		

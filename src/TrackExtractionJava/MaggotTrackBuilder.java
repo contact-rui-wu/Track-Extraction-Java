@@ -116,7 +116,8 @@ public class MaggotTrackBuilder extends TrackBuilder {
 			orientSegment(points, seg, c);
 		}
 		
-		ensureContinuity(points, segList, maxGap);
+		//ensure continuity causes problems when maggot balls up on both ends of a segment -- need better fix - graphics based?
+	//	ensureContinuity(points, segList, maxGap);
 	}
 	
 	

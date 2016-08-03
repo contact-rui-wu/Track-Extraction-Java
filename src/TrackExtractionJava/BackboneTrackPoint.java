@@ -170,6 +170,7 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	private boolean inHistory = false; //to say whether we are displaying images back in time
 	private String historyMessage;
 	
+	//protected FloatPolygon bbFromMidline = null;
 	
 	
 	public BackboneTrackPoint(){
@@ -211,6 +212,21 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		return btp;
 	}
 	
+	/*
+	private void storeMidlineAsBB() {
+		FloatPolygon newMid = midline.getFloatPolygon();
+		float[] xmid = new float[newMid.npoints];
+		float[] ymid = new float[newMid.npoints];
+		
+		//Gather absolute coordinates for the backbones
+		for(int i=0; i<newMid.npoints; i++){
+			xmid[i] = newMid.xpoints[i]+rect.x;
+			ymid[i] = newMid.ypoints[i]+rect.y;
+		}
+		FloatPolygon initBB = new FloatPolygon(xmid, ymid);//midline.getFloatPolygon();
+		bbFromMidline = MaggotTrackPoint.getInterpolatedSegment(new PolygonRoi(initBB, Roi.POLYLINE), numBBPts).getFloatPolygon();
+		
+	}*/
 	
 	/**
 	 * Resets the backbone info, marking the point with the artificialMid flag

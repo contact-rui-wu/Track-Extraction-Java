@@ -40,7 +40,7 @@ public class MaggotTrackPoint extends ImTrackPoint {
 	int[] contourX;
 	int[] contourY;
 	
-	
+	//TODO: why are head, tail stored as ints?
 	ContourPoint head; //RELATIVE TO IMAGE RECT
 	transient int headi;
 	ContourPoint tail; //RELATIVE TO IMAGE RECT
@@ -643,7 +643,30 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		
 		
 	}
+	public static void setHTByMidline (Vector <? extends TrackPoint> mtps) {
+		for (TrackPoint tp:mtps) {
+			MaggotTrackPoint mtp = (MaggotTrackPoint) tp;
+			if (mtp == null) {
+				continue;
+			}
+			mtp.setHTByMidline();
+		}
+	}
 	
+	public void setHTByMidline() {
+		if (!htValid) {
+			return;
+		}
+		//todo headi taili? - these are indices on contour - ignore for now?
+		//Head=0, tail=end 
+//		PolygonRoi midline;
+		FloatPolygon fp = midline.getFloatPolygon();
+		head.x = (int) (fp.xpoints[0] + 0.5);
+		head.y = (int) (fp.ypoints[0] + 0.5);
+		tail.x = (int) (fp.xpoints[fp.npoints-1] + 0.5);
+		tail.y = (int) (fp.ypoints[fp.npoints-1] + 0.5);
+
+	}
 	
 	
 	/**
@@ -684,7 +707,10 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		}
 		
 		//dot product of direction of movement and body direction 
+		//head and tail can be overwritten by backbone track point, so refitting will cause errors
+		//make sure to reset head-tail orientation earlier!
 		return (x-prevPt.x)*(head.x-tail.x) + (y-prevPt.y)*(head.y-tail.y);
+	
 	}
 	
 	

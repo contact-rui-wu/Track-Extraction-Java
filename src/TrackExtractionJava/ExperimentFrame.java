@@ -87,6 +87,8 @@ public class ExperimentFrame extends JFrame{
 	 */
 	JPanel playPanel;
 	
+	SimpleExtractionParameters sep;
+	
 	Vector<TrackMovieVirtualStack> movies;
 	/**
 	 * 
@@ -101,6 +103,7 @@ public class ExperimentFrame extends JFrame{
 	}
 	void init () {
 		movies = new Vector<TrackMovieVirtualStack>();
+		sep = new SimpleExtractionParameters();
 	}
 	
 	protected void addMovie (TrackMovieVirtualStack vs) {
@@ -137,7 +140,7 @@ public class ExperimentFrame extends JFrame{
 		
 		//Build the trackPanel
 		trackPanel = new TrackPanel(mdp, this);
-		trackPanel.setSize(700, 500);
+		trackPanel.setSize(trackPanel.getWidth(), 500);
 		
 		//Build the trackList 
 		buildExPanel();
@@ -151,7 +154,7 @@ public class ExperimentFrame extends JFrame{
 		add(exPanel, BorderLayout.WEST);
 		add(playPanel, BorderLayout.EAST);
 //		add(new JScrollPane(trackList), BorderLayout.WEST);
-		setSize(1024, 768);
+		//setSize(1024, 768);
 		pack();
 		
 		addWindowListener(new java.awt.event.WindowAdapter() {
@@ -169,7 +172,7 @@ public class ExperimentFrame extends JFrame{
 	}
 	
 	protected void showFrame(){
-		setSize(750, 600);
+		//setSize(750, 600);
 		setTitle("("+ex.getNumTracks()+" tracks) Experiment "+ex.getFileName());
 //		setTitle("("+Experiment.getNumTracks(ex.getFileName())+" tracks) Experiment "+ex.getFileName());
 		setVisible(true);
@@ -311,6 +314,7 @@ class TrackPanel extends JPanel {
 	JButton saveToExButton;
 	JButton saveToCSVButton;
 	JButton fitButton;
+	JButton paramsButton;
 	JPanel buttonPanel;
 	
 	public TrackPanel(MaggotDisplayParameters mdp, ExperimentFrame ef){
@@ -352,6 +356,15 @@ class TrackPanel extends JPanel {
 			}
 		});
 		
+		paramsButton = new JButton("Set Fit Params");
+		paramsButton.setSize(100, 40);
+		paramsButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				ef.sep.parameterFrame();
+			}
+		});
+		
 		saveToExButton = new JButton("Save Track to Experiment");
 		saveToExButton.setSize(100, 40);
 		saveToExButton.addActionListener(new ActionListener() {
@@ -380,7 +393,8 @@ class TrackPanel extends JPanel {
 		buttonPanel.add(saveToCSVButton);
 		buttonPanel.add(saveToExButton);
 		buttonPanel.add(fitButton);
-		buttonPanel.setSize(700, 60);
+		buttonPanel.add(paramsButton);
+//		buttonPanel.setSize(700, 60);
 		
 		add(descriptionPanel, BorderLayout.CENTER);
 		add(buttonPanel, BorderLayout.SOUTH);
@@ -420,7 +434,7 @@ class TrackPanel extends JPanel {
 						BackboneFitter bbf = new BackboneFitter(track); 
 						bbf.recordHistory();
 						IJ.showStatus("fitting track");
-						bbf.fitTrackNewScheme( new FittingParameters());//TODO adjust fitting parameters
+						bbf.fitTrackNewScheme( ef.sep.getFittingParameters());//TODO adjust fitting parameters
 						TrackMovieVirtualStack vs = bbf.getTrack().getVirtualMovieStack(mdp, true);
 						vs.setForces(bbf.Forces);
 						vs.getImagePlus().show();

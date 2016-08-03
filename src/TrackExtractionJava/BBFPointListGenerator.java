@@ -169,7 +169,8 @@ public class BBFPointListGenerator {
 				for (int i=0; i<BTPs.size(); i++){
 					if (params.leaveFrozenBackbonesAlone && BTPs.get(i).frozen){
 						//do nothing
-					} else if ((params.leaveFrozenBackbonesAlone && !BTPs.get(i).frozen) || (params.leaveBackbonesInPlace && BTPs.get(i).backbone!=null && BTPs.get(i).backbone.getNCoordinates()>0)){
+					} else if ((params.leaveFrozenBackbonesAlone && !BTPs.get(i).frozen) || 
+							(params.leaveBackbonesInPlace && BTPs.get(i).backbone!=null && BTPs.get(i).backbone.getNCoordinates()>0)){
 						origin[0]=0;
 						origin[1]=0;
 						BTPs.get(i).setBackboneInfo(params.clusterMethod, BTPs.get(i).backbone, origin);

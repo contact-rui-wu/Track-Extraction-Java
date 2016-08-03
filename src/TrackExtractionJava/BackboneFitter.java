@@ -4,7 +4,6 @@ import ij.ImagePlus;
 import ij.gui.PolygonRoi;
 import ij.process.FloatPolygon;
 import ij.text.TextWindow;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -255,12 +254,14 @@ public class BackboneFitter {
 		//timingInfo = new Vector<Double>();
 		
 		initTrack(t);
-
+		//reset backbones to midline
+		boolean leaveBackbonesInPlace = params.leaveBackbonesInPlace;
+		params.leaveBackbonesInPlace = false;
 		bplg = new BBFPointListGenerator(this, workingTrack, params, comm);
 		bplg.reset();
 		bplg.generateFullBTPList();
 		BTPs = bplg.getBTPs();
-		
+		params.leaveBackbonesInPlace = leaveBackbonesInPlace;
 		shifts = new double[BTPs.size()];
 		updater = new BBFUpdateScheme(BTPs.size());
 		doSetup = false;
@@ -283,6 +284,7 @@ public class BackboneFitter {
 		if (tr==null){
 			return;
 		}
+
 		oldTrack = tr;
 		
 		clearPrev();
@@ -441,6 +443,8 @@ public class BackboneFitter {
 			FittingParameters divergedParams, FittingParameters suspiciousParams, FittingParameters finalParams){
 		
 		Timer.tic("FitTrackNewScheme");
+	
+		
 		Timer.tic("FTNS:Setup");
 		float spineExpansionWeight = 1;
 		
@@ -616,6 +620,7 @@ public class BackboneFitter {
 			finalParams.spineExpansionWeight = spineExpansionWeight;
 		}
 		resetParams(finalParams);
+		/*
 		for (int i=0; i<params.numFinalSingleIterations; i++){
 			double sf = (1-((double) i)) / params.numFinalSingleIterations; //damp oscillations
 			for (BackboneTrackPoint btp : BTPs) {
@@ -623,6 +628,8 @@ public class BackboneFitter {
 			}
 			runSingleIteration();
 		}
+		*/
+		fitTrack();
 		finalizeBackbones();//TODO This wasn't being done. Test number of iterations
 		
 		Timer.toc("FTNS:final-fit");
@@ -1070,6 +1077,7 @@ public class BackboneFitter {
 		boolean noerror=true;
 		try {
 
+			MaggotTrackPoint.setHTByMidline(tr.getPoints());
 			MaggotTrackBuilder.orientMaggotTrack(tr, new ExtractionParameters().framesBtwnContSegs, comm);
 			
 			BTPs = new Vector<BackboneTrackPoint>();
