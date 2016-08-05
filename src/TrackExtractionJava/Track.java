@@ -457,6 +457,24 @@ public class Track implements Serializable{
 	public Vector<TrackPoint> getPoints(){
 		return points;
 	}
+	/**
+	 * linkPoints()
+	 * sets the prev and next pointers for each point in the track
+	 */
+	public void linkPoints() {
+		linkPoints(points);
+	}
+	public static void linkPoints(Vector <? extends TrackPoint> points) {
+		TrackPoint prevPt = null;
+		for (TrackPoint tp : points) {
+			tp.prev = prevPt;
+			if (prevPt != null) {
+				prevPt.next = tp;
+			}
+			tp.next = null;
+			prevPt = tp;
+		}
+	}
 	
 	public TrackPoint getPointCoerced(int index) {
 		if (index < 0) index = 0;

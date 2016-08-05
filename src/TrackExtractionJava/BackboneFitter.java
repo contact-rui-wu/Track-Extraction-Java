@@ -1078,7 +1078,7 @@ public class BackboneFitter {
 		try {
 
 			MaggotTrackPoint.setHTByMidline(tr.getPoints());
-			MaggotTrackBuilder.orientMaggotTrack(tr, new ExtractionParameters().framesBtwnContSegs, comm);
+			MaggotTrackBuilder.orientMaggotTrack(tr, params.minValidSegmentLen, comm); //this name is confusing - we should rename?
 			
 			BTPs = new Vector<BackboneTrackPoint>();
 			
@@ -1115,6 +1115,7 @@ public class BackboneFitter {
 				workingTrack = new Track(BTPs, tr);
 				workingTrack.setTrackID(tr.getTrackID());
 				newTrID = workingTrack.getTrackID();
+				workingTrack.linkPoints();
 				BTPs.removeAllElements();
 				
 			} else {

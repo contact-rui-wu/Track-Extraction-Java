@@ -1,7 +1,6 @@
 package TrackExtractionJava;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -11,6 +10,7 @@ import java.io.File;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonModel;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -21,7 +21,8 @@ import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-
+import ij.IJ;
+import ij.ImageJ;
 //import ij.ImageJ;
 import ij.ImageStack;
 import ij.WindowManager;
@@ -33,15 +34,20 @@ import ij.text.TextWindow;
 public class Track_Extractor implements PlugIn{
 	
 	// Set extraction parameters EXTRACTIONPARAMETERS
-	ExtractionParameters ep; 
+	//ExtractionParameters ep; 
+	//SimpleExtractionParameters sep;
 	
 	// Load the mmfs into an imagestack
-	ImageStack IS;
+	//ImageStack IS;
 	
 	// Build the tracks TRACKBUILDER
-	TrackBuilder tb;
+	//TrackBuilder tb;
 	//ep= new ExtractionParameters()
 	//ExperimentFrame ef;
+	
+	public Track_Extractor() {
+		//sep = new SimpleExtractionParameters();
+	}
 	
 	public void run(String arg) {
 				
@@ -63,10 +69,18 @@ public class Track_Extractor implements PlugIn{
 	}
 	
 	public static void main(String[] args) {
-        
-		Track_Extractor te = new Track_Extractor();
-		te.run("");
-}
+	// set the plugins.dir property to make the plugin appear in the Plugins menu
+			Class<?> clazz = Track_Extractor.class; 
+	        String url = clazz.getResource("/" + clazz.getName().replace('.', '/') + ".class").toString();
+	        String pluginsDir = url.substring(5, url.length() - clazz.getName().length() - 6);
+	        System.setProperty("plugins.dir", pluginsDir);
+			
+	        // start ImageJ
+	        new ImageJ();
+
+	        // run the plugin
+	        IJ.runPlugIn(clazz.getName(), "");
+		}
 	
 }
 
@@ -85,12 +99,24 @@ class ExtractorFrame extends JFrame{
 	String panelName = "Experiment Processor"; 
 	
 	InputPanel input;
-	ParamPanel params;
+	SimpleParamPanel params;
 	OutputPanel output;
 	JPanel buttonPanel;
 	JButton runButton;
+	SimpleExtractionParameters sep;
+	CSVPrefs cp;
+	boolean savetoCSV = true;
+	boolean currentWindow = false;
 	
-	public ExtractorFrame(){
+	
+	public ExtractorFrame () {
+		this(false);
+	}
+	
+	public ExtractorFrame(boolean currentWindow){
+		this.currentWindow = currentWindow; //whether to use the current window or load from disk
+		sep = new SimpleExtractionParameters();
+		cp = new CSVPrefs();
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 	}
 	
@@ -106,12 +132,13 @@ class ExtractorFrame extends JFrame{
 	private void buildFrame(){
 		
 		//Build components
-		input = new InputPanel();
 		output = new OutputPanel();
-		params = new ParamPanel();
-		input.outputDirFld = output.dirTxFld;
-		input.outputNameFld = output.nameTxFld;
-		
+		params = new SimpleParamPanel(this);
+		if (!currentWindow) {
+			input = new InputPanel();	
+			input.outputDirFld = output.dirTxFld;
+			input.outputNameFld = output.nameTxFld;
+		}
 		runButton = new JButton("Run Extraction");
 		runButton.addActionListener(new ActionListener() {
 			@Override
@@ -156,9 +183,11 @@ class ExtractorFrame extends JFrame{
 		mainPanel = new JPanel(); //new JTabbedPane(tabPlacement);
 		mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 		
-		mainPanel.add(makeLabelPanel("Source"));
-		mainPanel.add("Select input...", input);
-		mainPanel.add(new JSeparator(JSeparator.HORIZONTAL));
+		if (!currentWindow) {
+			mainPanel.add(makeLabelPanel("Source"));
+			mainPanel.add("Select input...", input);
+			mainPanel.add(new JSeparator(JSeparator.HORIZONTAL));
+		}
 		mainPanel.add(makeLabelPanel("Parameters"));
 		mainPanel.add("Parameters...", params);
 		mainPanel.add(new JSeparator(JSeparator.HORIZONTAL));
@@ -196,14 +225,21 @@ class ExtractorFrame extends JFrame{
 		
 		//Set params from input
 	//	ep.runningFromMain = false;
-		ep.prParams = params.procParams;
-		ep.extrParams = params.extrParams;
-		ep.fitParams = params.fitParams;
-		ep.csvPrefs = params.cPrefs;
+		ProcessingParameters ppr = sep.getProcessingParameters();
+		ppr.savetoCSV = savetoCSV;
+		
+		ep.prParams = ppr;
+		ep.extrParams = sep.getExtractionParameters();
+		ep.fitParams = sep.getFittingParameters();
+		ep.csvPrefs = cp;
 		
 		//Set src and dest
 		String[] epArgs = new String[3];
-		epArgs[0] = input.txFld.getText(); //src - "current"
+		if (currentWindow) {
+			epArgs[0] = "current";
+		} else {
+			epArgs[0] = input.txFld.getText(); //src - "current"
+		}
 		epArgs[1] = output.dirTxFld.getText(); //dstdir
 		epArgs[2] = output.nameTxFld.getText(); //dstname
 		
@@ -435,82 +471,29 @@ class OutputPanel extends JPanel{
 	
 	
 }
-
-
-class ParamPanel extends JPanel{
-
+class SimpleParamPanel extends JPanel{
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	
-	ProcessingParameters procParams;
-	ProcPanel pp;
-	ExtractionParameters extrParams;
-	extrPanel ep;
-	FittingParameters fitParams;
-	CSVPrefs cPrefs;
+	private static final long serialVersionUID = -6409294234655572186L;
+	//CSVPrefs cPrefs;
 	JButton cPrefButton;
 	JFrame cPrefFrame;
 	JPanel cPrefPanel;
+	JPanel sepPanel;
+	//SimpleExtractionParameters sep;
+	//boolean savetoCSV;
+	JCheckBox toCSVBox;
+	String toCSVName = "Save track data to CSV";
+	ExtractorFrame ef;
 	
-	public ParamPanel(){
-		init(null, null, null, null);
-		buildPanel();
-	}
-	
-	public ParamPanel(ProcessingParameters pp, ExtractionParameters ep, FittingParameters fp, CSVPrefs cp){
-		init(pp, ep, fp, cp);
-		buildPanel();
-	}
-	
-	private void init(ProcessingParameters pp, ExtractionParameters ep, FittingParameters fp, CSVPrefs cp){
-		
-		if (pp==null){
-			procParams = new ProcessingParameters();
-		} else {
-			procParams = pp;
-		}
-		
-		if (ep==null){
-			extrParams = new ExtractionParameters();
-		} else {
-			extrParams = ep;
-		}
-		
-		if (fp==null){
-			fitParams = new FittingParameters();
-		} else {
-			fitParams = fp;
-		}
-		
-		if (cp==null){
-			cPrefs = new CSVPrefs();
-		} else {
-			cPrefs = cp;
-		}
-		
-	}
-	
-	private void buildPanel(){
-		//Build the components
+	public SimpleParamPanel (ExtractorFrame ef) {
+		this.ef = ef;
 		buildComponents();
-		
-		//Add components to the panel
-		setLayout(new BoxLayout(this,BoxLayout.Y_AXIS));
-		
-		add(pp);
-		add(cPrefPanel);
-		add(ep);
-		
+		buildPanel();
 	}
 	
 	private void buildComponents(){
-		
-		pp = procParams.getPanel();
-		pp.setAlignmentX(Component.CENTER_ALIGNMENT);
-		ep = extrParams.getPanel();
-		ep.setAlignmentX(Component.CENTER_ALIGNMENT);
 		
 		cPrefButton = new JButton("Set CSV Saving Preferences");
 		cPrefButton.addActionListener(new ActionListener() {
@@ -520,7 +503,32 @@ class ParamPanel extends JPanel{
 			}
 		});
 		cPrefPanel = new JPanel();
+		
+		
+
+		toCSVBox = new  JCheckBox(toCSVName, ef.savetoCSV);
+		toCSVBox.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				ef.savetoCSV = toCSVBox.isSelected();
+				
+			}
+		});
 		cPrefPanel.add(cPrefButton);
+		cPrefPanel.add(toCSVBox);
+		sepPanel = ef.sep.fundamentalSettingsPanel();
+	
+	}
+	private void buildPanel(){
+		//Build the components
+		buildComponents();
+		
+		//Add components to the panel
+		setLayout(new BoxLayout(this,BoxLayout.Y_AXIS));
+		
+		add(cPrefPanel);
+		add(sepPanel);
 		
 	}
 	
@@ -529,13 +537,13 @@ class ParamPanel extends JPanel{
 		cPrefFrame = new JFrame();
 		
 		//Build components
-		csvPrefPanel cpp = new csvPrefPanel(cPrefs);
+		csvPrefPanel cpp = new csvPrefPanel(ef.cp);
 		JButton okButton = new JButton("OK");
 		okButton.addActionListener(new ActionListener() {
 			
 			public void actionPerformed(ActionEvent e) {
-				procParams.savetoCSV = true;
-				pp.toCSVBox.setSelected(true);
+				ef.savetoCSV = true;
+				toCSVBox.setSelected(true);
 				cPrefFrame.dispose();
 			}
 		});
@@ -551,8 +559,126 @@ class ParamPanel extends JPanel{
 		cPrefFrame.setVisible(true);
 	}
 	
-	
 }
+//
+//class ParamPanel extends JPanel{
+//
+//	/**
+//	 * 
+//	 */
+//	private static final long serialVersionUID = 1L;
+//	
+//	ProcessingParameters procParams;
+//	ProcPanel pp;
+//	ExtractionParameters extrParams;
+//	extrPanel ep;
+//	FittingParameters fitParams;
+//	
+//	CSVPrefs cPrefs;
+//	JButton cPrefButton;
+//	JFrame cPrefFrame;
+//	JPanel cPrefPanel;
+//	
+//	public ParamPanel(){
+////		init(sep, cp);
+//		init(null, null, null, null);
+//		buildPanel();
+//	}
+//	
+//	public ParamPanel(ProcessingParameters pp, ExtractionParameters ep, FittingParameters fp, CSVPrefs cp){
+//		init(pp, ep, fp, cp);
+//		buildPanel();
+//	}
+//	
+//	private void init(ProcessingParameters pp, ExtractionParameters ep, FittingParameters fp, CSVPrefs cp){
+//		
+//		if (pp==null){
+//			procParams = new ProcessingParameters();
+//		} else {
+//			procParams = pp;
+//		}
+//		
+//		if (ep==null){
+//			extrParams = new ExtractionParameters();
+//		} else {
+//			extrParams = ep;
+//		}
+//		
+//		if (fp==null){
+//			fitParams = new FittingParameters();
+//		} else {
+//			fitParams = fp;
+//		}
+//		
+//		if (cp==null){
+//			cPrefs = new CSVPrefs();
+//		} else {
+//			cPrefs = cp;
+//		}
+//		
+//	}
+//	
+//	private void buildPanel(){
+//		//Build the components
+//		buildComponents();
+//		
+//		//Add components to the panel
+//		setLayout(new BoxLayout(this,BoxLayout.Y_AXIS));
+//		
+//		add(pp);
+//		add(cPrefPanel);
+//		add(ep);
+//		
+//	}
+//	
+//	private void buildComponents(){
+//		
+//		pp = procParams.getPanel();
+//		pp.setAlignmentX(Component.CENTER_ALIGNMENT);
+//		ep = extrParams.getPanel();
+//		ep.setAlignmentX(Component.CENTER_ALIGNMENT);
+//		
+//		cPrefButton = new JButton("Set CSV Saving Preferences");
+//		cPrefButton.addActionListener(new ActionListener() {
+//			
+//			public void actionPerformed(ActionEvent e) {
+//				setCSVPrefs();
+//			}
+//		});
+//		cPrefPanel = new JPanel();
+//		cPrefPanel.add(cPrefButton);
+//		
+//	}
+//	
+//	private void setCSVPrefs(){
+//		
+//		cPrefFrame = new JFrame();
+//		
+//		//Build components
+//		csvPrefPanel cpp = new csvPrefPanel(cPrefs);
+//		JButton okButton = new JButton("OK");
+//		okButton.addActionListener(new ActionListener() {
+//			
+//			public void actionPerformed(ActionEvent e) {
+//				procParams.savetoCSV = true;
+//				pp.toCSVBox.setSelected(true);
+//				cPrefFrame.dispose();
+//			}
+//		});
+//		
+//		//Display components in frame
+//		cPrefFrame.setLayout(new BorderLayout());
+//		cPrefFrame.add(cpp, BorderLayout.CENTER);
+//		cPrefFrame.add(okButton, BorderLayout.SOUTH);
+//		
+//		cPrefFrame.pack();
+//
+//		cPrefFrame.setTitle("Test Frame for CSV preferences");
+//		cPrefFrame.setVisible(true);
+//	}
+//	
+//	
+//}
 
 class EPRunner implements Runnable {
 

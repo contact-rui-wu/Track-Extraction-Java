@@ -88,9 +88,11 @@ public class MaggotTrackBuilder extends TrackBuilder {
 
 		boolean debug = false;
 		
+		track.linkPoints();
+		
 		Vector<? extends TrackPoint> points = track.getPoints();
 		
-		Vector<Segment> segList = findSegments(points);
+		Vector<Segment> segList = findSegments(points, maxGap);
 		if (segList==null){
 			return;//Points are not MTPs 
 		}
@@ -109,7 +111,7 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		}
 		
 		for(Segment seg: segList){
-			alignSegment(points, seg);
+			alignSegment(points, seg, maxGap);
 		}
 		for(Segment seg: segList){
 			if (c!=null) c.message("Orienting segment #"+segList.indexOf(seg)+"/"+segList.indexOf(segList.lastElement())+",  ("+seg.length()+"pts)", VerbLevel.verb_debug);
@@ -117,18 +119,68 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		}
 		
 		//ensure continuity causes problems when maggot balls up on both ends of a segment -- need better fix - graphics based?
-	//	ensureContinuity(points, segList, maxGap);
+		//should be obviated by including maxGap in alignSegment
+		//ensureContinuity(points, segList, maxGap);
 	}
 	
 	
-	protected static Vector<Segment> findSegments(Vector<? extends TrackPoint> points){
+	protected static Vector<Segment> findSegments(Vector<? extends TrackPoint> points, int maxGap){
 		
 		Vector<Segment> segList = null; 
 		
-		if (points!=null && points.size()>0 && (points.get(0) instanceof MaggotTrackPoint)){
-			
-			segList = new Vector<Segment>();
-			
+		if (!(points!=null && points.size()>0 && (points.get(0) instanceof MaggotTrackPoint))){
+			return null;
+		}
+		
+		//assume previously linked
+//		TrackPoint prevPt = null;
+//		for (TrackPoint tp : points) {
+//			tp.prev = prevPt;
+//			if (prevPt != null) {
+//				prevPt.next = tp;
+//			}
+//			tp.next = null;
+//			prevPt = tp;
+//		}
+		
+		segList = new Vector<Segment>();
+		int segStart = 0;
+		int segEnd = 0;
+		boolean extending = false;
+		for (int i = 0; i < points.size(); ++i) {
+			MaggotTrackPoint mtp = (MaggotTrackPoint) points.get(i);
+			if (mtp == null) {
+				return segList;
+			}
+			if (extending) {
+				if (mtp.getNextValid(maxGap) == null) {
+					extending = false;
+					segEnd = i;
+					Segment newSeg = new Segment(segStart, segEnd);
+					if (segList.size()!=0){
+						newSeg.prevSeg = segList.lastElement();
+						segList.lastElement().nextSeg = newSeg;
+					}
+					segList.add(newSeg);
+				}
+			} else {
+				if (mtp.htValid) {
+					extending = true;
+					segStart = i;
+				}
+			}
+		}
+		if (extending) { 
+			segEnd = points.size()-1;
+			Segment newSeg = new Segment(segStart, segEnd);
+			if (segList.size()!=0){
+				newSeg.prevSeg = segList.lastElement();
+				segList.lastElement().nextSeg = newSeg;
+			}
+			segList.add(newSeg);
+		}
+		return segList;
+		/*
 			MaggotTrackPoint pt;
 			int i=0;
 			while (i<points.size()){
@@ -159,17 +211,19 @@ public class MaggotTrackBuilder extends TrackBuilder {
 			}
 			
 		}
-		return segList;
+		*/
+		
 	}
 	
-	protected static void alignSegment(Vector<? extends TrackPoint> points, Segment seg){
+	protected static void alignSegment(Vector<? extends TrackPoint> points, Segment seg, int maxGap){
 		
-		MaggotTrackPoint prevPt = (MaggotTrackPoint) points.get(seg.start);
+		//MaggotTrackPoint prevPt = (MaggotTrackPoint) points.get(seg.start);
 		MaggotTrackPoint pt;
 		for (int i=(seg.start+1); i<=seg.end; i++){
 			pt = (MaggotTrackPoint) points.get(i);
-			pt.orientMTP(prevPt);
-			prevPt = pt;
+			pt.segStart = seg.start;
+			pt.orientMTP(pt.getPrevValid(maxGap));
+			//prevPt = pt;
 		} 
 	}
 	
@@ -184,6 +238,8 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		if(seg.length()>=2){
 			//Orient the segment to the direction of motion
 			double dpSum=0;
+			//OK to use prevPt and not prevHTValid, because this only relies on COM and current HT
+			//gives 0 if ht not valid, so no need to check
 			MaggotTrackPoint prevPt = (MaggotTrackPoint) points.get(seg.start);
 			MaggotTrackPoint pt;
 			for (int i=(seg.start+1); i<=seg.end; i++){
@@ -238,25 +294,34 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		for (Segment seg : segList){
 			boolean flipPrev = false;
 			boolean flipNext = false;
+			boolean closePrev = false;
+			boolean closeNext = false;
+			//TODO maxGap is not appropriate here, get a new parameter that describes the 
+			if (seg.end - seg.start > maxGap*4){
+				continue; //don't flip long segments - assume they are properly aligned by HT motion
+			}
 			
+			//TODO: better to compare with extrapolated midline for short gaps?
+			//TODO: set alignment by image registration/statistics?
 			if (seg.prevSeg!=null && (seg.start-seg.prevSeg.end)<maxGap){
 				MaggotTrackPoint pt = (MaggotTrackPoint) points.get(seg.start);
 				flipPrev = (pt.chooseOrientation((MaggotTrackPoint) points.get(seg.prevSeg.end), false))>0;
+				closePrev = true;
 			}
 			if (seg.nextSeg!=null && (seg.nextSeg.start-seg.end)<maxGap){
 				MaggotTrackPoint pt = (MaggotTrackPoint) points.get(seg.end);
 				flipNext = (pt.chooseOrientation((MaggotTrackPoint) points.get(seg.nextSeg.start), false))>0;
-				
+				closeNext = true;
 			}
 				
-			if (flipPrev && flipNext){
+			if ((flipPrev || (flipNext && !closePrev)) && (flipNext || (flipPrev && !closeNext))){
 				flipSeg(points, seg.start, seg.end);
 			}
 		}
 		
 	}
 	
-	
+	/*
 	protected static void orientMaggotTrack(Vector<? extends TrackPoint> points, Communicator comm, int trackID){
 		
 		
@@ -322,13 +387,14 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		
 		
 	}
-	
+	*/
 	/**
 	 * Checks if the segment of MaggotTrackPoints is oriented in the direction of motion
 	 * @param track Track to be oriented
 	 * @param startInd Starting INDEX (not frame) to be oriented
 	 * @param endInd Ending  INDEX (not frame) to be oriented
 	 */
+	/*
 	protected static void analyzeMaggotDirection(Vector<? extends TrackPoint> points, int startInd, int endInd, Communicator comm, int trackID){
 		
 		if (points.isEmpty() || startInd<0 || endInd<0 || startInd>=endInd){
@@ -354,7 +420,7 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		
 		
 	}
-	
+	*/
 	/**
 	 * Flips the orientation of every maggot head/tail/midline in the segment
 	 * @param track

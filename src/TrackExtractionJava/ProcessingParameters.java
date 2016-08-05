@@ -12,8 +12,6 @@ import java.io.File;
 //import java.text.NumberFormat;
 
 import javax.swing.JCheckBox;
-import javax.swing.JFormattedTextField;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 
@@ -179,10 +177,10 @@ class ProcPanel extends JPanel {
 	JCheckBox dofitBox;
 	String dofitName = "Do backbone fitting";
 	
-	JFormattedTextField minTrackLenField;
-	JLabel minTrackLenLabel;
-	JPanel minTrackLenPanel;
-	String minTrackLengthName = "Minimum track length for fitting";
+	//JFormattedTextField minTrackLenField;
+	//JLabel minTrackLenLabel;
+	//JPanel minTrackLenPanel;
+	//String minTrackLengthName = "Minimum track length for fitting";
 	
 	JCheckBox toCSVBox;
 	String toCSVName = "Save track data to CSV";
@@ -204,7 +202,7 @@ class ProcPanel extends JPanel {
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new GridLayout(3, 1));
 		mainPanel.add(dofitBox);
-		mainPanel.add(minTrackLenPanel);
+		//mainPanel.add(minTrackLenPanel);
 		mainPanel.add(toCSVBox);
 		
 		add(mainPanel);

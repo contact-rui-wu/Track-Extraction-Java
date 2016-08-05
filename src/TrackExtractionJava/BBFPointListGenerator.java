@@ -264,6 +264,7 @@ public class BBFPointListGenerator {
 		
 	}
 	
+	//I'm not sure what this function does -- what's the orient track for? it's a different call from others, which is confusing
 	private boolean cleanUpBTPs(boolean[] sampledEmptyMids, double flickerDist){
 		if(sampledEmptyMids!=null){
 				comm.message("Clearing flickers", VerbLevel.verb_debug);
@@ -273,7 +274,7 @@ public class BBFPointListGenerator {
 			Vector<Gap> gaps = findGaps(sampledEmptyMids);
 				comm.message("Cleaning gaps", VerbLevel.verb_debug);
 			sanitizeGaps(gaps);
-			MaggotTrackBuilder.orientMaggotTrack(BTPs, comm, workingTrack.getTrackID());
+	//		MaggotTrackBuilder.orientMaggotTrack(BTPs, comm, workingTrack.getTrackID());
 				comm.message("Filling midlines", VerbLevel.verb_debug);
 			boolean noError = fillGaps(gaps);
 			if (!noError){

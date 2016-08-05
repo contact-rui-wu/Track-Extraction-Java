@@ -71,6 +71,9 @@ public class MaggotTrackPoint extends ImTrackPoint {
 	
 	transient Communicator comm;
 	
+	protected transient int segStart = -1;
+	
+	
 	public MaggotTrackPoint() {
 	}
 	
@@ -514,6 +517,7 @@ public class MaggotTrackPoint extends ImTrackPoint {
      * linking behind causes the previous point to link ahead, but linking
      * ahead does not cause the next point to link behind
      */
+	/*
 	protected void linkBehind(MaggotTrackPoint prev) {
         this.prev = prev;
         if (prev != null) {
@@ -523,7 +527,8 @@ public class MaggotTrackPoint extends ImTrackPoint {
 	protected void linkAhead(MaggotTrackPoint next) {
         this.next = next;
     }
-    
+    */
+	
 	protected void setMask(ImageProcessor mask){
 		this.mask = mask;
 	}
@@ -549,7 +554,7 @@ public class MaggotTrackPoint extends ImTrackPoint {
 	}
 	
 	protected int chooseOrientation(MaggotTrackPoint prevPt, boolean executeOrientation){
-		if (midline!=null && prevPt.midline!=null && midline.getNCoordinates()!=0 && prevPt.midline.getNCoordinates()!=0){
+		if (prevPt != null && midline!=null && prevPt.midline!=null && midline.getNCoordinates()!=0 && prevPt.midline.getNCoordinates()!=0){
 			//Measure the total distance for each midline (flipped vs not flipped) 
 			double distUnchanged = spineDistSqr(prevPt.midline);
 			PolygonRoi flippedMid = prevPt.invertMidline();
@@ -702,7 +707,7 @@ public class MaggotTrackPoint extends ImTrackPoint {
 	 */
 	public double MaggotDotProduct(MaggotTrackPoint prevPt){
 		
-		if (midpoint==null){
+		if (!htValid || midpoint==null || prevPt == null){
 			return 0;
 		}
 		
@@ -712,8 +717,25 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		return (x-prevPt.x)*(head.x-tail.x) + (y-prevPt.y)*(head.y-tail.y);
 	
 	}
-	
-	
+	//
+	public MaggotTrackPoint getPrevValid(int maxRecursion) {
+		if (maxRecursion < 0 || getPrev() == null) {
+			return null;
+		}
+		if (getPrev().htValid) {
+			return getPrev();
+		}
+		return getPrev().getPrevValid(maxRecursion-1);
+	}
+	public MaggotTrackPoint getNextValid(int maxRecursion) {
+		if (maxRecursion < 0 || getNext() == null) {
+			return null;
+		}
+		if (getNext().htValid) {
+			return getNext();
+		}
+		return getNext().getNextValid(maxRecursion-1);
+	}
 	public MaggotTrackPoint getPrev(){
 		return (MaggotTrackPoint)prev;
 	}
@@ -914,7 +936,7 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		btp.rightSeg = rightSeg;
 		btp.htValid = htValid;
 		btp.comm = comm;
-		
+		btp.segStart = segStart;
 		//ImTrackPoint fields
 		btp.im = im;
 		btp.serializableIm = serializableIm;

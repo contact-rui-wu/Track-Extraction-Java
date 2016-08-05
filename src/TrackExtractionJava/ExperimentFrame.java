@@ -431,7 +431,7 @@ class TrackPanel extends JPanel {
 			if (track!=null){
 				new Thread () {
 					public void run() {
-						BackboneFitter bbf = new BackboneFitter(track); 
+						BackboneFitter bbf = new BackboneFitter(track, ef.sep.getFittingParameters()); 
 						bbf.recordHistory();
 						IJ.showStatus("fitting track");
 						bbf.fitTrackNewScheme( ef.sep.getFittingParameters());//TODO adjust fitting parameters

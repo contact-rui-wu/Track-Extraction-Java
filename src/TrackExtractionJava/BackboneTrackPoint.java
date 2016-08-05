@@ -776,10 +776,13 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			
 		//BACKBONE
 		if (mdp.backbone) displayUtils.drawBackbone(im, bbpoly, mdp.expandFac, offX, offY, rect, Color.RED);
-		
+		String topstring = "segStart = " + segStart + "HT-DP = " + MaggotDotProduct((MaggotTrackPoint) prev);
+		if (inHistory) {
+			topstring +=  " " + historyMessage;
+		}
 		if (inHistory) {
 			im.setFont(new Font(im.getFont().getFontName(), Font.PLAIN, 14));
-			im.drawString(historyMessage, 5, im.getFont().getSize()+5);
+			im.drawString(topstring, 5, im.getFont().getSize()+5);
 		}
 		
 		return im;
