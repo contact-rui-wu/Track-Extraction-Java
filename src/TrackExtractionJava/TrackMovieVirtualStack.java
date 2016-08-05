@@ -76,8 +76,8 @@ public class TrackMovieVirtualStack extends VirtualStack {
 	private void init () {
 		btps = new Vector<BackboneTrackPoint>();
 		for (TrackPoint tp : tr.points) {
+			if (!(tp instanceof BackboneTrackPoint)) {continue;}
 			BackboneTrackPoint btp = (BackboneTrackPoint) tp;
-			if (btp == null) { continue; }
 			btps.add(btp);
 		}
 		Forces = new SimpleExtractionParameters().getFittingParameters().getForces(0);
@@ -145,7 +145,7 @@ public class TrackMovieVirtualStack extends VirtualStack {
 		TrackPoint tp = tr.getPointCoerced(frameNumber-1);
 		
 		if (tp != null) {
-			if (mdp.forces || showFitHistory) {
+			if (tp instanceof BackboneTrackPoint && (mdp.forces || showFitHistory)) {
 				BackboneTrackPoint btp = (BackboneTrackPoint) tp;
 				if (null != btp) {
 					btp.setTargetBackbones(Forces, btps, history);

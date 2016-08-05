@@ -84,6 +84,8 @@ public class MaggotTrackBuilder extends TrackBuilder {
 	
 	protected static void orientMaggotTrack(Track track, int maxGap, Communicator c){
 		
+		int gapSizeToSkipOver = 2; //if only 1 or 2 frames is missing, don't start new segment
+		
 		if (c!=null) c.message("Track "+track.getTrackID(), VerbLevel.verb_debug);
 
 		boolean debug = false;
@@ -92,7 +94,7 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		
 		Vector<? extends TrackPoint> points = track.getPoints();
 		
-		Vector<Segment> segList = findSegments(points, maxGap);
+		Vector<Segment> segList = findSegments(points, gapSizeToSkipOver);
 		if (segList==null){
 			return;//Points are not MTPs 
 		}
@@ -111,16 +113,15 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		}
 		
 		for(Segment seg: segList){
-			alignSegment(points, seg, maxGap);
+			alignSegment(points, seg, gapSizeToSkipOver); 
 		}
 		for(Segment seg: segList){
 			if (c!=null) c.message("Orienting segment #"+segList.indexOf(seg)+"/"+segList.indexOf(segList.lastElement())+",  ("+seg.length()+"pts)", VerbLevel.verb_debug);
 			orientSegment(points, seg, c);
 		}
 		
-		//ensure continuity causes problems when maggot balls up on both ends of a segment -- need better fix - graphics based?
-		//should be obviated by including maxGap in alignSegment
-		//ensureContinuity(points, segList, maxGap);
+		//ensure continuity causes problems when maggot balls up on both ends of a short segment -- need better fix - graphics based?
+		ensureContinuity(points, segList, maxGap);
 	}
 	
 	
@@ -153,7 +154,7 @@ public class MaggotTrackBuilder extends TrackBuilder {
 				return segList;
 			}
 			if (extending) {
-				if (mtp.getNextValid(maxGap) == null) {
+				if (mtp.getNextValid(1) == null) {
 					extending = false;
 					segEnd = i;
 					Segment newSeg = new Segment(segStart, segEnd);

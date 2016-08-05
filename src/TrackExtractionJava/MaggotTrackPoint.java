@@ -8,6 +8,7 @@ import ij.process.ByteProcessor;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -15,6 +16,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.ListIterator;
 import java.util.Vector;
@@ -901,7 +903,9 @@ public class MaggotTrackPoint extends ImTrackPoint {
 			displayUtils.drawPoint(im, tail, mdp.expandFac, offX, offY, Color.GREEN);
 			displayUtils.drawPoint(im, midpoint, mdp.expandFac, offX, offY, Color.BLUE);	
 		}
-		
+		String segmsg = "segStart = " + segStart + "HT-DP = " + new DecimalFormat().format(MaggotDotProduct(((MaggotTrackPoint) prev)));
+		im.setFont(new Font(im.getFont().getFontName(), Font.PLAIN, 14));
+		im.drawString(segmsg, 5, im.getHeight() - 5);
 			
 		return im;
 	}
