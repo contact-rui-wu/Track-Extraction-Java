@@ -22,7 +22,9 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		test_frameVSPointDdtScheme();
+		//test_getRawPaddedMovie();
+		
+		//test_frameVSPointDdtScheme();
 		
 		//test_frameSizeDdtMovie();
 		
@@ -39,6 +41,68 @@ public class TestRui {
 	}
 	
 	// write each test as a void method so that don't have to write a lot in main
+	
+	/**
+	 * For dft image registration tests in MATLAB
+	 */
+	public static void test_getRawPaddedMovie() {
+		ImageJ ij = new ImageJ();
+		// do extraction and look at the tracks
+		ProcessingParameters prParams = new ProcessingParameters();
+		prParams.diagnosticIm = false;
+		prParams.showMagEx = false;
+		prParams.saveMagEx = false;
+		prParams.doFitting = false;
+		prParams.showFitEx = false;
+		prParams.saveFitEx = false;
+		prParams.saveErrors = false;
+		ExtractionParameters extrParams = new ExtractionParameters();
+		extrParams.subset = true;
+		extrParams.startFrame = 1;
+		extrParams.endFrame = 1000;
+		extrParams.frameSizeDdt = false;
+		FittingParameters fitParams = new FittingParameters();
+		fitParams.storeEnergies = false;
+		String path = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/sampleShortExp/sampleShortExp_copy.mmf";
+		Experiment_Processor ep = new Experiment_Processor();
+		ep.runningFromMain = true;
+		ep.prParams = prParams;
+		ep.extrParams = extrParams;
+		ep.run(path);
+		// full length track chosen: 0
+		Track tr = ep.ex.getTrack(0);
+		System.out.println("Chosen track length: "+tr.getNumPoints());
+		int width = ep.extrParams.trackWindowWidth;
+		int height = ep.extrParams.trackWindowHeight;
+		// get raw movie
+		ImageStack rawMovie = new ImageStack(width,height);
+		for (int i=1;i<=tr.getNumPoints();i++) {
+			ImageProcessor ip = tr.getFramePoint(i).getRawIm();
+			Rectangle rect = tr.getFramePoint(i).rect;
+			ImageProcessor ipad = CVUtils.padAndCenter(new ImagePlus("",ip), width, height, rect.width/2, rect.height/2);
+			rawMovie.addSlice(ipad);
+		}
+		ImagePlus rawMoviePlus = new ImagePlus("raw movie", rawMovie);
+		rawMoviePlus.show();
+		// get ddt movie
+		ImageStack ddtMovie = new ImageStack(width,height);
+		for (int i=1;i<=tr.getNumPoints();i++) {
+			TrackPoint tp = tr.getFramePoint(i);
+			ImageProcessor ipad;
+			if (tp.is2ndValid(0)) {
+				ImageProcessor ip = tr.getFramePoint(i).get2ndIm(0);
+				Rectangle rect = tr.getFramePoint(i).get2ndRect(0);
+				ipad = CVUtils.padAndCenter(new ImagePlus("",ip), width, height, rect.width/2, rect.height/2);
+			} else {
+				ipad = new ColorProcessor(width,height);
+				ipad.setColor(new Color(0,0,0));
+				ipad.fill();
+			}
+			ddtMovie.addSlice(ipad);
+		}
+		ImagePlus ddtMoviePlus = new ImagePlus("ddt movie", ddtMovie);
+		ddtMoviePlus.show();
+	}
 	
 	public static void test_frameVSPointDdtScheme() {
 		ImageJ ij = new ImageJ();
