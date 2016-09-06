@@ -276,6 +276,7 @@ public class HandleExtraFileTypes extends ImagePlus implements PlugIn {
 				// plugin exists and was launched
 				try {
 					// check whether plugin was successful
+					@SuppressWarnings("rawtypes")
 					Class c = loci.getClass();
 					boolean success = c.getField("success").getBoolean(loci);
 					boolean canceled = c.getField("canceled").getBoolean(loci);

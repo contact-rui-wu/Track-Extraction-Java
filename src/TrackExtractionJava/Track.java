@@ -49,6 +49,9 @@ public class Track implements Serializable{
 	protected boolean valid=true;
 	
 	protected boolean diverged = false;
+	
+	protected boolean suspicious = false;
+	
 	/**
 	 * Unique identifier for the track 
 	 */
@@ -79,7 +82,7 @@ public class Track implements Serializable{
 	 */
 	Experiment exp;
 	
-	transient Communicator comm;
+	private transient Communicator comm;
 	
 	String otherInfo = "";
 	
@@ -294,6 +297,21 @@ public class Track implements Serializable{
 		}
 		return HTdist;
 	}
+	
+	public double getFractionHTValid() {
+		if (points==null || points.firstElement().getPointType()<MaggotTrackPoint.pointType) return 0;
+		double nval = 0;
+		for (int i=0;i<points.size(); i++) {
+			MaggotTrackPoint mtp = (MaggotTrackPoint)points.get(i);
+			if (mtp.htValid) nval++;
+		}
+		return nval/points.size();
+	}
+	
+	public double getMeanHTdist() {
+		return MathUtils.mean(getHTdists(), true);
+	}
+	
 	/**
 	 * sets the clustering variance as a fraction of the median HT distance of the maggots
 	 * the variance is set to the square of (median distance/(num backbone points * pointSpacingInSigmas))
@@ -311,6 +329,9 @@ public class Track implements Serializable{
 		double medianLength = HTdist[HTdist.length/2];
 		for (int i=0;i<points.size(); i++) {
 			BackboneTrackPoint btp= (BackboneTrackPoint) points.get(i);
+			if (btp == null) {
+				continue;
+			}
 			btp.setGmmClusterVariance(medianLength*medianLength/(pointSpacingInSigmas*pointSpacingInSigmas*btp.getNumBBPoints()*btp.getNumBBPoints()));
 		}
 	}
@@ -318,25 +339,6 @@ public class Track implements Serializable{
 		setVarianceFromHTdist(2);
 	}
 	
-	
-	/**
-	 * Calculates trackpoint energies using default fitting parameters
-	 * 
-	 */
-//	public void calcEnergies(){
-//		calcEnergies(new FittingParameters());
-//	}
-	
-	/**
-	 * Calculates trackpoint energies using 
-	 * @param fp
-	 */
-//	public void calcEnergies(FittingParameters fp){
-//		
-//		for (int i=0; i<points.size(); i++){
-//			points.get(i).calcEnergies(fp);
-//		}
-//	}
 	
 	/**
 	 * Gathers and returns energies of the given type from trackpoints
@@ -392,7 +394,11 @@ public class Track implements Serializable{
 		
 		Vector<Gap> badGaps = Gap.bools2Segs(bad);
 		if (badGaps.size()>1) BBFPointListGenerator.mergeGaps(badGaps, minValidSegmentLen, null);
-		
+		Vector<Gap> small = new Vector<Gap>();
+		for (Gap bg: badGaps){
+			if (bg.size()<2) small.add(bg);
+		}
+		badGaps.removeAll(small);
 		
  		return badGaps;
 
@@ -432,6 +438,10 @@ public class Track implements Serializable{
 		return diverged;
 	}
 	
+	public boolean suspicious(){
+		return suspicious;
+	}
+	
 	protected void setTrackID(int tid){
 		trackID = tid;
 	}
@@ -447,9 +457,33 @@ public class Track implements Serializable{
 	public Vector<TrackPoint> getPoints(){
 		return points;
 	}
+	/**
+	 * linkPoints()
+	 * sets the prev and next pointers for each point in the track
+	 */
+	public void linkPoints() {
+		linkPoints(points);
+	}
+	public static void linkPoints(Vector <? extends TrackPoint> points) {
+		TrackPoint prevPt = null;
+		for (TrackPoint tp : points) {
+			tp.prev = prevPt;
+			if (prevPt != null) {
+				prevPt.next = tp;
+			}
+			tp.next = null;
+			prevPt = tp;
+		}
+	}
+	
+	public TrackPoint getPointCoerced(int index) {
+		if (index < 0) index = 0;
+		if (index >= points.size()) index = points.size()-1;
+		return getPoint(index);
+	}
 	
 	public TrackPoint getPoint(int index){
-		if (index<0|| index>points.size()){
+		if (index<0|| index>=points.size()){
 			return null;
 		} else {
 			return points.get(index);
@@ -471,27 +505,65 @@ public class Track implements Serializable{
 		return points.lastElement();
 	}
 	
-	public void playMovie() {
+	public ImagePlus playMovie() {
 		comm = new Communicator();
-		playMovie(trackID, null);
-		
+		ImagePlus imp = playMovie(trackID, null);
 		if (!comm.outString.equals("")) new TextWindow("PlayMovie Error", comm.outString, 500, 500); 
+		return imp;
 	}
 	
-	public void playMovie(MaggotDisplayParameters mdp) {
-		playMovie(trackID, mdp);
+	public ImagePlus playMovie(MaggotDisplayParameters mdp) {
+		return playMovie(trackID, mdp);
 	}
 	
-	public void playBlankMovie(){
+	public ImagePlus playBlankMovie(){
 		MaggotDisplayParameters mdp = new MaggotDisplayParameters();
 		mdp.setAllFalse();
-		playMovie(trackID, mdp);
+		return playMovie(trackID, mdp);
 
 	}
 	
 	
+	private void updateTrackImageSize (boolean square) {
+		int w = 0;
+		int h = 0;
+		for (TrackPoint tp : points) {
+			w = w > tp.getRect()[2] ? w : tp.getRect()[2];
+			h = h > tp.getRect()[3] ? w : tp.getRect()[3];
+		}
+		if (square) {
+			w = w > h ? w : h;
+			h = w;
+		}
+		for (TrackPoint tp : points) {
+			ImTrackPoint itp = (ImTrackPoint) tp;
+			if (itp == null) { continue; }
+			itp.setTrackWindowWidth(w);
+			itp.setTrackWindowHeight(h);
+		}
+		
+	}
+	
 	public ImagePlus playMovie(int labelInd, MaggotDisplayParameters mdp){
-		return getMovieStack(labelInd, mdp, true); 
+		
+		TrackMovieVirtualStack vs = getVirtualMovieStack(mdp); 
+
+		ImagePlus trackPlus = vs.getImagePlus();//new ImagePlus("Track "+trackID+": frames "+points.firstElement().frameNum+"-"+points.lastElement().frameNum ,vs);
+		trackPlus.show();
+		return trackPlus;
+		//return getMovieStack(labelInd, mdp, true);
+	}
+	
+	public TrackMovieVirtualStack getVirtualMovieStack (MaggotDisplayParameters mdp) {
+		return getVirtualMovieStack(mdp, false);
+	}
+	public TrackMovieVirtualStack getVirtualMovieStack (MaggotDisplayParameters mdp, boolean showFitHistory){
+		if (mdp ==null) {
+			mdp = new MaggotDisplayParameters();
+		}
+		updateTrackImageSize(true);
+		return new TrackMovieVirtualStack(this, mdp, showFitHistory);
+		
 	}
 	
 	public ImagePlus getMovieStack(int labelInd, MaggotDisplayParameters mdp, boolean showMovie){
@@ -576,11 +648,11 @@ public class Track implements Serializable{
 		if (points.size()!=0){
 			info += " frames "+points.firstElement().frameNum+"-"+points.lastElement().frameNum;
 		}
-		
-		for (int i=0; i<points.size(); i++){
-			info += "\n Point "+i+": "+points.get(i).infoSpill();
-		}
-		
+//		can take extraordinarily long for long tracks
+//		for (int i=0; i<points.size(); i++){
+//			info += "\n Point "+i+": "+points.get(i).infoSpill();
+//		}
+//		
 		return info;
 		
 	}
@@ -619,39 +691,47 @@ public class Track implements Serializable{
 		
 	}
 	
-	
 	public void showFitting(){
+		showFitting(null, null, null, null, null);
+	}
+	
+	public void showFitting(FittingParameters straightParams, FittingParameters bentParams, 
+			FittingParameters divergedParams, FittingParameters suspiciousParams, FittingParameters finalParams){
+		
 		if (points==null || points.size()==0 || points.firstElement().getPointType()!=MaggotTrackPoint.pointType){
 			return;
 		}
-		
-		//Make a button
-//		JFrame buttonFrame = new JFrame("NextIterationFrame");
-////		buttonFrame.setSize(200, 200);
-//		
-//		JButton nextButton = new JButton("Next Iteration");
-//		nextButton.addActionListener(new ActionListener() {
-//			@Override
-//			public void actionPerformed(ActionEvent e) {
-//				notify();
-//			}
-//		});
-//		
-//		buttonFrame.add(nextButton);
-//		buttonFrame.setVisible(true);
-		
 		
 		BackboneFitter bbf = new BackboneFitter(this);
 		bbf.doPause = true;
 		bbf.userIn = new Scanner(System.in);
 		bbf.userOut = System.out;
 		
-		// TODO pass in a track fitting scheme and/or Fitting Params
-		bbf.fitTrackNewScheme();
+		bbf.fitTrackNewScheme(straightParams, bentParams, divergedParams, suspiciousParams, finalParams);
 		
 		
 		
 	}
+	
+	protected void markSuspiciousGaps(Vector<Gap> badGaps){
+		
+		if (points.firstElement().getPointType()!=BackboneTrackPoint.pointType){
+			if (comm!=null) comm.message("Tried to mark suspicious points in track "+trackID+", but points were not of type BackboneTrackPoint", VerbLevel.verb_warning);
+			return;
+		}
+		
+		for (Gap bg: badGaps){
+			if (bg.start<0 || bg.end>=points.size()){
+				if (comm!=null) comm.message("Tried to mark a suspicious gap in track "+trackID+", but the gap ("+bg.start+"-"+bg.end+") was out of bounds", VerbLevel.verb_warning);
+				return;
+			} 
+			for (int i=bg.start; i<=bg.end; ++i){
+				((BackboneTrackPoint)points.get(i)).suspicious = true;
+			}
+		}
+		
+	}
+	
 	
 	public Track fitTrack(FittingParameters fp){
 		if (points==null || points.size()==0 || points.firstElement().getPointType()!=MaggotTrackPoint.pointType){
@@ -666,29 +746,29 @@ public class Track implements Serializable{
 		return bbf.workingTrack;
 	}
 	
-	public int toDisk(DataOutputStream dos, PrintWriter pw){
+	public int toDisk(DataOutputStream dos){
 		
-		if (pw!=null) pw.println("Writing track "+trackID+"...");
+		message("Writing track "+trackID+"...", VerbLevel.verb_verbose);
 		
 		//Write the size in bytes in this track to disk
 		try {
-			if (pw!=null) pw.println("Getting track size");
-			int nBytes = sizeOnDisk(pw);
-			if (pw!=null) pw.println("Size on disk: "+nBytes+" bytes");
+			message("Getting track size", VerbLevel.verb_debug);
+			int nBytes = sizeOnDisk();
+			message("Size on disk: "+nBytes+" bytes", VerbLevel.verb_debug);
 			if (nBytes>=0){
-				if (pw!=null) pw.println("Writing Track size");
+				message("Writing Track size", VerbLevel.verb_debug);
 				dos.writeInt(nBytes);
 				dos.writeInt(trackID);
 			} else {
-				if (pw!=null) pw.println("...Error getting size of track "+trackID+"; aborting save");
+				message("...Error getting size of track "+trackID+"; aborting save", VerbLevel.verb_error);
 				return 3;
 			}
 		} catch (Exception e) {
 			StringWriter sw = new StringWriter();
 			PrintWriter pw2 = new PrintWriter(sw);
 			e.printStackTrace(pw2);
-			if (pw!=null) pw.println(sw.toString());
-			if (pw!=null) pw.println("...Error writing size of track "+trackID+"; aborting save");
+			message (sw.toString(), VerbLevel.verb_error);
+			message ("...Error writing size of track "+trackID+"; aborting save", VerbLevel.verb_error);
 			return 3;
 		}
 
@@ -700,7 +780,7 @@ public class Track implements Serializable{
 			} else{
 				v="false";
 			}
-			if (pw!=null) pw.println("Writing valid flag ("+v+")");
+			message("Writing valid flag ("+v+")", VerbLevel.verb_debug);
 			dos.writeBoolean(valid);
 			
 			if (diverged){
@@ -708,54 +788,56 @@ public class Track implements Serializable{
 			} else{
 				v="false";
 			}
-			if (pw!=null) pw.println("Writing diverged flag ("+v+")");
+			message("Writing diverged flag ("+v+")", VerbLevel.verb_debug);
 			dos.writeBoolean(diverged);
 		} catch(Exception e){
-			if (pw!=null) pw.println("...Error writing valid flag in track "+trackID+"; aborting save");
+			message("...Error writing valid flag in track "+trackID+"; aborting save", VerbLevel.verb_error);
 			return 4;
 		}
 		
 		//Write the # of points in this track to disk
 		try {
-			if (pw!=null) pw.println("Writing #pts ("+points.size()+")");
+			debugMessage("Writing #pts ("+points.size()+")");
 			if (points.size()>=0){
 				dos.writeInt(points.size());
 			} else {
-				if (pw!=null) pw.println("...Error getting # of points in track "+trackID+"; aborting save");
+				message("...Error getting # of points in track "+trackID+"; aborting save", VerbLevel.verb_error);
 				return 2;
 			}
 		} catch (Exception e) {
-			if (pw!=null) pw.println("...Error writing # of points in track "+trackID+"; aborting save");
+			message("...Error writing # of points in track "+trackID+"; aborting save", VerbLevel.verb_error);
 			return 2;
 		}
 		
 		//Write the points to disk
 		try {
-			if (pw!=null) pw.println("Writing points...");
+			message("Writing points...", VerbLevel.verb_verbose);
 			for (int i=0; i<points.size(); i++){
-				if (points.get(i).toDisk(dos,pw)!=0){
-					if (pw!=null) pw.println("...Error writing TrackPoint "+points.get(i).pointID+"; aborting save");
+				if (points.get(i).toDisk(dos,null)!=0){ //todo set communicator and use it
+					message("...Error writing TrackPoint "+points.get(i).pointID+"; aborting save", VerbLevel.verb_error);
 					return 1;
 				}
 				if (i==(points.size()-1)){
-					if (pw!=null) pw.println("Last point in track "+trackID+" written");
+					debugMessage("Last point in track "+trackID+" written");
 				}
 			}
-			if (pw!=null) pw.println("...done writing points");
+			debugMessage("...done writing points");
 		} catch (Exception e) {
-			if (pw!=null) pw.println("...Error writing points; aborting save");
+			message("...Error writing points; aborting save", VerbLevel.verb_error);
 			return 1;
 		}
 		
-		if (pw!=null) pw.println("...Track Saved!");
+		message("...Track Saved!", VerbLevel.verb_verbose);
 		return 0;
 	}
 
 	
-	private int sizeOnDisk(PrintWriter pw){
+	private int sizeOnDisk(){
 		
-		//Add the size of the "# of points" field (32-bit integer)
-		int size = Integer.SIZE/Byte.SIZE;
+		int size =Integer.SIZE/Byte.SIZE;//trackID
+		size += 1;//Boolean.SIZE/Byte.SIZE;//valid
+		size += 1;//Boolean.SIZE/Byte.SIZE;//diverged
+		size += Integer.SIZE/Byte.SIZE;//NumPts
 		
 		//Add the size of each point
 		for (int i=0; i<points.size(); i++){
@@ -784,7 +866,6 @@ public class Track implements Serializable{
 		points = new Vector<TrackPoint>();
 		exp = experiment;
 		trackID=nextIDNum++;
-		
 		//advance past size on disk
 		try {
 			int size = dis.readInt();
@@ -926,6 +1007,8 @@ public class Track implements Serializable{
 			d += (pointList.size()>0) ? pointList.firstElement().frameNum+"-"+pointList.lastElement().frameNum+lb+lb : "X-X"+lb+lb;
 		}
 		
+		
+		 
 		if(!addInfo.equals("")) d += addInfo+lb+lb;
 		
 		if (pointList!=null){d += "Points("+pointList.firstElement().getTypeName()+"; "+pointList.size()+"):"+lb;
@@ -943,12 +1026,90 @@ public class Track implements Serializable{
 		return d;
 	}
 	
+	public String description(boolean decimate) {
+		int maxLength = 2000;
+		String htInfo;
+		String lb = "\n";
+		htInfo = "Mean HT-dist = " + getMeanHTdist() + lb;
+		htInfo += "Max Excursion = " + maxExcursion() + lb;
+		htInfo += "Fraction HT Valid = " + getFractionHTValid() + lb + lb;
+		
+		if (decimate && points.size() > maxLength) {
+			Vector<TrackPoint> pv = new Vector<TrackPoint> (maxLength);
+			for (int j = 0; j < maxLength; ++j) {
+				pv.add(points.get((int) j * (points.size()/maxLength)));
+			}
+			return makeDescription("" + trackID, pv, otherInfo + lb + htInfo);
+		} else {
+			return makeDescription(""+trackID, points, otherInfo + lb + htInfo);
+		}
+	}
+	/**
+	 * @return: the largest distance traveled from the starting point
+	 */
+	public double maxExcursion() {
+		double dist = 0;
+		double x0 = points.firstElement().x;
+		double y0 = points.firstElement().y;
+		double ds;
+		for (TrackPoint p : points) {
+			ds = (p.x - x0)*(p.x - x0) + (p.y-y0)*(p.y - y0);
+			dist = ds > dist ? ds : dist;
+		}
+		return Math.sqrt(dist);
+		
+	}
+	
+	public int getPointIndexFromID (Vector<? extends TrackPoint>points, int pointID) {
+		for (int i = 0; i < points.size(); ++i) {
+			if (points.get(i).pointID == pointID) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	
+	public int getPointIndexFromID (int pointID) {
+		return (getPointIndexFromID(points, pointID));
+	}
+	
+	public int getBackboneHistoryLength () {
+		int length = 0;
+		for (TrackPoint tp : points) {
+			BackboneTrackPoint btp = (BackboneTrackPoint) tp;
+			if (btp == null) {
+				return 0;
+			}
+			length = length > btp.getHistoryLength() ? length : btp.getHistoryLength();
+		}
+		return length;
+	}
+	
 	public String description(){
-		return makeDescription(""+trackID, points, otherInfo);
+		return description(true); //enable decimation to 2000 points by default
 	}
 	
 	public static String emptyDescription(){
 		return makeDescription("X", null, "");
+	}
+
+	private void debugMessage (String message) {
+		message (message, VerbLevel.verb_debug);
+	}
+	
+	
+	private void message (String message, VerbLevel messVerb) {
+		if (comm != null) {
+			comm.message("Track: " + message, messVerb);
+		}
+	}
+
+	public Communicator getComm() {
+		return comm;
+	}
+
+	public void setComm(Communicator comm) {
+		this.comm = comm;
 	}
 	
 	/*

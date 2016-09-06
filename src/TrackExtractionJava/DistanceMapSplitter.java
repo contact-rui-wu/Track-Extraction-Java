@@ -29,6 +29,8 @@ public class DistanceMapSplitter {
 		ImageStack mag1Stack = new ImageStack(rawIm.getWidth(), rawIm.getHeight());
 		if (debug>1) twoMagStack.addSlice(rawIm.getProcessor());
 		
+		if (comm != null) comm.message("splitPoint - A", VerbLevel.verb_debug);
+		
 		
 		//Rethreshold the image
 		ImagePlus rethreshIm = new ImagePlus("Thresh im Frame "+itp.frameNum+"("+rethreshVal+", orig="+itp.thresh+")", itp.im.getBufferedImage());
@@ -60,8 +62,12 @@ public class DistanceMapSplitter {
 			}
 			return null;
 		}
+		if (comm != null) comm.message("splitPoint - B", VerbLevel.verb_debug);
+		
+		rm.reset();
 		rm.removeAll();
 		rm.close();
+		if (comm != null) comm.message("splitPoint - C", VerbLevel.verb_debug);
 		
 		//Generate distance maps
 		int[] imSize = {itp.getRawIm().getWidth(),itp.getRawIm().getHeight()}; 
@@ -127,6 +133,8 @@ public class DistanceMapSplitter {
 			}
 			
 		}
+		if (comm != null) comm.message("splitPoint - D", VerbLevel.verb_debug);
+		
 		
 		if (debug>1){
 			mag0Stack.addSlice(maskedIms.get(0));

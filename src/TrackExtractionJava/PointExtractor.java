@@ -149,11 +149,15 @@ public class PointExtractor {
 	 * @param ep
 	 */
 	private void init(int startFrame, ImageStack stack, Communicator comm, ExtractionParameters ep){
+		startFrame = startFrame < 1 ? 1 : startFrame; //imagej stacks start at 1
 		this.startFrameNum = startFrame;
 //		imageStack = stack;
 		this.comm = comm;
 		this.ep = ep;
-		endFrameNum = stack.getSize()-1;
+		endFrameNum = stack.getSize(); //imagej stacks end at num frames
+		if (ep.endFrame > endFrameNum) {
+			ep.endFrame = endFrameNum;
+		}
 //		endFrameNum = imageStack.getSize()-1;//.getNFrames()-1;// 
 		increment = ep.increment;
 		lastFrameExtracted=-1;
@@ -202,7 +206,7 @@ public class PointExtractor {
 	public int loadFrame(int frameNum){
 		
 		if (frameNum==currentFrameNum && (analysisRect==null ||(fl.returnIm.getWidth()==analysisRect.getWidth() && fl.returnIm.getHeight()==analysisRect.getHeight()))){
-			if (comm!=null) comm.message("Frame already loaded in Frameloader", VerbLevel.verb_message);
+			//if (comm!=null) comm.message("Frame already loaded in Frameloader", VerbLevel.verb_verbose);
 			return 0;
 		}
 		
@@ -295,7 +299,7 @@ public class PointExtractor {
 //		ep.excludeEdges = excl;
 		
 //		if (showResults) {
-		if (comm!=null) comm.message("Frame "+frameNum+": "+pointTable.getCounter()+" points in ResultsTable", VerbLevel.verb_message);
+		if (comm!=null) comm.message("Frame "+frameNum+": "+pointTable.getCounter()+" points in ResultsTable", VerbLevel.verb_verbose);
 //	    }
 
 			//ResultsTable rt, int frameNum, Rectangle analysisRect, int[] frameSize, ImagePlus currentIm, ImagePlus threshIm, ExtractionParameters ep, int thresh, Communicator comm
@@ -415,7 +419,7 @@ public class PointExtractor {
 					if (comm!=null) comm.message("Point was not proper size: not made into a point", VerbLevel.verb_debug);
 				}
 			} else {
-				if (comm!=null) comm.message("Point "+row+" from ResultsTable in frame "+frameNum+" was clipped", VerbLevel.verb_message);
+				if (comm!=null) comm.message("Point "+row+" from ResultsTable in frame "+frameNum+" was clipped", VerbLevel.verb_verbose);
 			}
 			
 		}

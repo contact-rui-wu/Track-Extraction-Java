@@ -7,7 +7,7 @@ import java.awt.image.BufferedImage;
 import java.util.Vector;
 
 import ij.ImagePlus;
-import ij.gui.Roi;
+//import ij.gui.Roi;
 import ij.measure.Measurements;
 import ij.measure.ResultsTable;
 import ij.plugin.ImageCalculator;
@@ -63,6 +63,18 @@ public class CVUtils {
 		for (int i=0; i<fp1.npoints; i++){
 			x[i] = fp1.xpoints[i] + fp2.xpoints[i];
 			y[i] = fp1.ypoints[i] + fp2.ypoints[i];
+		}
+		
+		return new FloatPolygon(x, y);
+	}
+	public static FloatPolygon fPolyAddOffset (FloatPolygon fp1, float offX, float offY){
+		
+		float[] x = new float[fp1.npoints];
+		float[] y = new float[fp1.npoints];
+		
+		for (int i=0; i<fp1.npoints; i++){
+			x[i] = fp1.xpoints[i] + offX;
+			y[i] = fp1.ypoints[i] + offY;
 		}
 		
 		return new FloatPolygon(x, y);
@@ -210,7 +222,7 @@ public class CVUtils {
 		
 		
 		//Populate the results table
-		Roi r = threshIm.getRoi();
+//		Roi r = threshIm.getRoi();
 		
 		double mint = threshIm.getProcessor().getMinThreshold();
 		double maxt = threshIm.getProcessor().getMaxThreshold();
@@ -230,7 +242,7 @@ public class CVUtils {
 			System.out.println ("partAN returned error");
 		};
 		threshIm.getProcessor().setThreshold(mint, maxt, ImageProcessor.NO_LUT_UPDATE);
-		threshIm.setRoi(r);
+//		threshIm.setRoi(r);
 		
 		
 		return rt;
@@ -284,15 +296,17 @@ public class CVUtils {
 		Graphics g = newIm.getGraphics();
 		g.setColor(Color.black);
 		g.fillRect(0,0,newWidth,newHeight);
-		int offsetX = (newWidth/2)+1-centerX;
-		int offsetY = (newHeight/2)+1-centerY;
+		int offsetX = (newWidth/2)-centerX;
+		int offsetY = (newHeight/2)-centerY;
 		g.drawImage(image.getBufferedImage(), offsetX, offsetY, null);
 		
 		ImagePlus retIm = new ImagePlus("Padded "+image.getTitle(), newIm);
 		
 		return retIm.getProcessor();
+	}
+	public static ImageProcessor padAndCenter(ImageProcessor image, int newWidth, int newHeight, int centerX, int centerY){
 		
-		
+		return (padAndCenter(new ImagePlus("foobar", image), newWidth, newHeight, centerX, centerY));
 		
 	}
 	

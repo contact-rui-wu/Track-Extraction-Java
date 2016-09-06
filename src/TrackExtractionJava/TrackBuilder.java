@@ -100,19 +100,21 @@ public class TrackBuilder implements Serializable{
 	/**
 	 * Constructs a TrackBuilder object
 	 */
-	public TrackBuilder(ImageStack IS, ExtractionParameters ep){
-		
+	public TrackBuilder(ImageStack IS, ExtractionParameters ep, Communicator comm){
+		this.comm = comm;
+		trackMessage = comm;
 		this.ep = ep;
 		init(ep.startFrame, IS);
 	}
-	
+	public TrackBuilder(ImageStack IS, ExtractionParameters ep) {
+		this(IS,ep, new Communicator());
+	}
 	/**
 	 * Initialization of objects
 	 */
 	private void init(int frameNum, ImageStack IS){
 		
 		//Set Auxillary objects
-		comm = new Communicator();
 		pe = new PointExtractor(IS, comm, ep);
 		
 		//Set track-building objects
@@ -126,7 +128,7 @@ public class TrackBuilder implements Serializable{
 		
 		
 		matchSpills = new Vector<Communicator>();
-		trackMessage = new Communicator();
+	//	trackMessage = new Communicator();
 		
 		
 	}
@@ -148,47 +150,57 @@ public class TrackBuilder implements Serializable{
 		
 //		while (pe.nextFrameNum() <= pe.fl.getStackSize()) {
 //		while (pe.nextFrameNum() <= pe.endFrameNum && pe.nextFrameNum() <= ep.endFrame) {
-		TicToc t = new TicToc();
-		t.tic();
-		long lastelapsed = 0;
-	    long reportEvery = 60;
-	    if (!ep.subset){
-	    	System.out.println("Building tracks for frames 1-"+pe.fl.getStackSize());
-	    } else {
+		Timer.tic("buildTracks");
+		double lastelapsed = 0;
+		double reportEvery = 60;
+//	    if (!ep.subset){
+//	    	System.out.println("Building tracks for frames 1-"+pe.fl.getStackSize());
+//	    } else {
 	    	System.out.println("Building tracks for frames "+ep.startFrame+"-"+ep.endFrame);
-	    }
+	    //}
 	    
 	    
 	    
-		while ( (!ep.subset && (pe.nextFrameNum()<=pe.fl.getStackSize()) ) || 
-				(ep.subset && (pe.nextFrameNum()<=pe.endFrameNum && pe.nextFrameNum()<=ep.endFrame)) ){
+		//while ( (!ep.subset && (pe.nextFrameNum()< pe.fl.getStackSize()) ) || 
+			//	(ep.subset && (pe.nextFrameNum()<=pe.endFrameNum && pe.nextFrameNum()<=ep.endFrame)) ){
+	    while (pe.nextFrameNum() <= pe.endFrameNum && pe.nextFrameNum() <= ep.endFrame) {
 			frameNum = pe.nextFrameNum();
-			if (frameNum%20 == 0){
+			if (frameNum%100 == 0){
 				IJ.showStatus("Building : Adding Frame "+frameNum+"...");
+				//if (ep.subset) {
+					IJ.showProgress(frameNum - ep.startFrame + 1, ep.endFrame-ep.startFrame);
+				//} else {
+				//	IJ.showProgress(frameNum+1,pe.fl.getStackSize());
+				//}
 			}
-			long elapsed = t.toc()/1000;
+			double elapsed = Timer.getElapsedTime("buildTracks")/1000;
 	        if (elapsed - lastelapsed > reportEvery){
 	            lastelapsed = elapsed;
 	            System.out.println(elapsed+"s: frame "+frameNum);
 	        }
 			if (addFrame(frameNum)>0) {
 				comm.message("Error adding frame "+pe.nextFrameNum(), VerbLevel.verb_error);
-				return;
-			}
-			
+				break; //was return - cleanup code never called!
+			}	
 		}
+		comm.message("finished extracting tracks at frame " + pe.currentFrameNum, VerbLevel.verb_message);
+		IJ.showProgress(1,1); //close progress bar
 		
 		//Debug Output
-		trackMessage.message("There are "+activeColIDs.size()+"+"+finishedColIDs.size()+" collisions", VerbLevel.verb_message);
-		for (int i=0; i<activeTracks.size(); i++){
-			trackMessage.message(activeTracks.get(i).infoString(), VerbLevel.verb_message);
-		}
-		
+		trackMessage.message("There are "+activeColIDs.size()+"+"+finishedColIDs.size()+" collisions", VerbLevel.verb_verbose);
+		//for (int i=0; i<activeTracks.size(); i++){
+	//		trackMessage.message(activeTracks.get(i).infoString(), VerbLevel.verb_debug);
+	//	}
+		finishTracks();
 		//Move all active tracks to finished
-		finishedTracks.addAll(activeTracks);
-		activeTracks.removeAll(activeTracks);
-		
+//		finishedTracks.addAll(activeTracks);
+		//activeTracks.removeAll(activeTracks);
+	//	activeTracks.removeAllElements();
 
+		//resolveCollisions();
+		//finishedColIDs.addAll(activeColIDs);
+		//activeColIDs.removeAll(finishedColIDs);
+		/*
 		if (ep.matchSpill.length>0) {
 			for (int i=0;i<ep.matchSpill.length;i++){
 				
@@ -205,13 +217,11 @@ public class TrackBuilder implements Serializable{
 			}
 			new TextWindow("Abnormal matches", sb.toString(), 600, 500);
 		}
+		*/
 		
 		
-		//resolveCollisions();
-		finishedColIDs.addAll(activeColIDs);
-		activeColIDs.removeAll(finishedColIDs);
 
-		
+		Timer.toc("buildTracks");
 	}
 	
 	
@@ -875,7 +885,7 @@ public class TrackBuilder implements Serializable{
 			if (match.getTopMatchPoint()==null) {
 				//End the match/track
 				finishedTracks.addElement(match.track);
-				trackMessage.message(match.track.infoString(), VerbLevel.verb_message);
+				trackMessage.message(match.track.infoString(), VerbLevel.verb_debug);
 				activeTracks.remove(match.track);
 				
 			} else if (match.track.getNumPoints()==0) {
@@ -1012,7 +1022,13 @@ public class TrackBuilder implements Serializable{
 		return totalA/num; 
 	}
 	
-	
+	protected void finishTracks() {
+		comm.message("finishing tracks", VerbLevel.verb_message);
+		finishedTracks.addAll(activeTracks);
+		activeTracks.clear();
+		finishedColIDs.addAll(activeColIDs);
+		activeColIDs.clear();
+	}
 	
 	public Experiment toExperiment(){
 		//Clean up the TrackBuilder
@@ -1039,19 +1055,19 @@ public class TrackBuilder implements Serializable{
 		
 		return exp;
 	}
-	
-	public void showCommOutput(){
-		if (ep.dispTrackInfo){
-			if (!trackMessage.outString.equals("")){
-				new TextWindow("Track info", trackMessage.outString, 500, 500);
-			}
-			if (!comm.outString.equals("")){
-				new TextWindow("Builder info", comm.outString, 500, 500);
-			}
-				
-		}
-		
-	}
+//	
+//	public void showCommOutput(){
+//		if (ep.dispTrackInfo){
+//			if (!trackMessage.outString.equals("")){
+//				new TextWindow("Track info", trackMessage.outString, 500, 500);
+//			}
+//			if (!comm.outString.equals("")){
+//				new TextWindow("Builder info", comm.outString, 500, 500);
+//			}
+//				
+//		}
+//		
+//	}
 	
 
 }

@@ -1,15 +1,16 @@
 package TrackExtractionJava;
 
-import ij.ImagePlus;
 import ij.gui.PolygonRoi;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Rectangle;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Vector;
@@ -32,18 +33,27 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	final static int pointType = 3;
 	 
 	/**
+	 * minimum total movement to call an update on the clustering
+	 * note: uses distance, not squared distance
+	 */
+	private static final double minShiftToUpdateClusters = 0.1;
+	
+	/**
 	 * The number of pixels in the image considered as part of the maggot
 	 */
 	private transient int numPix;
 	/**
 	 * A list of X Coordinates of points that are considered as part of the maggot 
-	 * QUESTION: These coordinates are referenced to original video image, not to subimage stored in ImTrackPoint ?
+	 * <p>
+	 * Coordinates are *Absolute* coordinates, not coords relative to image frame
 	 * <p>
 	 * Contains numPix valid elements
 	 */
 	private transient float[] MagPixX;
 	/**
-	 * A list of X Coordinates of points that are considered as part of the maggot 
+	 * A list of Y Coordinates of points that are considered as part of the maggot  
+	 * <p>
+	 * Coordinates are *Absolute* coordinates, not coords relative to image frame
 	 * <p>
 	 * Contains numPix valid elements  
 	 */
@@ -65,7 +75,11 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	 */
 	private transient int[] clusterInds;
 	
+	private transient double cumulativeShift = 0;
 	
+	/**
+	 * The pixel clustering method used by the backbone fitter
+	 */
 	private int clusterMethod=0;
 	
 	/**
@@ -76,35 +90,88 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	private transient double gmmClusterVariance = -1;
 	
 	/**
-	 * The backbone of the maggot
+	 * The final backbone of the maggot
+	 * <p>
+	 * NOTE: during backbone fitting, this is not set; instead use bbOld/bbNew
 	 */
 	PolygonRoi backbone;
 	
 	/**
-	 * For plotting
+	 * The BackboneFitter's initial guess for the backbone. Absolute coordinates.
+	 * <p>
+	 * (Used for plotting)
 	 */
-	protected transient FloatPolygon bbInit;
+	private transient FloatPolygon bbInit;
 	/**
-	 * Temporary backbone used to fit the final backbone
+	 * Temporary backbone used to fit the final backbone. Absolute coordinates.
+	 * <p>
+	 * In the backbone-fitting algorithm, bbOld stores the previous iteration's backbone, and 
+	 * is used for all calculations of new backbones  
 	 */
-	protected transient FloatPolygon bbOld;
+	protected transient FloatPolygon bbOld = null;
 	/**
-	 * Temporary backbone used to fit the final backbone
+	 * Temporary backbone used to fit the final backbone. Absolute coordinates.
+	 * <p>
+	 * In the backbone fitting algorithm, bbNew stores the current iteration's backbone
 	 */
-	protected transient FloatPolygon bbNew;
+	protected transient FloatPolygon bbNew  = null;
 	
-	protected Vector<FloatPolygon> targetBackbones = null;
+	/**
+	 * The target backbones used to generate the last backbone. Absolute coordinates. Used in track.showFitting.
+	 * Not saved to disk. 
+	 */
+	protected transient Vector<FloatPolygon> targetBackbones = null;
 	
+	/**
+	 * The backbone fitter used to fit this btp. Present primarily for access to bf.communicator
+	 * Not saved to disk.
+	 */
 	transient BackboneFitter bf;
 	
+	/**
+	 * Flag indicating whether or not the midline (i.e. the one generated during extraction) was  
+	 * used as the initial backbone guess. True means the midline was replaced before calculating a 
+	 * backbone.
+	 */
 	protected boolean artificialMid;
+
+	/**
+	 * Flag indicating whether or not this backbone is considered a potentially incorrect representation 
+	 * of the larva's posture. 
+	 * <p>
+	 * Calculated in the backbone fitter after all fitting has occurred 
+	 */
+	public boolean suspicious = false; 
 	
-	public boolean bbvalid = true;
 	
+	/**
+	 * Flag indicating whether or not this btp is used in calculations for neighboring btp's backbone
+	 */
 	protected boolean hidden = false;
+	
+	/**
+	 * Flag indicating whether or not this backbone is to be updated in the current iteration of the backbone fitter
+	 */
 	protected boolean frozen = false;
 	
+	/**
+	 * Relatively unused currently; put in place to modulate the step size by which bbOld is adjusted to 
+	 * create bbNew. 
+	 * <p>
+	 * See BackboneFitter.bbRelaxationStep 
+	 */
 	protected double scaleFactor = 1;
+	
+	
+	
+	private Vector<FloatPolygon> bbHistory = null;
+	private Vector<String> historyLabel = null;
+	
+	private boolean inHistory = false; //to say whether we are displaying images back in time
+	private String historyMessage;
+	
+	//protected FloatPolygon bbFromMidline = null;
+	
 	
 	public BackboneTrackPoint(){
 		
@@ -120,9 +187,9 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	 * @param thresh
 	 */
 	public BackboneTrackPoint(double x, double y, Rectangle rect, double area,
-			int frame, int thresh) {
+			int frame, int thresh, int numBBPts) {
 		super(x, y, rect, area, frame, thresh);
-		//QUESTION: needs numBBPts?
+		this.numBBPts = numBBPts; 
 	}
 	
 	
@@ -136,25 +203,52 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	public static BackboneTrackPoint convertMTPtoBTP(MaggotTrackPoint mtp, int numBBPts){
 		
 		//Copy all old info
-		
-		BackboneTrackPoint btp = new BackboneTrackPoint(mtp.x, mtp.y, mtp.rect, mtp.area, mtp.frameNum, mtp.thresh);
+		BackboneTrackPoint btp = new BackboneTrackPoint(mtp.x, mtp.y, mtp.rect, mtp.area, mtp.frameNum, mtp.thresh, numBBPts);
 		mtp.copyInfoIntoBTP(btp);
 
 		//Make new stuff
-		btp.numBBPts = numBBPts; 
+//		btp.numBBPts = numBBPts; 
 		
 		return btp;
 	}
 	
+	/*
+	private void storeMidlineAsBB() {
+		FloatPolygon newMid = midline.getFloatPolygon();
+		float[] xmid = new float[newMid.npoints];
+		float[] ymid = new float[newMid.npoints];
+		
+		//Gather absolute coordinates for the backbones
+		for(int i=0; i<newMid.npoints; i++){
+			xmid[i] = newMid.xpoints[i]+rect.x;
+			ymid[i] = newMid.ypoints[i]+rect.y;
+		}
+		FloatPolygon initBB = new FloatPolygon(xmid, ymid);//midline.getFloatPolygon();
+		bbFromMidline = MaggotTrackPoint.getInterpolatedSegment(new PolygonRoi(initBB, Roi.POLYLINE), numBBPts).getFloatPolygon();
+		
+	}*/
+	
+	/**
+	 * Resets the backbone info, marking the point with the artificialMid flag
+	 * See also: setBackboneInfo 
+	 * @param clusterMethod
+	 * @param newMidline
+	 * @param prevOrigin
+	 */
 	protected void fillInBackboneInfo(int clusterMethod, PolygonRoi newMidline, float[] prevOrigin){
 		artificialMid = true;
 		setBackboneInfo(clusterMethod, newMidline, prevOrigin);
 	}
 	
+	/**
+	 * Sets initial backbone guess, complete with pixel/cluster info. All info stored as absolute coordinates
+	 * @param clusterMethod
+	 * @param newMidline
+	 * @param prevOrigin
+	 */
 	protected void setBackboneInfo(int clusterMethod, PolygonRoi newMidline, float[] prevOrigin){
 		
 		if(newMidline!=null){
-			
 			
 			//Correct the origin of the midline
 			FloatPolygon newMid = newMidline.getFloatPolygon();
@@ -206,7 +300,9 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 			}
 			
 		}
-		bbInit = initBB.getFloatPolygon();
+		if (bbInit==null){
+			bbInit = initBB.getFloatPolygon();
+		}
 		bbOld = initBB.getFloatPolygon();
 		
 	}
@@ -262,8 +358,8 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	}
 		
 	private void setInitialClusterInfo(){
+		clusterInds = new int[numPix];
 		if (clusterMethod==0){
-			clusterInds = new int[numPix];
 			setVoronoiClusters();
 		} else if (clusterMethod==1){
 			MagPixWold = new double[numBBPts][numPix];
@@ -315,19 +411,19 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	}
 	
 	private void setInitialWeights(){
-		clusterInds = new int[numPix];
-		setVoronoiClusters();
+		//clusterInds = new int[numPix];
+	//	setVoronoiClusters();
 		//Set the initial weights to be the voronoi clusters
 		for (int pix=0; pix<numPix; pix++){
 			MagPixWold[ clusterInds[pix] ][pix] = 1;
 		}
-		clusterInds = null;
+		//clusterInds = null;
 		
 		setGaussianMixtureWeights();//Sets MagPixWnew, which is used for generation of the backbone
 	}
 	
 	private void setGaussianMixtureWeights(){
-		
+		Timer.tic("SetGaussianMixtureWeights");
 		double var = (gmmClusterVariance <= 0) ? calcVariance() : gmmClusterVariance;
 		setVoronoiClusters();
 		for (int pix=0; pix<numPix; pix++){
@@ -337,20 +433,21 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		}
 		for (int pix=0; pix<numPix; pix++){
 			double denom = 0;
-			for (int cl = clusterInds[pix] - 1; cl < numBBPts; cl++ ) {
+			for (int cl = clusterInds[pix] - 1; cl < numBBPts && cl <= clusterInds[pix]+1; cl++ ) {
 				if (cl < 0){
 					continue;
 				}
 				MagPixWnew[cl][pix] = Math.exp(((-0.5)*calcDistSqrBtwnPixAndBBPt(cl, pix))/var);
 				denom += MagPixWnew[cl][pix];
 			}
-			for (int cl = clusterInds[pix] - 1; cl < numBBPts; cl++ ) {
+			for (int cl = clusterInds[pix] - 1; cl < numBBPts&& cl <= clusterInds[pix]+1; cl++ ) {
 				if (cl < 0){
 					continue;
 				}
 				MagPixWnew[cl][pix] /= denom;
 			}
 		}	
+		Timer.toc("SetGaussianMixtureWeights");
 	}
 	
 	private double calcVariance(){
@@ -374,17 +471,36 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		return distSqr;
 	}
 
+	
+	/**
+	 * Returns the sum of the distance squared between each backbone coordinate
+	 * <p>
+	 * Calculation is made between bbNew and bbOld 
+	 * @return
+	 */
 	public double calcPointShift(){
 		//Calculate the change between the old and new backbones
+		if (frozen) {
+			return 0;
+		}
+		
 		double shift = 0;
 		for(int i=0; i<numBBPts; i++){
 			double xs = bbNew.xpoints[i]-bbOld.xpoints[i];
 			double ys = bbNew.ypoints[i]-bbOld.ypoints[i];
 			shift += (xs*xs)+(ys*ys);
-		}
-		
+		}		
 		return shift;
 	}
+	private void updateCumulativeShift() {
+		for(int i=0; i<numBBPts; i++){
+			double xs = bbNew.xpoints[i]-bbOld.xpoints[i];
+			double ys = bbNew.ypoints[i]-bbOld.ypoints[i];
+			cumulativeShift += Math.sqrt((xs*xs)+(ys*ys));
+		}
+		
+	}
+	
 	
 
 	protected void setHidden(boolean h){
@@ -408,13 +524,22 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	 * Preps the working variables for the next iteration of the fitting algorithm
 	 */
 	protected void setupForNextRelaxationStep(){
+		if (frozen) {
+			return;
+		}
+		Timer.tic("setupForNextRelaxationStep");
+		updateCumulativeShift();
 		bbOld = bbNew;
-		MagPixWold = MagPixWnew;
-		setClusterInfo();//fills in MagPixWnew using MagPixWold 
+		if (cumulativeShift >= minShiftToUpdateClusters) {
+			cumulativeShift = 0;
+			MagPixWold = MagPixWnew;
+			setClusterInfo();//fills in MagPixWnew using MagPixWold 
+		}
+		Timer.toc("setupForNextRelaxationStep");
 	}
 	
 	/**
-	 * Stores the final backbone
+	 * Stores the final backbone, and resets head, tail and midpoint
 	 */
 	protected void finalizeBackbone(){
 		if (bbOld!=null){
@@ -429,14 +554,24 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		}
 	}
 	
+	/**
+	 * 
+	 * @param energies
+	 */
 	public void storeEnergies(HashMap<String, Double> energies){
 		this.energies = energies;
 	}
 	
+	/**
+	 * Returns the previous point in the track
+	 */
 	public BackboneTrackPoint getPrev(){
 		return (BackboneTrackPoint)prev;
 	}
 	
+	/**
+	 * Returns the next point in the track
+	 */
 	public BackboneTrackPoint getNext(){
 		return (BackboneTrackPoint)next;
 	}
@@ -477,10 +612,23 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 //		}
 	}
 	
+	public FloatPolygon getBbInit(){
+		return (bbInit==null)? null : bbInit.duplicate();
+	}
+	
+	/**
+	 * Gets the finalized backbone. NOTE: during backbone fitting, this is not set; instead use bbOld/bbNew
+	 * @return
+	 */
 	public double[][] getBackbone(){
 		return CVUtils.fPoly2Array(backbone.getFloatPolygon(), rect.x, rect.y);
 	}
 	
+	/**
+	 * Interpolates the backbone to the given number of coordinates
+	 * @param numCoords
+	 * @return
+	 */
 	public double[][] getInterpdBackbone(int numCoords){
 		if (numCoords==-1) numCoords = numBBPts;
 		PolygonRoi newBB = getInterpolatedSegment(backbone, numCoords);
@@ -546,48 +694,51 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		}
 		return false;
 	}
-	
-	public ImageProcessor getIm(){
-
-		return getIm(MaggotDisplayParameters.DEFAULTexpandFac, MaggotDisplayParameters.DEFAULTclusters,MaggotDisplayParameters.DEFAULTmid, MaggotDisplayParameters.DEFAULTinitialBB, MaggotDisplayParameters.DEFAULTnewBB, 	
-				MaggotDisplayParameters.DEFAULTcontour, MaggotDisplayParameters.DEFAULTht, MaggotDisplayParameters.DEFAULTforces, MaggotDisplayParameters.DEFAULTbackbone);
-		
-	}
-	
-	public ImageProcessor getIm(MaggotDisplayParameters mdp){
-		
-		if (mdp==null){
-			return getIm();
-		} else {
-			return getIm(mdp.expandFac, mdp.clusters, mdp.mid, mdp.initialBB, mdp.newBB, 	
-				mdp.contour, mdp.ht, mdp.forces, mdp.backbone);
-		}
-	}
-	
-	
-	public ImageProcessor getIm(int expandFac, boolean clusters, boolean mid, boolean initialBB, boolean newBB, boolean contour, boolean ht, boolean forces, boolean bb){
-
-		if (mid && MagPixX==null){
-			reloadMagPix();
-		}
-		
-		
-		imOriginX = (int)x-(trackWindowWidth/2)-1;
-		imOriginY = (int)y-(trackWindowHeight/2)-1;
-		im.snapshot();
-		
-		ImageProcessor bigIm = im.resize(im.getWidth()*expandFac);
-		
-		int centerX = (int)(x-rect.x)*(expandFac);
-		int centerY = (int)(y-rect.y)*(expandFac);
-		ImageProcessor pIm = CVUtils.padAndCenter(new ImagePlus("Point "+pointID, bigIm), expandFac*trackWindowWidth, expandFac*trackWindowHeight, centerX, centerY);
-		int offX = trackWindowWidth*(expandFac/2) - ((int)x-rect.x)*expandFac;//rect.x-imOriginX;
-		int offY = trackWindowHeight*(expandFac/2) - ((int)y-rect.y)*expandFac;//rect.y-imOriginY;
-		
-		
-		return drawFeatures(pIm, offX, offY, expandFac, clusters, mid, initialBB, newBB, contour, ht, forces, bb); 
-		
-	}
+//	
+//	public ImageProcessor getIm(){
+//
+//		return getIm(new MaggotDisplayParameters());
+//	//	return getIm(MaggotDisplayParameters.DEFAULTexpandFac, MaggotDisplayParameters.DEFAULTclusters,MaggotDisplayParameters.DEFAULTmid, MaggotDisplayParameters.DEFAULTinitialBB, MaggotDisplayParameters.DEFAULTnewBB, 	
+//		//		MaggotDisplayParameters.DEFAULTcontour, MaggotDisplayParameters.DEFAULTht, MaggotDisplayParameters.DEFAULTforces, MaggotDisplayParameters.DEFAULTbackbone);
+//		
+//	}
+//	
+//	public ImageProcessor getIm(MaggotDisplayParameters mdp){
+//		
+//		if (mdp==null){
+//			return getIm();
+//		} 
+//		ImageProcessor ip = super.getIm(mdp);
+//		
+////		return drawFeatures(ip, mdp); 
+//
+//	}
+//	
+//	
+//	public ImageProcessor getIm(int expandFac, boolean clusters, boolean mid, boolean initialBB, boolean newBB, boolean contour, boolean ht, boolean forces, boolean bb){
+//
+//		if (mid && MagPixX==null){
+//			reloadMagPix();
+//		}
+//		
+//		imOriginX = (int)x-(getTrackWindowWidth()/2);
+//		imOriginY = (int)y-(getTrackWindowHeight()/2);
+//		im.snapshot();
+//		
+//		ImageProcessor bigIm = im.resize(im.getWidth()*expandFac);
+//		
+//		int centerX = (int)((x-rect.x)*(expandFac));
+//		int centerY = (int)((y-rect.y)*(expandFac));
+//		ImageProcessor pIm = CVUtils.padAndCenter(new ImagePlus("Point "+pointID, bigIm), expandFac*getTrackWindowWidth(), expandFac*getTrackWindowHeight(), centerX, centerY);
+//		int offX = (expandFac*getTrackWindowWidth())/2-centerX;
+//		int offY = (expandFac*getTrackWindowHeight())/2-centerY;
+////		int offX =  windowCenterX - centerX;//((int)x-rect.x)*expandFac;//rect.x-imOriginX;
+////		int offY = windowCenterY - centerY;//((int)y-rect.y)*expandFac;//rect.y-imOriginY;
+//		
+//		
+//		return drawFeatures(pIm, offX, offY, expandFac, clusters, mid, initialBB, newBB, contour, ht, forces, bb); 
+//		
+//	}
 
 	public void reloadMagPix(){
 		setInitialBB(backbone, numBBPts);
@@ -595,73 +746,41 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		setInitialClusterInfo();
 	}
 	
-	public ImageProcessor getImWithMidline(PolygonRoi mid){
-		int expandFac = 10;//TODO MOVE TO PARAMETERS
-		
-		imOriginX = (int)x-(trackWindowWidth/2)-1;
-		imOriginY = (int)y-(trackWindowHeight/2)-1;
-		im.snapshot();
-		
-		ImageProcessor bigIm = im.resize(im.getWidth()*expandFac);
-		
-		int centerX = (int)(x-rect.x)*(expandFac);
-		int centerY = (int)(y-rect.y)*(expandFac);
-		ImageProcessor pIm = CVUtils.padAndCenter(new ImagePlus("Point "+pointID, bigIm), expandFac*trackWindowWidth, expandFac*trackWindowHeight, centerX, centerY);
-		int offX = trackWindowWidth*(expandFac/2) - ((int)x-rect.x)*expandFac;//rect.x-imOriginX;
-		int offY = trackWindowHeight*(expandFac/2) - ((int)y-rect.y)*expandFac;//rect.y-imOriginY;
-		
-		ImageProcessor im = pIm.convertToRGB();
-		Vector<PolygonRoi> mids = new Vector<PolygonRoi>();	mids.add(midline); mids.add(mid);
-		Vector<Color> colors = new Vector<Color>(); colors.add(Color.YELLOW); colors.add(Color.RED);
-		displayUtils.drawMidlines(im, mids, offX, offY, expandFac, colors);
-//		displayUtils.drawMidline(im, mid, offX, offY, expandFac, Color.RED);
-
-		
-		return im;
-	}
-	
-	protected ImageProcessor drawFeatures(ImageProcessor grayIm, int offX, int offY, int expandFac, boolean clusters, boolean mid, boolean initialBB, boolean newBB, boolean contour, boolean ht, boolean forces, boolean bb){
-		
-		ImageProcessor im = grayIm.convertToRGB();
-		
+	protected ImageProcessor drawFeatures(ImageProcessor grayIm, MaggotDisplayParameters mdp){
+		ImageProcessor im = super.drawFeatures(grayIm, mdp);
+		if (im.isGrayscale()) {
+			im = im.convertToRGB();
+		} 
+		int centerX = (int)((x-rect.x)*(mdp.expandFac));
+		int centerY = (int)((y-rect.y)*(mdp.expandFac));
+		int offX = (mdp.expandFac*getTrackWindowWidth())/2-centerX;
+		int offY = (mdp.expandFac*getTrackWindowHeight())/2-centerY;
 		
 		//PIXEL CLUSTERS
-		if (clusters) displayUtils.drawClusters(im, numPix, MagPixX, MagPixY, clusterInds, expandFac, offX, offY, rect);
+		if (mdp.clusters) displayUtils.drawClusters(im, numPix, MagPixX, MagPixY, clusterInds, mdp.expandFac, offX, offY, rect);
 		
-		//MIDLINE
-		if (mid) displayUtils.drawMidline(im, midline, offX, offY, expandFac, Color.YELLOW);
 		
-		//LR SEGS: TEMP
-//		if (initialBB) displayUtils.drawMidline(im, leftSeg, offX, offY, expandFac, Color.BLUE);
-//		if (initialBB) displayUtils.drawMidline(im, rightSeg, offX, offY, expandFac, Color.BLUE);
-//		if (initialBB) displayUtils.drawBBInit(im, bbInit, offX, offY, rect, expandFac, Color.YELLOW);
-//		if (initialBB) displayUtils.drawSegLines(im, new PolygonRoi(bbInit, PolygonRoi.POLYLINE), backbone, expandFac, offX, offY, Color.GREEN);
-
 		//INITIAL SPINE
-		if (initialBB) displayUtils.drawBBInit(im, bbInit, offX, offY, rect, expandFac, Color.MAGENTA);
+		if (mdp.initialBB) displayUtils.drawBBInit(im, bbInit, offX, offY, rect, mdp.expandFac, Color.MAGENTA);
 		
-		if (newBB) displayUtils.drawBackbone(im, bbNew, expandFac, offX, offY, rect, Color.blue);
+		if (mdp.newBB) displayUtils.drawBackbone(im, bbNew, mdp.expandFac, offX, offY, rect, Color.blue);
 		
+		FloatPolygon bbpoly = inHistory ? bbOld : backbone.getFloatPolygon();
 		
-		//CONTOUR
-		if (contour) displayUtils.drawContour(im, contourX, contourY, expandFac, offX, offY, Color.BLUE);
-		
-		 
-		//HEAD AND TAIL
-		if (ht){
-			displayUtils.drawPoint(im, head, expandFac, offX, offY, Color.MAGENTA);
-			displayUtils.drawPoint(im, tail, expandFac, offX, offY, Color.GREEN);
-			displayUtils.drawPoint(im, midpoint, expandFac, offX, offY, Color.BLUE);
-		}
 		
 		//FORCES
-		if (forces && targetBackbones!=null && targetBackbones.size()>0) {
-			displayUtils.drawTargets(im, targetBackbones, expandFac, offX, offY, rect);//TargetBackbones are absolute coords
+		if (mdp.forces && targetBackbones!=null && targetBackbones.size()>0) {
+			displayUtils.drawTargets(im, targetBackbones, mdp.showForce, mdp.expandFac, offX, offY, rect, bbpoly);//TargetBackbones are absolute coords
 		}
 			
 			
 		//BACKBONE
-		if (bb) displayUtils.drawBackbone(im, backbone.getFloatPolygon(), expandFac, offX, offY, rect, Color.RED);
+		if (mdp.backbone) displayUtils.drawBackbone(im, bbpoly, mdp.expandFac, offX, offY, rect, Color.RED);
+		
+		if (inHistory) {
+			im.setFont(new Font(im.getFont().getFontName(), Font.PLAIN, 14));
+			im.drawString(historyMessage, 5, im.getFont().getSize()+5);
+		}
 		
 		return im;
 	}
@@ -691,6 +810,17 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 		}
 		
 		return Math.sqrt(totalDistSqr);
+	}
+	
+	
+	public double getBackboneLength () {
+		int[] x = backbone.getXCoordinates();
+		int[] y = backbone.getYCoordinates();
+		return MathUtils.curveLength(MathUtils.castIntArray2Double(x), MathUtils.castIntArray2Double(y));
+	}
+	
+	public double[] getBackboneMean () {
+		return new double[] {MathUtils.mean(backbone.getXCoordinates()), MathUtils.mean(backbone.getYCoordinates())};
 	}
 	
 	
@@ -739,7 +869,18 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
 	public int sizeOnDisk(){
 		
 		int size = super.sizeOnDisk();
-		size += Short.SIZE/Byte.SIZE + (2*backbone.getNCoordinates())*java.lang.Float.SIZE/Byte.SIZE+ Byte.SIZE/Byte.SIZE;
+		size += Short.SIZE/Byte.SIZE;//# backbone pts
+		size += (2*backbone.getNCoordinates())*java.lang.Float.SIZE/Byte.SIZE;//Backbone coords
+		size += Byte.SIZE/Byte.SIZE;//artificialmid flag
+		
+		size += Integer.SIZE/Byte.SIZE;//# energy values
+		if (energies!=null){
+			for(String key : energies.keySet()){
+				size += 2*Byte.SIZE/Byte.SIZE; //UTF metadata
+				size += key.getBytes().length; //UTF representation of energy name
+				size += Double.SIZE/Byte.SIZE; //energy value
+			}
+		}
 		
 		return size;
 	}
@@ -819,6 +960,105 @@ public class BackboneTrackPoint extends MaggotTrackPoint{
         
 	}
 
+	public void recordHistory() {
+		if (null == bbHistory) {
+			bbHistory = new Vector<FloatPolygon>();
+			historyLabel = new Vector<String>();
+		}
+	}
+	public void noHistory() {
+		if (null == bbHistory) { return;}
+		bbHistory.clear();
+		bbHistory = null;
+		historyLabel.clear();
+		historyLabel = null;
+	}
+	public void storeBackbone(String s) {
+		if (null == bbHistory) { return; }
+		bbHistory.add(bbOld);
+		if (frozen) {
+			historyLabel.add(s + " frozen" );
+		} else if (hidden) {
+			historyLabel.add(s + " hidden");
+		} else {
+			historyLabel.add(s + " active");
+		}
+	}
+	public void storeBackbone() {
+		storeBackbone("");
+	}
+	public int getHistoryLength() {
+		if (null == bbHistory) { return 0; }
+		return bbHistory.size();
+	}
+	
+	
+	/**
+	 * setTargetBackbones
+	 * intended to be used only for display purposes
+	 * changes state of BackboneTrackPoint, so WILL interfere with fitting
+	 */
+	public void setTargetBackbones (Vector<Force> Forces, Vector<BackboneTrackPoint> points, int history) {
+		try{	
+			int ind = track.getPointIndexFromID(points, pointID);
+			if (ind < 0 || ind >= points.size()){
+				return;
+			}	
+			if (targetBackbones == null) {
+				targetBackbones = new Vector<FloatPolygon>();
+			}
+			targetBackbones.clear();
+			//bbOld = CVUtils.fPolyAddOffset(backbone.getFloatPolygon(), rect.x, rect.y);
+			if (null == bbHistory || history < 0 || history >= bbHistory.size()) {
+				for (BackboneTrackPoint btp : points) {
+					btp.bbOld = btp.backbone.getFloatPolygon();
+				}
+				inHistory = false;
+			} else {
+				for (BackboneTrackPoint btp : points) {
+					btp.bbOld = btp.bbHistory.get(history);
+				}
+//				bbOld = bbHistory.get(history);
+				if (null == bbOld) {
+					bbOld = backbone.getFloatPolygon();
+				}
+				inHistory = true;
+				historyMessage = historyLabel.get(history);
+			}
+			setMagPix();
+			setInitialClusterInfo();
+			for (int i=0; i<Forces.size(); i++){						
+				FloatPolygon tb = Forces.get(i).getTargetPoints(ind, points);
+				targetBackbones.add(tb);
+			}
+		} catch(Exception e){
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter(sw);
+			e.printStackTrace(pw);
+			comm.message("Error getting target backbones: \n"+sw.toString()+"\n", VerbLevel.verb_error);
+		}
+	}
+	public void setTargetBackbones (Vector<Force> Forces, Vector<BackboneTrackPoint> points) {
+		setTargetBackbones(Forces, points, -1);
+	}
+	/**
+	 * setTargetBackbones
+	 * slow, intended to be used only for display purposes
+	 * changes state of BackboneTrackPoint, so WILL interfere with fitting
+	 */
+	public void setTargetBackbones (Vector<Force> Forces, int history) {
+		Vector<BackboneTrackPoint> btps = new Vector<BackboneTrackPoint>();
+		for (TrackPoint tp : track.points) {
+			BackboneTrackPoint btp = (BackboneTrackPoint) tp;
+			if (btp == null) { return; }
+			btps.add(btp);
+		}
+		setTargetBackbones(Forces, btps, history);
+	}
+	public void setTargetBackbones (Vector<Force> Forces) {
+		setTargetBackbones(Forces,-1);
+	}
+	
 	public int getPointType(){
 		return BackboneTrackPoint.pointType;
 	}

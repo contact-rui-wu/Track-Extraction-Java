@@ -6,8 +6,8 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 
-
-public class FittingParameters {
+//TODO: incorporate convergence critieria and iteration counts
+public class FittingParameters implements Cloneable{
 	
 	int GCInterval = 5;
 	
@@ -18,6 +18,7 @@ public class FittingParameters {
 	int startInd = 0;
 	int endInd = 1000;
 	
+	int numFinalSingleIterations = 50;
 	
 	boolean storeEnergies = false;
 //	boolean storeCommOutput = false;
@@ -40,11 +41,13 @@ public class FittingParameters {
 	 */
 	int clusterMethod = 0;
 	
-	public int[] grains = {32,16, 1}; 
+	public int[] grains = {1}; 
 	public int smallGapMaxLen = 5;//The maximum gap length for which the previous midline will be carried forward (otherwise interpolate)
 	public int minValidSegmentLen = 20;//The minimum segment length (in frames) which is situated between two midline gaps and which is considered valid
-	public double minFlickerDist = numBBPts;//The minimum distance between spines which indicates an erroneous midline flicker 
-	public int gapDilation = 5;
+	//TODO: distances need to know about distance
+	// the typical lengh of a maggot ~15-20 pixels; midline has 11 pts; reversal ~11*15/2 = 80
+	public double minFlickerDist = 40; //was numBBPts 7/22 //The minimum distance between spines which indicates an erroneous midline flicker 
+	public int gapDilation = 2;
 	public boolean dilateToEdges = true;
 	
 	
@@ -52,23 +55,22 @@ public class FittingParameters {
 	public int divergenceConstant = 1;//
 	
 	public float imageWeight = 1.0f;
-	public float spineLengthWeight = 0.4f;
-	public float spineSmoothWeight = 0.8f;
-	public float[] timeLengthWeight = {0.3f, 0.1f, 0.1f};
-	public float[] timeSmoothWeight = {0.3f, 0.1f, 0.1f}; 
+	public float spineLengthWeight = 0.5f; //0.4
+	public float spineSmoothWeight = .25f; //1.0
+	public float[] timeLengthWeight = {0.5f}; //.5
+	public float[] timeSmoothWeight = {0.25f}; //.5
+	public float spineExpansionWeight = 0;
 	
 	//Head=0, Tail=end
 	public float[] imageWeights = {1,1,1, 1,1,1, 1};
-	public float[] spineLengthWeights = {0,1,1, 1,1,1, 1};
-	public float[] spineSmoothWeights = {.6f,1,1, 1,1,1, 1};
-	public float[][] timeLengthWeights = { {1,1,1, 1,1,1, 1},
-											{1,1,1, 1,1,1, 1},
-											{1,1,1, 1,1,1, 1} };
-	public float[][] timeSmoothWeights = { {1,1,1, 1,1,1, 1},
-											{1,1,1, 1,1,1, 1},
-											{1,1,1, 1,1,1, 1} };
+	public float[] spineLengthWeights = {.5f,1,1, 1,1,1, .25f};
+	public float[] spineSmoothWeights = {1,1,1, 1,1,1, 1};
+	public float[][] timeLengthWeights = { {1,1,1, 1,1,1, 1} };
+	public float[][] timeSmoothWeights = { {1,1,1, 1,1,1, 1} };
+	public float[] spineExpansionWeights = {1,1,1, 1,1,1, 1};
+	public float targetLength = -1;
 	
-	
+
 	/**
 	 * Refits the segments of a diverged track surrounding the divergence event
 	 */
@@ -89,12 +91,58 @@ public class FittingParameters {
 	
 	
 	
-	fittingParamTableModel fpTableModel;
+	fittingParamTableModel fpTableModel = null;
 	
-	JPanel fpPanel;
+	JPanel fpPanel = null;
 	
-	public FittingParameters(){
-		//TODO
+	public FittingParameters(){	}
+	
+	protected FittingParameters clone() throws CloneNotSupportedException {
+		FittingParameters fp = (FittingParameters)super.clone();
+		fp.grains = grains.clone();
+		fp.timeLengthWeight = timeLengthWeight.clone();
+		fp.timeSmoothWeight = timeSmoothWeight.clone(); 
+		fp.imageWeights = imageWeights.clone();
+		fp.spineLengthWeights = spineLengthWeights.clone();
+		fp.spineSmoothWeights = spineSmoothWeights.clone();
+		fp.timeLengthWeights = timeLengthWeights.clone();
+		fp.timeSmoothWeights = timeSmoothWeights.clone();
+		fp.spineExpansionWeights = spineExpansionWeights.clone();
+		//table model not cloneable -- worry about this later if at all
+		return fp;
+	}
+
+	public static FittingParameters getSinglePassParams(){
+		return new FittingParameters();
+	}
+	
+	public static FittingParameters getMultiPassParams(){
+		
+		FittingParameters fp = new FittingParameters();
+			
+		
+		int[] gs = {32,16, 1}; 
+		fp.grains = gs;
+		
+		float[] tlw = {0.3f, 0.1f, 0.1f};
+		float[] tsw = {0.3f, 0.1f, 0.1f}; 
+		fp.timeLengthWeight = tlw;
+		fp.timeSmoothWeight = tsw;
+		
+		
+		float[][] tlws = { {1,1,1, 1,1,1, 1},
+							{1,1,1, 1,1,1, 1},
+							{1,1,1, 1,1,1, 1} };
+		float[][] tsws = { {1,1,1, 1,1,1, 1},
+							{1,1,1, 1,1,1, 1},
+							{1,1,1, 1,1,1, 1} };
+		fp.timeLengthWeights = tlws;
+		fp.timeSmoothWeights = tsws;
+		
+		
+		return fp;
+		
+		
 	}
 	
 	public boolean isFirstPass(int grain){
@@ -142,6 +190,21 @@ public class FittingParameters {
 				timeLengthWeight(pass)));
 		Forces.add(new TimeSmoothForce(tsWeights,
 				timeSmoothWeight(pass)));
+		
+		if (spineExpansionWeight > 0 && targetLength > 0) {
+			Forces.add(new SpineExpansionForce(spineExpansionWeights, spineExpansionWeight, targetLength, true));
+		}
+		return Forces;
+	}
+public Vector<String> getForceNames() {
+		
+		Vector<String> Forces = new Vector<String>();
+		Forces.add("image force");
+		Forces.add("spine length force");
+		Forces.add("spine smooth force");
+		Forces.add("time length force");
+		Forces.add("time smooth force");
+		Forces.add("spine expansion force");
 		return Forces;
 	}
 	
@@ -169,20 +232,6 @@ public class FittingParameters {
 		return fpPanel;
 	}
 	
-	
-	public static FittingParameters getSinglePassParams(){
-		FittingParameters fp = new FittingParameters();
-		
-		fp.grains = new int[1];
-		fp.timeLengthWeight = new float[1];
-		fp.timeSmoothWeight = new float[1];
-		
-		fp.grains[0] = 1;
-		fp.timeLengthWeight[0] = 0.1f;
-		fp.timeSmoothWeight[0] = 0.1f;
-		
-		return fp;
-	}
 }
 
 

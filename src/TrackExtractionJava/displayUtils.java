@@ -5,6 +5,7 @@ import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Rectangle;
 import java.util.Vector;
 
@@ -65,7 +66,10 @@ public class displayUtils {
 //				im.drawDot(dotX, dotY);
 				int circWid = 4;
 				im.drawOval(dotX-(circWid/2), dotY-(circWid/2), circWid, circWid);
-				
+
+				if (i==0){
+					im.drawOval(dotX-(circWid), dotY-(circWid), circWid*2, circWid*2);
+				}
 			}
 		} else {
 			int size = 20;
@@ -83,9 +87,15 @@ public class displayUtils {
 			im.setColor(colors.get(j));
 			FloatPolygon floatMidline = midlines.get(j).getFloatPolygon();
 			for (int i=0; i<midlines.get(j).getNCoordinates(); i++){
+				
 				int dotX = offX + (int)(expandFac*(floatMidline.xpoints[i]));
 				int dotY = offY + (int)(expandFac*(floatMidline.ypoints[i]));
 				im.drawDot(dotX, dotY);
+				
+				int circWid = 2;
+				if (i==0){
+					im.drawOval(dotX-(circWid), dotY-(circWid), circWid*2, circWid*2);
+				}
 			}
 		}
 	}
@@ -104,6 +114,11 @@ public class displayUtils {
 					int circWid = 6;
 					im.drawOval(dotX-(circWid/2), dotY-(circWid/2), circWid, circWid);
 	//				im.drawDot(dotX, dotY);
+					
+
+					if (i==0){
+						im.drawOval(dotX-(circWid), dotY-(circWid), circWid*2, circWid*2);
+					}
 				} else {
 					im.setColor(Color.RED);
 					im.drawOval(0, 0, 5, 5);
@@ -120,6 +135,7 @@ public class displayUtils {
 	
 	public static void drawBackbone(ImageProcessor im, FloatPolygon bbNew, int expandFac, int offX, int offY, Rectangle rect, Color color){
 		im.setColor(color);
+		im.setFont(new Font (im.getFont().getName(), im.getFont().getStyle(), 8));
 		if (bbNew!=null && bbNew.npoints>0){
 			for (int i=0; i<bbNew.npoints; i++){
 				int x = (int)(expandFac*(bbNew.xpoints[i]-rect.x));
@@ -130,7 +146,7 @@ public class displayUtils {
 					int dotY = offY + y;
 					int circWid = 8;
 					im.drawOval(dotX-(circWid/2), dotY-(circWid/2), circWid, circWid);
-					
+					im.drawString(""+i, dotX, dotY-(circWid/2));
 					if (i==0){
 						im.drawOval(dotX-(circWid), dotY-(circWid), circWid*2, circWid*2);
 					}
@@ -147,8 +163,10 @@ public class displayUtils {
 		}
 	}
 	
-	
-	public static void drawTargets(ImageProcessor im, Vector<FloatPolygon> targetBackbones, int expandFac, int offX, int offY, Rectangle rect){
+	public static void drawTargets(ImageProcessor im, Vector<FloatPolygon> targetBackbones, boolean[] showForces, int expandFac, int offX, int offY, Rectangle rect) {
+		drawTargets(im, targetBackbones, showForces, expandFac, offX, offY, rect, null);
+	}
+	public static void drawTargets(ImageProcessor im, Vector<FloatPolygon> targetBackbones, boolean[] showForces, int expandFac, int offX, int offY, Rectangle rect, FloatPolygon oldBB){
 		
 		if(targetBackbones==null){
 			return;
@@ -156,7 +174,10 @@ public class displayUtils {
 		
 		Vector<Color> colors = getColorList();
 		
-		for (int j=0; j<targetBackbones.size(); j++){
+		for (int j=0; j<targetBackbones.size() && j < showForces.length; j++){
+			if (!showForces[j]) {
+				continue;
+			}
 			Color color = colors.get(j%colors.size());
 			FloatPolygon bbNew = targetBackbones.get(j);
 			
@@ -181,6 +202,11 @@ public class displayUtils {
 						im.drawOval(1, 1, 6, 6);
 						im.setColor(color);
 					}
+					if (oldBB != null) {
+						int x0 = (int)(expandFac*(oldBB.xpoints[i]-rect.x));
+						int y0 = (int)(expandFac*(oldBB.ypoints[i]-rect.y));
+						im.drawLine(offX + x0, offY + y0, offX + x, offY + y);
+					}
 				}
 			}else {
 				int ovalSize = 20;
@@ -194,11 +220,11 @@ public class displayUtils {
 	private static Vector<Color> getColorList(){
 		
 		Vector<Color> colors = new Vector<Color>();
-		colors.add(Color.RED);
-		colors.add(Color.BLUE);
-		colors.add(Color.GREEN);
-		colors.add(Color.MAGENTA);
-		colors.add(Color.YELLOW);
+		colors.add(Color.RED);//Image
+		colors.add(Color.BLUE);//Spine-Length
+		colors.add(Color.GREEN);//Spine-Smooth
+		colors.add(Color.MAGENTA);//Time-Length 
+		colors.add(Color.YELLOW);//Time-Smooth
 		
 		return colors;
 	}

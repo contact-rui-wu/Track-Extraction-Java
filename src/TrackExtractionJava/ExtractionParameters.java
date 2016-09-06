@@ -18,6 +18,8 @@ import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import ij.ImageStack;
+
 
 public class ExtractionParameters implements Serializable{ 
 	
@@ -30,9 +32,9 @@ public class ExtractionParameters implements Serializable{
 	static final int DERIV_SYMMETRIC = 3;
 	
 
-	public boolean subset = false;
+	//public boolean subset = false;
 	public int startFrame = 1;
-	public int endFrame = 500;
+	public int endFrame = Integer.MAX_VALUE;
 	
 	int GCInterval = 500;
 
@@ -88,7 +90,6 @@ public class ExtractionParameters implements Serializable{
 	int sampleInd = 10;
 	int trackWindowHeight = 30;
 	int trackWindowWidth = 30;
-	int trackZoomFac = 10;
 	int[] matchSpill = {};//{234,251,356,367};
 	boolean flagAbnormalMatches = false;
 	boolean dispTrackInfo = false;
@@ -115,8 +116,9 @@ public class ExtractionParameters implements Serializable{
     
     /**
      * Whether or not to globally threshold the image
+     * not used in current code - removed
      */
-    boolean useGlobalThresh = true;
+    //boolean useGlobalThresh = true;
     /**
      * The global threshold value
      */
@@ -198,11 +200,17 @@ public class ExtractionParameters implements Serializable{
 	 * Creates a set of Extraction Parameters, with the proper start frame
 	 */
 	public ExtractionParameters(){
-		if (!subset){
+		//if (!subset){
 			startFrame = 1;
-		}
+		//}
 	}
     
+	public void adjustBoundsForStack (ImageStack s) {
+		if (s == null) { return; }
+		startFrame = startFrame < 1 ? 1 : startFrame;
+		endFrame = endFrame > s.getSize() ? s.getSize() : endFrame;
+	}
+	
 	public boolean properPointSize(double area){
 		return (area>=minArea && area<=maxArea);
 	}
@@ -341,12 +349,22 @@ class extrPanel extends JPanel {
 	
 	public void buildComponents(){
 		
-		subsetBox = new  JCheckBox(subsetName, exPs.subset);
+		subsetBox = new  JCheckBox(subsetName, false);
 		subsetBox.addActionListener(new ActionListener() {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				exPs.subset = subsetBox.isSelected();
+				startFrameField.setVisible(subsetBox.isSelected());
+				startFrameLabel.setVisible(subsetBox.isSelected());
+				endFrameField.setVisible(subsetBox.isSelected());
+				endFrameLabel.setVisible(subsetBox.isSelected());
+				if (subsetBox.isSelected()) {
+					exPs.startFrame = ((Number)startFrameField.getValue()).intValue();
+					exPs.endFrame = ((Number) endFrameField.getValue()).intValue();
+				} else {
+					exPs.startFrame = 1;
+					exPs.endFrame = Integer.MAX_VALUE;
+				}
 			}
 		});
 		

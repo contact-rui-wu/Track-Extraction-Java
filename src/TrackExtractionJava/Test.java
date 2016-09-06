@@ -4,11 +4,15 @@ import ij.ImageJ;
 import ij.ImagePlus;
 
 import java.awt.BorderLayout;
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
+//import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
+//import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+//import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Scanner;
 import java.util.Vector;
 
@@ -27,21 +31,52 @@ public class Test {//extends JFrame
 
 	public static void main(String[] args) {
 		
+		try {
+			testMHG2();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		/*
+		testMHG();
+		String[] dirs = {
+//				"E:\\data2\\OdorPlusOpto\\42a@CsChrimson(X)redo_newparams\\S_Od_EtAc_Dr_0to10ppt_4drops#N_Re_B0to255s3_120Hz_800uW\\201507311116\\",
+//				"E:\\data2\\OdorPlusOpto\\42a@CsChrimson(X)\\S_Od_EtAc_Dr_0to10ppt_4drops#N_Re_B0to255s3_120Hz_800uW\\201507311116\\",
+				"E:\\data2\\OdorPlusOpto\\Or42b@CsChrimson(3)\\N_Re_B0to255s3_120Hz_110uW#C_Bl_2uW\\201509101505\\"//,
+//				"E:\\data\\optogenetics\\Or42a@Chrimson(X)\\RWN_0.3ohm_BWN_39ohm\\201504191707\\"
+		};
+		String[] names = {
+//				"42a@CsChrimson(X)_S_Od_EtAc_Dr_0to10ppt_4drops#N_Re_B0to255s3_120Hz_800uW_201507311116",
+//				"42a@CsChrimson(X)_S_Od_EtAc_Dr_0to10ppt_4drops#N_Re_B0to255s3_120Hz_800uW_201507311116",
+				"Or42b@CsChrimson(3)_N_Re_B0to255s3_120Hz_110uW#C_Bl_2uW_201509101505"//,
+//				"Or42a@Chrimson(X)_RWN_0.3ohm_BWN_39ohm_201504191707"
+		};
+		for (int i=0; i<dirs.length; i++){
+			try {
+				testTailDrag(dirs[i], names[i]);
+			} catch (Exception e){
+				e.printStackTrace(new PrintStream(new BufferedOutputStream(System.out)));
+			}
+		}
+		*/
+		
+		/*
+		*/
 		
 		/*
 		testBadTrackFinder();
 		*/
 
+		//testFitterPauseDisplay();
 		/*
-		testFitterPauseDisplay();
 		*/
 		
 		/*
 		testSubsetInchInwards();
 		*/
 		
-		fitExperimentNewScheme();
 		/*
+		fitExperimentNewScheme();
 		*/
 		
 		/*
@@ -211,6 +246,163 @@ public class Test {//extends JFrame
 		
 	}
 	
+	@SuppressWarnings("unused")
+	public static void testMHG(){
+
+		ImageJ ij = new ImageJ();
+		
+		String fileName = "Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541";
+		String outputDir = "E:\\bernatTest\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541\\";
+
+		String args[] = new String[2];
+		
+		args[0] = outputDir+fileName+".prejav";
+		args[1] = outputDir+""+fileName+"\\";
+		
+		File f = new File(args[1]); 
+		if (!f.exists()){
+			f.mkdirs();
+		}
+
+		
+		Experiment ex = new Experiment(args[0]);
+
+		Vector<Track> fit = new Vector<Track>();
+		
+		int[] tnum = {33, 69, 8};
+		
+		for (int tn : tnum) {
+			BackboneFitter bbf = new BackboneFitter(ex.getTrack(tn));
+		
+			bbf.fitTrackNewScheme();
+		
+			fit.add(bbf.getTrack());
+		}
+		BufferedWriter writer = null;
+		//from stackoverflow example code ...
+		try {
+            String timeLog = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+            File logFile = new File(args[1] + timeLog + " timing.txt");
+
+
+            writer = new BufferedWriter(new FileWriter(logFile));
+            Timer.generateReport(writer, true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+            	if (writer != null)
+            		writer.close();
+            } catch (Exception e) {
+            }
+        }
+		
+		Experiment fitTrackEx = new Experiment(ex, fit);
+		fitTrackEx.showEx();
+		
+		
+//		ij.quit();
+	}
+	
+	@SuppressWarnings("unused")
+	public static void testTailDrag(){
+
+		ImageJ ij = new ImageJ();
+		
+//		String inputDir = "";
+		String fileName = "Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541";
+		String outputDir = "E:\\bernatTest\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541\\";
+//		String inputFileName_full = outputDir+"test badness fixer\\0 Before any fixing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";
+//		String fileName = "42a@CsChrimson(X)_S_Od_EtAc_Dr_0to10ppt_4drops#N_Re_B0to255s3_120Hz_800uW_201507311116";
+
+		String args[] = new String[2];
+//		args[0] = inputFileName_full;
+		
+		args[0] = outputDir+fileName+".prejav";
+		args[1] = outputDir+""+fileName+"\\";
+		
+		File f = new File(args[1]); 
+		if (!f.exists()){
+			f.mkdirs();
+		}
+
+//		Experiment exFull = new Experiment(inputFileName_full);
+//		Vector<Track> badTracks = new Vector<Track>();
+//		//Bad Orientation...
+//		//...at beginning of track
+//		badTracks.add(exFull.getTrack(25));
+//		//...during a turn (larva backs up)
+//		badTracks.add(exFull.getTrack(1));
+//		badTracks.add(exFull.getTrack(32));
+//		badTracks.add(exFull.getTrack(36));
+//		//Bad ball resolution...
+//		//...overshoot
+//		badTracks.add(exFull.getTrack(0));
+//		badTracks.add(exFull.getTrack(69));
+//		//...crinkle/flip
+//		badTracks.add(exFull.getTrack(8));
+//		badTracks.add(exFull.getTrack(33));
+//		badTracks.add(exFull.getTrack(36));
+//		
+//		Experiment ex = new Experiment(exFull, badTracks);
+		
+//		File f = new File(args[1]+"badTracks_manual.prejav");
+//		DataOutputStream dos;
+//		try {
+//			dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
+//			ex.toDisk(dos, null);
+//			dos.close();
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		} 
+		
+		
+		
+//		args[0] = f.getAbsolutePath(); 
+//		args[1] += "overallUpBy10_tailUpByNone\\withNoExtraSetup\\";
+		
+		
+//		Experiment_Processor ep = new Experiment_Processor();
+//		ep.runningFromMain = true;
+//
+//		ExtractionParameters exP = new ExtractionParameters();
+//		exP.subset = true;
+//		exP.startFrame = 2000;
+//		exP.endFrame = 4000;
+//		
+//		ProcessingParameters pp = new ProcessingParameters();
+//		pp.doFitting = true;
+//		pp.fitType=1;
+//		pp.showFitEx = true;
+//		
+//		FittingParameters fp = new FittingParameters();
+//		fp.storeEnergies = false;
+//		
+//		ep.prParams = pp;
+//		ep.extrParams = exP;
+//		ep.fitParams = fp;
+//		
+//		ep.run(args);
+		
+		
+		Experiment ex = new Experiment(args[1]+fileName+".prejav");
+//		ex.showEx();
+//		ex.getTrack(33).showFitting();
+		
+
+		BackboneFitter bbf = new BackboneFitter(ex.getTrack(523));
+		
+		bbf.fitTrackNewScheme();
+		
+		Vector<Track> fit = new Vector<Track>();
+		fit.add(bbf.getTrack());
+		Experiment fitTrackEx = new Experiment(ex, fit);
+		fitTrackEx.showEx();
+		
+//		ij.quit();
+	}
+	
+	
 	public static void testBadTrackFinder(){
 		ImageJ ij = new ImageJ();
 		
@@ -229,6 +421,7 @@ public class Test {//extends JFrame
 		ij.quit();
 	}
 	
+	@SuppressWarnings("unused")
 	public static void testFitterPauseDisplay(){
 		ImageJ ij = new ImageJ();
 		
@@ -240,23 +433,23 @@ public class Test {//extends JFrame
 		Experiment ex = new Experiment(inputFileName);
 		Track t = ex.getTrack(trackID);
 		
-		t.showFitting();
-//		BackboneFitter bbf = new BackboneFitter(t);
+//		t.showFitting();
+		BackboneFitter bbf = new BackboneFitter(t);
 //		bbf.doPause = true;
-////		bbf.userIn = new Scanner(System.in);
+//		bbf.userIn = new Scanner(System.in);
 //		bbf.userOut = System.out;
-//		
-//		bbf.fitTrackNewScheme();
+		
+		bbf.fitTrackNewScheme();
 		
 		
-//		if (bbf.getTrack()!=null){
-//			Vector<Track> newTracks = new Vector<Track>();
-//			newTracks.add(bbf.getTrack());
-//			Experiment newExperiment = new Experiment(ex, newTracks);
-//			newExperiment.showEx();
-//		}
+		if (bbf.getTrack()!=null){
+			Vector<Track> newTracks = new Vector<Track>();
+			newTracks.add(bbf.getTrack());
+			Experiment newExperiment = new Experiment(ex, newTracks);
+			newExperiment.showEx();
+		}
 		
-		ij.quit();
+//		ij.quit();
 	}
 	
 	public static void testSubsetInchInwards(){
@@ -292,21 +485,106 @@ public class Test {//extends JFrame
 		ij.quit();
 	}
 	
+	public static void testMHG2 () {
+		String srcdir = "E:\\Example Data\\CO2 triangle waves\\CS@CS\\T_Od_CO2_Tr_0to5pct_200\\201606101638\\";
+		String srcname = "CS@CS_T_Od_CO2_Tr_0to5pct_200_201606101638.mmf";
+		String dstdir = "E:\\Example Extracted\\CO2 triangle waves\\CS@CS\\T_Od_CO2_Tr_0to5pct_200\\201606101638\\";
+		String dstname = "foobar.java";
+	//	@SuppressWarnings("unused")
+		ImageJ ij = new ImageJ();
+		Experiment_Processor ep = new Experiment_Processor();
+		ep.setVerbosity(VerbLevel.verb_message);
+//		ep.extrParams = new ExtractionParameters();
+//		ep.extrParams.subset = true;
+//		ep.extrParams.startFrame = 1;
+//		ep.extrParams.endFrame = 1000;
+		ep.run(new File(srcdir, srcname).getAbsolutePath(), dstdir, dstname);
+		ij.quit();
+	}
+	
+	@SuppressWarnings("unused")
+	public static void testTrackFromDisk() throws Exception{
+		
+		ImageJ ij = new ImageJ();
+		String magExName = "E:\\extracted\\OdorPlusOpto\\Or42a@CsChrimson(3)\\N_Re_B0to255s3_120Hz_90uW#C_Bl_2uW\\Or42a@CsChrimson(3)_N_Re_B0to255s3_120Hz_90uW#C_Bl_2uW_201509021651.prejav";
+//		String mmfName = "E:\\data\\Test\\Or42b(2)@CsChrimson(3)2\\C_Bl_2uW#N_Re_B0to255s3_120Hz_800uW\\201607141545\\Or42b(2)@CsChrimson(3)_C_Bl_2uW#N_Re_B0to255s3_120Hz_800uW_201607141545.mmf"; 
+//		String fname = "E:\\extracted\\Test\\Or42b(2)@CsChrimson(3)\\C_Bl_2uW#N_Re_B0to255s3_120Hz_800uW\\Or42b(2)@CsChrimson(3)_C_Bl_2uW#N_Re_B0to255s3_120Hz_800uW_201606271555.jav";
+//		String fSrcDirNew = "E:\\extracted\\Test\\Or42b(2)@CsChrimson(3)\\C_Bl_2uW#N_Re_B0to255s3_120Hz_800uW\\"; 
+//		String fnameNew = "newSave1545.jav";
+		
+		
+		String badExDir = "E:\\extracted\\OdorPlusOpto\\Or42a@CsChrimson(3)\\N_Re_B0to255s3_120Hz_90uW#C_Bl_2uW\\badEx\\";
+//		File f = new File(badExDir+"\\badEx.prejav");
+		
+		String[] args = new String[3];
+		args[0] = badExDir+"\\badEx.prejav";
+//		Experiment badEx = new Experiment(args[0]);
+//		badEx.tracks.firstElement().showFitting();
+//		badEx.tracks.firstElement().playMovie();
+//		MaggotTrackBuilder.orientMaggotTrack(badEx.tracks.firstElement(), new ExtractionParameters().framesBtwnContSegs, null);		
+//		badEx.tracks.firstElement().playMovie();
+		
+		args[1] = badExDir;
+		args[2] = "badEx_refit_oriented.jav";
+		Experiment_Processor ep = new Experiment_Processor();
+		//ep.runningFromMain = true;
+		ep.run(args);
+		ep.ex.showEx();
+		
+//		Vector<Track> matchTrack = new Vector<Track>();
+//		Track oldTrack = ep.ex.tracks.get(ep.ex.tracks.size()/2);
+//		matchTrack.add(oldTrack);
+//		
+//		Experiment exNew = new Experiment(fSrcDirNew+"\\"+fnameNew);
+//		matchTrack.add(exNew.getTrack(oldTrack.getTrackID()));
+//		
+//		Experiment matching = new Experiment(exNew, matchTrack);
+//		matching.showEx();
+		
+//		System.out.println("Loading...");
+//		Experiment ex = new Experiment(magExName);
+//		Vector<Track> badTracks = new Vector<Track>();
+//		badTracks.add(ex.getTrack(122));
+//		badTracks.add(ex.getTrack(147));
+//		String badExDir = "E:\\extracted\\OdorPlusOpto\\Or42a@CsChrimson(3)\\N_Re_B0to255s3_120Hz_90uW#C_Bl_2uW\\badEx\\";
+//		Experiment bad = new Experiment(ex, badTracks);
+//		System.out.println("Saving...");
+//		File f = new File(badExDir+"\\badEx.prejav");
+//		DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
+//		bad.toDisk(dos, null);
+//		dos.close();
+//		System.out.println("Done!");
+		
+		
+		
+		
+		
+		
+		
+//		int n = Experiment.getNumTracks(fnameNew);
+//		Track t = Experiment.getTrack(n-1, fnameNew);
+//		MaggotDisplayParameters mdp = new MaggotDisplayParameters();
+//		mdp.contour = true;
+//		t.playMovie(mdp);
+//		System.out.println();
+		
+	}
+	
 	public static void fitExperimentNewScheme(){
 		
 		ImageJ ij = new ImageJ();
 		
 		String outputDir = "E:\\testing\\Java Backbone Fitting\\test badness fixer\\";
-		String inputFileName = "E:\\data\\phototaxis2\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";//outputDir+"7 Coord to contour from marc\\4000_6000\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav" ;//outputDir+"0 Before any fixing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";// 
+		String inputFileName = outputDir+"0 Before any fixing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";//"E:\\data\\phototaxis2\\berlin@berlin\\2NDs_B_Square_SW_96-160\\201411201541\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";//outputDir+"7 Coord to contour from marc\\4000_6000\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav" ;// 
 		
 		String args[] = new String[2];
 		args[0] = inputFileName;
-		args[1] = outputDir+"7 Coord to contour from marc\\4000_6000\\";
+		args[1] = "E:\\testing\\Full Processing\\Speed test\\";
 		
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+		//ep.runningFromMain = true;
 		ExtractionParameters exP = new ExtractionParameters();
-		exP.subset = true;
+		//exP.subset = true;
 		exP.startFrame = 4000;
 		exP.endFrame = 6000;
 
@@ -322,6 +600,25 @@ public class Test {//extends JFrame
 		ep.fitParams = fp;
 		
 		ep.run(args);
+
+		
+		BufferedWriter writer = null;
+		try {
+            String timeLog = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+            File logFile = new File(args[1] + timeLog + " timing.txt");
+
+
+            writer = new BufferedWriter(new FileWriter(logFile));
+            Timer.generateReport(writer);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+            	if (writer != null)
+            		writer.close();
+            } catch (Exception e) {
+            }
+        }
 		
 		ij.quit();
 	}
@@ -525,6 +822,9 @@ public class Test {//extends JFrame
 		
 	}
 	
+	/**
+	 * DEFUNCT: bbf.fitTrack(Track t) method no longer exists
+	 */
 	public static void testNewBBFArchitecture(){
 		
 		String outputDir = "E:\\testing\\Java Backbone Fitting\\test orientation fix\\";
@@ -536,8 +836,10 @@ public class Test {//extends JFrame
 		BackboneFitter bbf = new BackboneFitter(ex.getTrackFromInd(50));
 		bbf.fitTrack();
 		
-		BackboneFitter bbfOld = new BackboneFitter();
-		bbfOld.fitTrack(ex.getTrackFromInd(50));
+		//BackboneFitter bbfOld = new BackboneFitter();
+		///method no longer exists
+		//bbfOld.fitTrack(ex.getTrackFromInd(50));
+		///
 		
 		System.out.println("Done");
 	}
@@ -561,7 +863,7 @@ public class Test {//extends JFrame
 		prP.diagnosticIm = false;
 		
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+		//ep.runningFromMain = true;
 		ep.prParams = prP;
 		ep.fitParams = fP;
 		
@@ -604,7 +906,7 @@ public class Test {//extends JFrame
 		fitPar.timeSmoothWeights = timeSmoothWeights_m5;
 		
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.fitParams = fitPar;
 		ep.run(args);
 		
@@ -664,147 +966,153 @@ public class Test {//extends JFrame
 		if (s!=null) s.close();
 	}
 	
-	public static void testTrackBreakdown(){
-		ImageJ imj = new ImageJ(ImageJ.NO_SHOW);
-		
-//		Experiment_Processor ep;
-		
-//		ProcessingParameters prParam = new ProcessingParameters();
-//		prParam.diagnosticIm = false;
-		
-		//Set src and dest
-		String srcName = "E:\\testing\\Java Backbone Fitting\\Fitting Params\\fullExptWithAreaSplit_0.7-1.4_otherPtSplit\\divergedTrackExp.prejav";
-		String dstBaseDir = "E:\\testing\\Java Backbone Fitting\\Track Breakdown\\";
-		
-		Experiment ex = new Experiment(srcName);
-		//Find a long track
-		
-//		int len = 16726;
-		//Find a track that's the length of the experiment
-//		System.out.println("Finding full-experiment track in "+ex.tracks.size()+" tracks...");
-		Track longTrack = null;
-//		int i;
-//		for (i=0; (i<ex.tracks.size() && longTrack==null); i++){
-//			if (ex.getTrackFromInd(i).points.size()==len) longTrack=ex.getTrackFromInd(i);
+	
+	/**
+	 * DEFUNCT: bbf.fitTrack(Track t) method no longer exists
+	 */
+//	public static void testTrackBreakdown(){
+//		ImageJ imj = new ImageJ(ImageJ.NO_SHOW);
+//		
+////		Experiment_Processor ep;
+//		
+////		ProcessingParameters prParam = new ProcessingParameters();
+////		prParam.diagnosticIm = false;
+//		
+//		//Set src and dest
+//		String srcName = "E:\\testing\\Java Backbone Fitting\\Fitting Params\\fullExptWithAreaSplit_0.7-1.4_otherPtSplit\\divergedTrackExp.prejav";
+//		String dstBaseDir = "E:\\testing\\Java Backbone Fitting\\Track Breakdown\\";
+//		
+//		Experiment ex = new Experiment(srcName);
+//		//Find a long track
+//		
+////		int len = 16726;
+//		//Find a track that's the length of the experiment
+////		System.out.println("Finding full-experiment track in "+ex.tracks.size()+" tracks...");
+//		Track longTrack = null;
+////		int i;
+////		for (i=0; (i<ex.tracks.size() && longTrack==null); i++){
+////			if (ex.getTrackFromInd(i).points.size()==len) longTrack=ex.getTrackFromInd(i);
+////		}
+////		System.out.println("Found track (ind="+i+")");
+//		
+//		
+//		Vector<Track> fits = new Vector<Track>();
+//		Vector<Track> divs = new Vector<Track>();
+//		BackboneFitter bbf;
+//		for (int j=0; j<ex.tracks.size(); j++){
+//			
+//			longTrack = ex.tracks.get(j);
+//			int len = longTrack.points.size();
+//			int clipLen = 500;
+//			if (len>(clipLen*3)){
+//				Vector<Track> fitTracks = new Vector<Track>();
+//				Vector<Track> divTracks = new Vector<Track>();
+//				
+//				System.out.println("Clipping and Fitting track...");
+//				for (int i=0; i<=len/clipLen; i++){
+//				
+//					bbf = new BackboneFitter();
+//		//			bbf.clipEnds = true;
+//					int sf = 1+i*clipLen;
+//					int ef = (len<((i+1)*clipLen))? len-1: (i+1)*clipLen;
+//					
+//					Track clipTrack = new Track(longTrack.getPoints().subList(sf, ef), i);
+//						
+//					///method no longer exists
+//					//bbf.fitTrack(clipTrack);
+//					///
+//					
+//					if (bbf.getTrack()!=null){
+//						fitTracks.add(bbf.getTrack());				
+//					} else {
+//						divTracks.add(clipTrack);
+//					}
+//					
+//				}
+//				fits.addAll(fitTracks);
+//				divs.addAll(divTracks);
+//				
+//				System.out.println("...Done fitting: "+fitTracks.size()+"/"+(fitTracks.size()+divTracks.size()+" were fit properly"));
+//				
+//				Experiment fitEx = new Experiment();
+//				fitEx.tracks = fitTracks;
+//				Experiment divEx = new Experiment();
+//				divEx.tracks = divTracks;
+//				
+//				try {
+//					File f = new File(dstBaseDir+"tracks\\track"+j+"\\");
+//					if (!f.exists()) f.mkdirs();
+//					
+//					
+//					f = new File(dstBaseDir+"tracks\\track"+j+"\\"+"fitTrackExp.jav");
+//					System.out.println("Saving fit track experiment to "+f.getPath());
+//					try{
+//						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
+//								
+//						fitEx.toDisk(dos);
+//						dos.close();
+//						System.out.println("Done saving fit tracks");
+//					} catch(Exception e){
+//						System.out.println("Save error");
+//					}
+//					
+//					f = new File(dstBaseDir+"tracks\\track"+j+"\\"+"divergedTrackExp.prejav");
+//					System.out.println("Saving error track experiment to "+f.getPath());
+//					try{
+//						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
+//								
+//						divEx.toDisk(dos);
+//						dos.close();
+//						System.out.println("Done saving diverged tracks");
+//					} catch(Exception e){
+//						System.out.println("Save error");
+//					}
+//		
+//				} catch (Exception e){
+//					
+//				}
+//			} else {
+//			}
 //		}
-//		System.out.println("Found track (ind="+i+")");
-		
-		
-		Vector<Track> fits = new Vector<Track>();
-		Vector<Track> divs = new Vector<Track>();
-		BackboneFitter bbf;
-		for (int j=0; j<ex.tracks.size(); j++){
-			
-			longTrack = ex.tracks.get(j);
-			int len = longTrack.points.size();
-			int clipLen = 500;
-			if (len>(clipLen*3)){
-				Vector<Track> fitTracks = new Vector<Track>();
-				Vector<Track> divTracks = new Vector<Track>();
-				
-				System.out.println("Clipping and Fitting track...");
-				for (int i=0; i<=len/clipLen; i++){
-				
-					bbf = new BackboneFitter();
-		//			bbf.clipEnds = true;
-					int sf = 1+i*clipLen;
-					int ef = (len<((i+1)*clipLen))? len-1: (i+1)*clipLen;
-					
-					Track clipTrack = new Track(longTrack.getPoints().subList(sf, ef), i);
-							
-					bbf.fitTrack(clipTrack);
-					
-					if (bbf.getTrack()!=null){
-						fitTracks.add(bbf.getTrack());				
-					} else {
-						divTracks.add(clipTrack);
-					}
-					
-				}
-				fits.addAll(fitTracks);
-				divs.addAll(divTracks);
-				
-				System.out.println("...Done fitting: "+fitTracks.size()+"/"+(fitTracks.size()+divTracks.size()+" were fit properly"));
-				
-				Experiment fitEx = new Experiment();
-				fitEx.tracks = fitTracks;
-				Experiment divEx = new Experiment();
-				divEx.tracks = divTracks;
-				
-				try {
-					File f = new File(dstBaseDir+"tracks\\track"+j+"\\");
-					if (!f.exists()) f.mkdirs();
-					
-					
-					f = new File(dstBaseDir+"tracks\\track"+j+"\\"+"fitTrackExp.jav");
-					System.out.println("Saving fit track experiment to "+f.getPath());
-					try{
-						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
-								
-						fitEx.toDisk(dos, null);
-						dos.close();
-						System.out.println("Done saving fit tracks");
-					} catch(Exception e){
-						System.out.println("Save error");
-					}
-					
-					f = new File(dstBaseDir+"tracks\\track"+j+"\\"+"divergedTrackExp.prejav");
-					System.out.println("Saving error track experiment to "+f.getPath());
-					try{
-						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
-								
-						divEx.toDisk(dos, null);
-						dos.close();
-						System.out.println("Done saving diverged tracks");
-					} catch(Exception e){
-						System.out.println("Save error");
-					}
-		
-				} catch (Exception e){
-					
-				}
-			} else {
-			}
-		}
-		
-		
-		Experiment fitEx = new Experiment();
-		fitEx.tracks = fits;
-		Experiment divEx = new Experiment();
-		divEx.tracks = divs;
-		
-		try {
-			File f = new File(dstBaseDir+"allFitTracks.jav");
-			System.out.println("Saving fit track experiment to "+f.getPath());
-			try{
-				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
-						
-				fitEx.toDisk(dos, null);
-				dos.close();
-				System.out.println("Done saving fit tracks");
-			} catch(Exception e){
-				System.out.println("Save error");
-			}
-			
-			f = new File(dstBaseDir+"allDivTracks.prejav");
-			System.out.println("Saving error track experiment to "+f.getPath());
-			try{
-				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
-						
-				divEx.toDisk(dos, null);
-				dos.close();
-				System.out.println("Done saving diverged tracks");
-			} catch(Exception e){
-				System.out.println("Save error");
-			}
-
-		} catch (Exception e){
-			
-		}
-		
-		
-		imj.quit();
-	}
+//		
+//		
+//		Experiment fitEx = new Experiment();
+//		fitEx.tracks = fits;
+//		Experiment divEx = new Experiment();
+//		divEx.tracks = divs;
+//		
+//		try {
+//			File f = new File(dstBaseDir+"allFitTracks.jav");
+//			System.out.println("Saving fit track experiment to "+f.getPath());
+//			try{
+//				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
+//						
+//				fitEx.toDisk(dos);
+//				dos.close();
+//				System.out.println("Done saving fit tracks");
+//			} catch(Exception e){
+//				System.out.println("Save error");
+//			}
+//			
+//			f = new File(dstBaseDir+"allDivTracks.prejav");
+//			System.out.println("Saving error track experiment to "+f.getPath());
+//			try{
+//				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f))); 
+//						
+//				divEx.toDisk(dos);
+//				dos.close();
+//				System.out.println("Done saving diverged tracks");
+//			} catch(Exception e){
+//				System.out.println("Save error");
+//			}
+//
+//		} catch (Exception e){
+//			
+//		}
+//		
+//		
+//		imj.quit();
+//	}
 	
 	public static void runDefaultFitting(){
 		
@@ -934,7 +1242,7 @@ public class Test {//extends JFrame
 		fP.storeEnergies = true;
 		fP.refitDiverged = true;
 		ExtractionParameters exP = new ExtractionParameters();
-		exP.subset = true;
+//		exP.subset = true;
 		exP.startFrame = 1;
 		exP.endFrame = 2000;
 		
@@ -943,7 +1251,7 @@ public class Test {//extends JFrame
 //		prP.showFitEx = true;
 		
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.prParams = prP;
 		ep.extrParams = exP;
 		ep.fitParams = fP;
@@ -973,8 +1281,8 @@ public class Test {//extends JFrame
 		
 		
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
-		exParam.subset = false;
+	//	ep.runningFromMain = true;
+//		exParam.subset = false;
 		FittingParameters fp = new FittingParameters();
 		fp.spineLengthWeight = 0.5f;
 		ep.extrParams = exParam;
@@ -986,8 +1294,8 @@ public class Test {//extends JFrame
 		System.out.println("DONE fitting tracks");
 		
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
-		exParam.subset = false;
+	//	ep.runningFromMain = true;
+//		exParam.subset = false;
 		fp = new FittingParameters();
 		int[] gr = {8,4,1};
 		fp.grains = gr;
@@ -1015,7 +1323,7 @@ public class Test {//extends JFrame
 		ProcessingParameters prParam = new ProcessingParameters();
 		prParam.diagnosticIm = false;
 		ExtractionParameters exParam = new ExtractionParameters();
-		exParam.subset = true;
+//		exParam.subset = true;
 		exParam.startFrame = 1;
 		exParam.endFrame = 1000;
 		
@@ -1132,8 +1440,8 @@ public class Test {//extends JFrame
 
 		*/
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
-		exParam.subset = false;
+	//	ep.runningFromMain = true;
+//		exParam.subset = false;
 		exParam.splitMatchesByAreaFrac = true;
 		exParam.lowerAreaFrac = 0.7;
 		exParam.upperAreaFrac = 1.4;
@@ -1186,7 +1494,7 @@ public class Test {//extends JFrame
 		fitPar = new FittingParameters();
 
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.fitParams = fitPar;
 		ep.run(args);
 		
@@ -1211,7 +1519,7 @@ public class Test {//extends JFrame
 		fitPar.timeSmoothWeights = timeSmoothWeights;
 		
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.fitParams = fitPar;
 		ep.run(args);
 		
@@ -1242,7 +1550,7 @@ public class Test {//extends JFrame
 		fitPar.timeSmoothWeights = timeSmoothWeights_m;
 		
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.fitParams = fitPar;
 		ep.run(args);
 		
@@ -1273,7 +1581,7 @@ public class Test {//extends JFrame
 		fitPar.timeSmoothWeights = timeSmoothWeights_m5;
 		
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.fitParams = fitPar;
 		ep.run(args);
 		
@@ -1301,7 +1609,7 @@ public class Test {//extends JFrame
 		
 		Experiment_Processor ep = new Experiment_Processor();
 		ExtractionParameters exParams = new ExtractionParameters();
-		exParams.subset = true;
+//		exParams.subset = true;
 		exParams.endFrame = 2000;
 		ep.extrParams = exParams;
 		ProcessingParameters prParams= new ProcessingParameters();
@@ -1323,7 +1631,7 @@ public class Test {//extends JFrame
 		String mmfName = "Or42a@Chrimson(3)_N_Bl_B0to159s13_120Hz_50W_S1-3#T_Bl_Sq_0to96_30#C_Re_400uW_201603081647.mmf";
 		
 		ExtractionParameters exParams = new ExtractionParameters();
-		exParams.subset = true;
+//		exParams.subset = true;
 		exParams.endFrame = 2000;
 		
 		String[] args = new String[3]; //Name-of-mmf; dstdir; dstname
@@ -1334,7 +1642,7 @@ public class Test {//extends JFrame
 		exParams.pointSplittingMethod = 1;
 		args[1] = baseDir+threshDir;
 		Experiment_Processor ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.extrParams = exParams;
 		ep.run(args);
 		
@@ -1342,7 +1650,7 @@ public class Test {//extends JFrame
 		exParams.pointSplittingMethod = 2;
 		args[1] = baseDir+DMDir;
 		ep = new Experiment_Processor();
-		ep.runningFromMain = true;
+	//	ep.runningFromMain = true;
 		ep.extrParams = exParams;
 		ep.run(args);
 		
@@ -1480,23 +1788,23 @@ public class Test {//extends JFrame
 		
 		ImageJ imj = new ImageJ(ImageJ.NO_SHOW);
 		
-		Experiment_Processor ep = new Experiment_Processor();
+//		Experiment_Processor ep = new Experiment_Processor();
 		
 		
 		//Set params from input
-		ep.runningFromMain = true;
+//		ep.runningFromMain = true;
 //		ep.prParams = p;
 //		ep.extrParams = e;
 //		ep.fitParams = f;
 		
 		//Set src and dest
 		String[] epArgs = new String[3];
-		epArgs[0] = "C:\\Users\\Natalie\\Documents\\Testing\\Interface testing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
-		epArgs[1] = "C:\\Users\\Natalie\\Documents\\Testing\\Interface testing\\";
-		epArgs[2] = "Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541";
+		epArgs[0] = "E:\\testing\\Full Processing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.prejav";//"C:\\Users\\Natalie\\Documents\\Testing\\Interface testing\\Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541.mmf";
+		epArgs[1] = "E:\\testing\\Full Processing\\";
+//		epArgs[2] = "Berlin@Berlin_2NDs_B_Square_SW_96-160_201411201541";
 		
-		ep.run(epArgs[0]);
-		
+//		ep.run(epArgs[0]);
+		Experiment_Processor.main(epArgs);
 
 		imj.quit();
 	}

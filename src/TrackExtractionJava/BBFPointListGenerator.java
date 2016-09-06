@@ -22,7 +22,8 @@ public class BBFPointListGenerator {
 	FittingParameters params;
 	Communicator comm;
 	
-	
+	boolean doDilation = true;
+	boolean doCleanup = true;
 	protected boolean clipEnds;// = false;
 	protected int BTPstartFrame;// = -1;
 	protected int BTPendFrame;// = -1;
@@ -153,6 +154,11 @@ public class BBFPointListGenerator {
 		
 	}
 
+	protected boolean resetBackboneInfo_SinglePass(){
+		BTPs = new Vector<BackboneTrackPoint>();
+		sampleTrackPoints(params.grains[0]);
+		return addBackboneInfo(0, 1);
+	}
 	
 	private boolean addBackboneInfo(int pass, int grain){
 		
@@ -163,7 +169,8 @@ public class BBFPointListGenerator {
 				for (int i=0; i<BTPs.size(); i++){
 					if (params.leaveFrozenBackbonesAlone && BTPs.get(i).frozen){
 						//do nothing
-					} else if ((params.leaveBackbonesInPlace && BTPs.get(i).backbone!=null && BTPs.get(i).backbone.getNCoordinates()>0)){
+					} else if ((params.leaveFrozenBackbonesAlone && !BTPs.get(i).frozen) || 
+							(params.leaveBackbonesInPlace && BTPs.get(i).backbone!=null && BTPs.get(i).backbone.getNCoordinates()>0)){
 						origin[0]=0;
 						origin[1]=0;
 						BTPs.get(i).setBackboneInfo(params.clusterMethod, BTPs.get(i).backbone, origin);
@@ -176,9 +183,13 @@ public class BBFPointListGenerator {
 					comm.message("Adding backbone info to BTP "+i+"(frame "+BTPs.get(i).frameNum+")", VerbLevel.verb_debug);
 				}
 				
-				boolean noError = cleanUpBTPs(findEmptyMids(), params.minFlickerDist*grain);
-				return noError;
-				
+				if (doCleanup){
+					boolean noError = cleanUpBTPs(findEmptyMids(), params.minFlickerDist*grain);
+					doCleanup = false;
+					return noError;
+				} else {
+					return true;
+				}
 			} else {
 				origin[0] = 0;
 				origin[1] = 0;
@@ -253,6 +264,7 @@ public class BBFPointListGenerator {
 		
 	}
 	
+	//I'm not sure what this function does -- what's the orient track for? it's a different call from others, which is confusing
 	private boolean cleanUpBTPs(boolean[] sampledEmptyMids, double flickerDist){
 		if(sampledEmptyMids!=null){
 				comm.message("Clearing flickers", VerbLevel.verb_debug);
@@ -262,7 +274,7 @@ public class BBFPointListGenerator {
 			Vector<Gap> gaps = findGaps(sampledEmptyMids);
 				comm.message("Cleaning gaps", VerbLevel.verb_debug);
 			sanitizeGaps(gaps);
-			MaggotTrackBuilder.orientMaggotTrack(BTPs, comm, workingTrack.getTrackID());
+	//		MaggotTrackBuilder.orientMaggotTrack(BTPs, comm, workingTrack.getTrackID());
 				comm.message("Filling midlines", VerbLevel.verb_debug);
 			boolean noError = fillGaps(gaps);
 			if (!noError){
@@ -286,7 +298,7 @@ public class BBFPointListGenerator {
 			
 			currMag = btpIt.next();
 			if(prevMag!=null) {
-				dist = currMag.bbInitDist(prevMag.bbInit);
+				dist = currMag.bbInitDist(prevMag.getBbInit());
 			} else {
 				dist = -1;
 			}
@@ -338,11 +350,14 @@ public class BBFPointListGenerator {
 			
 			comm.message("Merging "+gaps.size()+" gaps", VerbLevel.verb_debug); 
 			
-			dilateGaps(gaps, params.gapDilation, params.minValidSegmentLen, 0, BTPs.size()-1, params.dilateToEdges);
+			if (doDilation){
+				dilateGaps(gaps, params.gapDilation, params.minValidSegmentLen, 0, BTPs.size()-1, params.dilateToEdges);
+				doDilation = false;
+			}
 			//dilateGaps(gaps, params.gapDilation, params.minValidSegmentLen, track.getStart().frameNum, track.getEnd().frameNum, params.dilateToEdges);
 			
 			if (mergeGaps(gaps, params.minValidSegmentLen, comm)) {
-				invalidateGaps(gaps);
+//				invalidateGaps(gaps);
 //				MaggotTrackBuilder.orientMaggotTrack(BTPs, comm, track.getTrackID());
 			}
 			
@@ -406,16 +421,6 @@ public class BBFPointListGenerator {
 		return gapsChanged;
 	}
 
-	private void invalidateGaps(Vector<Gap> gaps){
-		for (int i=0; i<gaps.size(); i++){
-			Gap gap = gaps.get(i);
-			for (int j=gap.start; j<=gap.end; j++){
-				BackboneTrackPoint btp = BTPs.get(j);
-				btp.bbvalid = false;
-			}
-		}
-	}
-	
 	
 	/**
 	 * Finds and fills all the empty midlines
@@ -449,7 +454,7 @@ public class BBFPointListGenerator {
 	 * carried through the gap. Otherwise, the midlines are interpolated from
 	 * the surrounding midlines
 	 * <p>
-	 * False is returned when both the midlines surrounding a small gap, or one
+	 * False is returned when either both the midlines surrounding a small gap, or one
 	 * of the midlines surrounding a large gap, is at the beginning or end of
 	 * the track
 	 * 
@@ -463,8 +468,7 @@ public class BBFPointListGenerator {
 		try { 
 			int gapLen = gapEnd - gapStart + 1;
 			comm.message("Filling gap of size "+gapLen, VerbLevel.verb_debug);
-			if (gapLen < params.smallGapMaxLen) {
-				// Set the
+			if (gapLen < params.smallGapMaxLen) { //Small gap
 				
 				PolygonRoi fillerMidline;
 				float[] origin;
@@ -484,7 +488,7 @@ public class BBFPointListGenerator {
 					BTPs.get(i).fillInBackboneInfo(params.clusterMethod, fillerMidline, origin);
 				}
 	
-			} else if (gapStart != 0 && gapEnd != (BTPs.size() - 1)) {
+			} else if (gapStart != 0 && gapEnd != (BTPs.size() - 1)) { //Large gap
 				comm.message("Filling large gap", VerbLevel.verb_debug);
 				
 				Vector<FloatPolygon> newMids = interpBackbones(gapStart - 1, gapEnd + 1);
@@ -512,13 +516,14 @@ public class BBFPointListGenerator {
 				
 				comm.message("Gap filled", VerbLevel.verb_debug);
 			
-			} else if (gapStart==0 && gapEnd == (BTPs.size()-1)){
+			} else if (gapStart==0 && gapEnd == (BTPs.size()-1)){ //Whole track is a gap
 				comm.message("All midlines are invalid in track "+workingTrack.getTrackID(), VerbLevel.verb_error);
 				System.out.println("All midlines are invalid in track "+workingTrack.getTrackID());
+				workingTrack.points.removeAllElements();
 				return false;
 				
-			} else {
-				clipEnds=true;
+			} else { //Gap is on either end of the track
+				clipEnds=true; //Set the flag for clipEnds to be called later 
 				if (gapStart == 0) {
 					BTPstartFrame=BTPs.get(gapEnd+1).frameNum;
 				} else if (gapEnd == (BTPs.size()-1)){
@@ -538,10 +543,12 @@ public class BBFPointListGenerator {
 	private boolean clipEnds(){
 		
 		comm.message("Clipping ends on track "+workingTrack.getTrackID()+": startFrame="+BTPstartFrame+" endFrame="+BTPendFrame, VerbLevel.verb_message);
+		bbf.clipEnds = true;
 		
 		int nFrames = (BTPendFrame>0)? BTPendFrame : workingTrack.points.lastElement().frameNum;
 		nFrames -= (BTPstartFrame>0)? BTPstartFrame : workingTrack.points.firstElement().frameNum;
 		if (nFrames<params.minTrackLen) {
+			workingTrack.points.removeAllElements();
 			System.out.println("After clipping, track is too short");
 			return false;
 		}
@@ -567,9 +574,6 @@ public class BBFPointListGenerator {
 				}
 				//Remove elements
 				BTPs.subList(i, BTPs.size()).clear();
-				
-				
-				//TODO edit the subset in bbf
 				
 			} else {
 				comm.message("Error clipping ends in track "+workingTrack.getTrackID()+": could not find index of new end frame ("+BTPendFrame+")", VerbLevel.verb_error);
