@@ -59,7 +59,7 @@ public class TestRui {
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true;
 		extrParams.startFrame = 1;
-		extrParams.endFrame = 10000;
+		extrParams.endFrame = 1000;
 		extrParams.frameSizeDdt = false;
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
