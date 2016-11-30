@@ -50,7 +50,7 @@ public class TestRui {
 		// do extraction and look at the tracks
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
-		prParams.showMagEx = false;
+		prParams.showMagEx = true;
 		prParams.saveMagEx = false;
 		prParams.doFitting = false;
 		prParams.showFitEx = false;
@@ -59,7 +59,7 @@ public class TestRui {
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true;
 		extrParams.startFrame = 1;
-		extrParams.endFrame = 1000;
+		extrParams.endFrame = 10000;
 		extrParams.frameSizeDdt = false;
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
