@@ -22,7 +22,7 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		//test_getRawPaddedMovie();
+		test_getRawPaddedMovie();
 		
 		//test_frameVSPointDdtScheme();
 		
@@ -63,7 +63,7 @@ public class TestRui {
 		extrParams.frameSizeDdt = false;
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
-		String path = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/sampleShortExp/sampleShortExp_copy.mmf";
+		String path = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/sampleShortExp_copy.mmf";
 		Experiment_Processor ep = new Experiment_Processor();
 		ep.runningFromMain = true;
 		ep.prParams = prParams;
