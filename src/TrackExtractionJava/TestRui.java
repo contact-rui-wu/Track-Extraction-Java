@@ -22,7 +22,7 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		test_getRawPaddedMovie();
+		//test_getRawPaddedMovie();
 		
 		//test_frameVSPointDdtScheme();
 		
