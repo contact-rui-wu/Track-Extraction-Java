@@ -6,9 +6,9 @@ public class TestRui {
 
 	public static void main(String[] args) {
 		
-		test_isDebugWorking();
+		//test_isDebugWorking();
 		
-		//test_pipeline();
+		test_pipeline();
 
 	}
 	
@@ -23,22 +23,22 @@ public class TestRui {
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
-		prParams.showMagEx = false;
-		prParams.saveMagEx = true;
-		prParams.doFitting = true;
-		prParams.showFitEx = true;
-		prParams.saveFitEx = true;
+		prParams.showMagEx = true;
+		prParams.saveMagEx = false;
+		prParams.doFitting = false;
+		prParams.showFitEx = false;
+		prParams.saveFitEx = false;
 		prParams.saveErrors = false;
 		prParams.saveSysOutToFile = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
-		//extrParams.subset = true;
+		//extrParams.subset = true; // deprecated
 		extrParams.startFrame = 1;
 		extrParams.endFrame = 1000;
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
 		// prepare processor
 		Experiment_Processor ep = new Experiment_Processor();
-		//ep.runningFromMain = true;
+		//ep.runningFromMain = true; // deprecated
 		ep.prParams = prParams;
 		ep.extrParams = extrParams;
 		ep.fitParams = fitParams;
