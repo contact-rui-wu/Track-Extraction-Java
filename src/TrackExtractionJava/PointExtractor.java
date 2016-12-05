@@ -4,7 +4,8 @@ import ij.*;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.process.ImageProcessor;
-import ij.process.ColorProcessor;
+//import ij.process.ColorProcessor;
+import ij.process.ByteProcessor;
 
 import java.awt.Rectangle;
 import java.awt.Color;
@@ -742,18 +743,21 @@ public class PointExtractor {
 		ImageProcessor im1 = imp1.getProcessor();
 		ImageProcessor im2 = imp2.getProcessor();
 		
-		ddtIm.setProcessor(new ColorProcessor(im1.getWidth(), im1.getHeight()));
+		ddtIm.setProcessor(new ByteProcessor(im1.getWidth(), im1.getHeight()));
 		
 		for(int i=0; i<im1.getWidth(); i++) {
 			for(int j=0; j<im1.getHeight(); j++) {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
-				int ddt = pixDiff/dt; //TODO potential round-off error
+				int ddt = (pixDiff/dt+256)/2; //TODO potential round-off error
+				/*
 				if (pixDiff>0) {
 					ddtIm.getProcessor().setColor(new Color(ddt,0,0));
 				} else {
 					ddtIm.getProcessor().setColor(new Color(0,0,-ddt));
 				}
 				ddtIm.getProcessor().drawPixel(i,j);
+				*/
+				ddtIm.getProcessor().set(i,j,ddt);
 			}
 		}
 	}
@@ -774,7 +778,8 @@ public class PointExtractor {
 	}
 	
 	public ImageProcessor calcDdtPointIm(Rectangle rect, int derivMethod) {
-		ImageProcessor ddtPointIm = new ColorProcessor(rect.width, rect.height);
+		//ImageProcessor ddtPointIm = new ColorProcessor(rect.width, rect.height);
+		ImageProcessor ddtPointIm = new ByteProcessor(rect.width, rect.height);
 		ImageProcessor im1;
 		ImageProcessor im2;
 		int dt = increment;
@@ -798,13 +803,16 @@ public class PointExtractor {
 		for(int i=0; i<im1.getWidth(); i++) {
 			for(int j=0; j<im1.getHeight(); j++) {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
-				int ddt = pixDiff/dt;
+				int ddt = (pixDiff/dt+256)/2;
+				/*
 				if (pixDiff>0) {
 					ddtPointIm.setColor(new Color(ddt,0,0));
 				} else {
 					ddtPointIm.setColor(new Color(0,0,-ddt));
 				}
 				ddtPointIm.drawPixel(i,j);
+				*/
+				ddtPointIm.set(i,j,ddt);
 			}
 		}
 		return ddtPointIm;

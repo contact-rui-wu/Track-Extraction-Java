@@ -4,6 +4,7 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Plot;
 import ij.process.ColorProcessor;
+import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 import ij.text.TextWindow;
 
@@ -417,14 +418,22 @@ public class Track implements Serializable{
 			int width = exp.getEP().trackWindowWidth*exp.getEP().trackZoomFac;
 			int height = exp.getEP().trackWindowHeight*exp.getEP().trackZoomFac;
 			
+			//preparing appropriate background color
+			Color background;
+			if (secType==0) {
+				background = Color.gray;
+			} else {
+				background = Color.black;
+			}
+			
 			//Get the first image
 			ImageProcessor firstIm;
 			if (point.is2ndValid(secType)) {
 				firstIm = point.view2ndIm(secType);
 			} else {
-				System.out.println("Preparing secondary movie for track "+trackID+": failed to get first image");
-				firstIm = new ColorProcessor(width,height);
-				firstIm.setColor(new Color(0,0,0));
+				System.out.println("Preparing secondary movie for track "+trackID+": first image not available, drawing placeholder");
+				firstIm = new ByteProcessor(width,height);
+				firstIm.setColor(background); //does this work?!!!
 				firstIm.fill();
 			}
 			
@@ -444,8 +453,8 @@ public class Track implements Serializable{
 					img = point.view2ndIm(secType);
 				} else {
 					System.out.println("Preparing secondary movie for track "+trackID+": failed to get image # "+tpIt.nextIndex());
-					img = new ColorProcessor(firstIm.getWidth(), firstIm.getHeight());
-					img.setColor(new Color(0,0,0));
+					img = new ByteProcessor(firstIm.getWidth(), firstIm.getHeight());
+					img.setColor(background);
 					img.fill();
 				}
 				

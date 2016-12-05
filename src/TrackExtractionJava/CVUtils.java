@@ -241,13 +241,18 @@ public class CVUtils {
 		return measInt;
 	}
 	
-	
 	public static ImageProcessor padAndCenter(ImagePlus image, int newWidth, int newHeight, int centerX, int centerY){
+		Color background = Color.black; // if did not specify padding background, pad black
+		return padAndCenter(image,newWidth,newHeight,centerX,centerY,background);
+	}
+	
+	public static ImageProcessor padAndCenter(ImagePlus image, int newWidth, int newHeight, int centerX, int centerY, Color background){
 		
 		int type = image.getBufferedImage().getType();
 		BufferedImage newIm = new BufferedImage(newWidth, newHeight, type);
 		Graphics g = newIm.getGraphics();
-		g.setColor(Color.black);
+		//g.setColor(Color.black);
+		g.setColor(background);
 		g.fillRect(0,0,newWidth,newHeight);
 		int offsetX = (newWidth/2)+1-centerX;
 		int offsetY = (newHeight/2)+1-centerY;
@@ -256,8 +261,6 @@ public class CVUtils {
 		ImagePlus retIm = new ImagePlus("Padded "+image.getTitle(), newIm);
 		
 		return retIm.getProcessor();
-		
-		
 		
 	}
 	

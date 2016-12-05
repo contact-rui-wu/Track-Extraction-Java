@@ -11,6 +11,7 @@ import java.util.Vector;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 
@@ -22,7 +23,7 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		//test_getRawPaddedMovie();
+		test_getRawPaddedMovie();
 		
 		//test_frameVSPointDdtScheme();
 		
@@ -59,7 +60,7 @@ public class TestRui {
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true; // note: deprecated in master branch
 		extrParams.startFrame = 1;
-		extrParams.endFrame = 9000;
+		extrParams.endFrame = 1000;
 		extrParams.frameSizeDdt = false;
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
@@ -69,12 +70,13 @@ public class TestRui {
 		ep.prParams = prParams;
 		ep.extrParams = extrParams;
 		ep.run(path);
-		/*
+		
 		// full length track chosen: 0
 		Track tr = ep.ex.getTrack(0);
 		System.out.println("Chosen track length: "+tr.getNumPoints());
 		int width = ep.extrParams.trackWindowWidth;
 		int height = ep.extrParams.trackWindowHeight;
+		/*
 		// get raw movie
 		ImageStack rawMovie = new ImageStack(width,height);
 		for (int i=1;i<=tr.getNumPoints();i++) {
@@ -85,7 +87,9 @@ public class TestRui {
 		}
 		ImagePlus rawMoviePlus = new ImagePlus("raw movie", rawMovie);
 		rawMoviePlus.show();
+		*/
 		// get ddt movie
+		/*
 		ImageStack ddtMovie = new ImageStack(width,height);
 		for (int i=1;i<=tr.getNumPoints();i++) {
 			TrackPoint tp = tr.getFramePoint(i);
@@ -93,11 +97,15 @@ public class TestRui {
 			if (tp.is2ndValid(0)) {
 				ImageProcessor ip = tr.getFramePoint(i).get2ndIm(0);
 				Rectangle rect = tr.getFramePoint(i).get2ndRect(0);
-				ipad = CVUtils.padAndCenter(new ImagePlus("",ip), width, height, rect.width/2, rect.height/2);
+				ipad = CVUtils.padAndCenter(new ImagePlus("",ip), width, height, rect.width/2, rect.height/2, Color.gray); // Java gray is (128,128,128)
 			} else {
-				ipad = new ColorProcessor(width,height);
-				ipad.setColor(new Color(0,0,0));
-				ipad.fill();
+				ipad = new ByteProcessor(width,height);
+				// create a 128 ddt-background image
+				for (int j=0;j<width;j++) {
+					for (int k=0;k<height;k++) {
+						ipad.set(j,k,128);
+					}
+				}
 			}
 			ddtMovie.addSlice(ipad);
 		}

@@ -69,7 +69,13 @@ public class ImTrackPoint extends TrackPoint{
 			ep.trackWindowWidth = trackWindowWidth;
 			ep.trackWindowHeight = trackWindowHeight;
 		}
-		ImageProcessor newIm = CVUtils.padAndCenter(new ImagePlus("",get2ndIm(secType)), ep.trackWindowWidth, ep.trackWindowHeight, get2ndRect(secType).width/2, get2ndRect(secType).height/2);
+		Color background;
+		if (secType==0) {
+			background = Color.gray;
+		} else {
+			background = Color.black;
+		}
+		ImageProcessor newIm = CVUtils.padAndCenter(new ImagePlus("",get2ndIm(secType)), ep.trackWindowWidth, ep.trackWindowHeight, get2ndRect(secType).width/2, get2ndRect(secType).height/2,background);
 		return newIm.resize(ep.trackWindowWidth*ep.trackZoomFac);
 	}
 	
@@ -222,7 +228,6 @@ public class ImTrackPoint extends TrackPoint{
 		
 		
 	}
-	//*/
 	
 	// 20160608: moved to TrackPoint
 	/*
