@@ -57,9 +57,9 @@ public class TestRui {
 		prParams.saveFitEx = false;
 		prParams.saveErrors = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
-		extrParams.subset = true;
+		extrParams.subset = true; // note: deprecated in master branch
 		extrParams.startFrame = 1;
-		extrParams.endFrame = 1000;
+		extrParams.endFrame = 9000;
 		extrParams.frameSizeDdt = false;
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
@@ -69,6 +69,7 @@ public class TestRui {
 		ep.prParams = prParams;
 		ep.extrParams = extrParams;
 		ep.run(path);
+		/*
 		// full length track chosen: 0
 		Track tr = ep.ex.getTrack(0);
 		System.out.println("Chosen track length: "+tr.getNumPoints());
@@ -102,6 +103,7 @@ public class TestRui {
 		}
 		ImagePlus ddtMoviePlus = new ImagePlus("ddt movie", ddtMovie);
 		ddtMoviePlus.show();
+		*/
 	}
 	
 	public static void test_frameVSPointDdtScheme() {
