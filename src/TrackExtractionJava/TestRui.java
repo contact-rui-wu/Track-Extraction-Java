@@ -6,14 +6,14 @@ public class TestRui {
 
 	public static void main(String[] args) {
 		
-		//test_isDebugWorking();
+		test_isDebugWorking();
 		
-		test_pipeline();
+		//test_pipeline();
 
 	}
 	
 	public static void test_isDebugWorking() {
-		System.out.println("Is debug working?");
+		System.out.println("Is debug working on master?");
 	}
 	
 	public static void test_pipeline() {
