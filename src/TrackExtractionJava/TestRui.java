@@ -8,9 +8,11 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.Vector;
 
+import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.io.FileSaver;
 import ij.process.ByteProcessor;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
@@ -23,7 +25,7 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		test_getRawPaddedMovie();
+		test_getPaddedMovie();
 		
 		//test_frameVSPointDdtScheme();
 		
@@ -46,9 +48,14 @@ public class TestRui {
 	/**
 	 * For dft image registration tests in MATLAB
 	 */
-	public static void test_getRawPaddedMovie() {
+	public static void test_getPaddedMovie() {
 		ImageJ ij = new ImageJ();
-		// do extraction and look at the tracks
+		
+		//////////////////////////////////////////
+		// do extraction and look at the tracks //
+		//////////////////////////////////////////
+		
+		// prepare params
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
 		prParams.showMagEx = true;
@@ -58,25 +65,36 @@ public class TestRui {
 		prParams.saveFitEx = false;
 		prParams.saveErrors = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
-		extrParams.subset = true; // note: deprecated in master branch
-		extrParams.startFrame = 1;
-		extrParams.endFrame = 1000;
+		//extrParams.subset = true; // note: deprecated in master branch
+		//extrParams.startFrame = 1;
+		//extrParams.endFrame = 10000;
 		extrParams.frameSizeDdt = false;
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
-		String path = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/sampleShortExp_copy.mmf";
+		// prepare data paths
+		String dataID = "sampleShortExp_copy";
+		String mmfDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/";
+		String mmfPath = mmfDir+dataID+".mmf";
+		String tiffDir = "/home/data/rw1679/GitLib/Matlab-Track-Analysis/user specific/Rui/Data/sampleShortExp_copy/";
+		// TODO: make Java automatically create dir if it's not there
+		// extract tracks
 		Experiment_Processor ep = new Experiment_Processor();
 		ep.runningFromMain = true;
 		ep.prParams = prParams;
 		ep.extrParams = extrParams;
-		ep.run(path);
+		ep.run(mmfPath);
 		
+		///////////////////////////////////////////
+		// show raw and ddt movies for one track //
+		///////////////////////////////////////////
+		
+		/*
 		// full length track chosen: 0
 		Track tr = ep.ex.getTrack(0);
 		System.out.println("Chosen track length: "+tr.getNumPoints());
 		int width = ep.extrParams.trackWindowWidth;
 		int height = ep.extrParams.trackWindowHeight;
-		/*
+		
 		// get raw movie
 		ImageStack rawMovie = new ImageStack(width,height);
 		for (int i=1;i<=tr.getNumPoints();i++) {
@@ -87,9 +105,8 @@ public class TestRui {
 		}
 		ImagePlus rawMoviePlus = new ImagePlus("raw movie", rawMovie);
 		rawMoviePlus.show();
-		*/
+		
 		// get ddt movie
-		/*
 		ImageStack ddtMovie = new ImageStack(width,height);
 		for (int i=1;i<=tr.getNumPoints();i++) {
 			TrackPoint tp = tr.getFramePoint(i);
@@ -99,19 +116,119 @@ public class TestRui {
 				Rectangle rect = tr.getFramePoint(i).get2ndRect(0);
 				ipad = CVUtils.padAndCenter(new ImagePlus("",ip), width, height, rect.width/2, rect.height/2, Color.gray); // Java gray is (128,128,128)
 			} else {
+				// draw placeholder
 				ipad = new ByteProcessor(width,height);
-				// create a 128 ddt-background image
-				for (int j=0;j<width;j++) {
-					for (int k=0;k<height;k++) {
-						ipad.set(j,k,128);
-					}
-				}
+				ipad.setColor(Color.gray);
+				ipad.fill();
 			}
 			ddtMovie.addSlice(ipad);
 		}
 		ImagePlus ddtMoviePlus = new ImagePlus("ddt movie", ddtMovie);
 		ddtMoviePlus.show();
 		*/
+		
+		///////////////////////////////////////////////////
+		// save raw and ddt movies of all tracks to disk //
+		///////////////////////////////////////////////////
+		
+		/*
+		
+		// ij.io.FileSaver overwrites by default
+		
+		System.out.println("Saving all raw+ddt stitched track movies as .tiff files...");
+		
+		Experiment ex = ep.ex;
+		int width = ep.extrParams.trackWindowWidth;
+		int height = ep.extrParams.trackWindowHeight;
+		int numTracks = ex.getNumTracks();
+		FileSaver fs;
+		for (int i=0;i<numTracks;i++) {
+			if (i%20==0) {
+				IJ.showStatus("saving track "+i);
+			}
+			Track tr = ex.getTrack(i);
+			int start = tr.getStart().getFrameNum();
+			int end = tr.getEnd().getFrameNum();
+			// get stitched movie
+			ImageStack stitchedMovie = new ImageStack(width*2,height);
+			for (int j=start;j<=end;j++) {
+				TrackPoint tp = tr.getFramePoint(j);
+				// get padded rawIm
+				ImageProcessor rawIm = tp.getRawIm();
+				Rectangle rawRect = tp.rect;
+				ImageProcessor rawPad = CVUtils.padAndCenter(new ImagePlus("",rawIm), width, height, rawRect.width/2, rawRect.height/2);
+				// get padded ddtIm
+				ImageProcessor ddtPad;
+				if (tp.is2ndValid(0)) {
+					ImageProcessor ddtIm = tp.get2ndIm(0);
+					Rectangle ddtRect = tp.get2ndRect(0);
+					ddtPad = CVUtils.padAndCenter(new ImagePlus("",ddtIm), width, height, ddtRect.width/2, ddtRect.height/2, Color.gray); // Java gray is (128,128,128)
+				} else {
+					// draw placeholder
+					ddtPad = new ByteProcessor(width,height);
+					ddtPad.setColor(Color.gray);
+					ddtPad.fill();
+				}
+				// stitch together
+				ImageProcessor ip = new ByteProcessor(width*2,height);
+				ip.insert(rawPad, 0, 0);
+				ip.insert(ddtPad, width, 0);
+				stitchedMovie.addSlice(ip);
+			}
+			ImagePlus stitchedPlus = new ImagePlus("Track "+i+" (stitched)", stitchedMovie);
+			fs = new FileSaver(stitchedPlus);
+			if (start==end) {
+				fs.saveAsTiff(tiffDir+dataID+"_"+i+"_stitched.tiff");
+			} else {
+				fs.saveAsTiffStack(tiffDir+dataID+"_"+i+"_stitched.tiff");
+			}
+			///*
+			// get raw movie
+			ImageStack rawMovie = new ImageStack(width,height);
+			for (int j=start;j<=end;j++) {
+				ImageProcessor ip = tr.getFramePoint(j).getRawIm();
+				Rectangle rect = tr.getFramePoint(j).rect;
+				ImageProcessor ipad = CVUtils.padAndCenter(new ImagePlus("",ip), width, height, rect.width/2, rect.height/2);
+				rawMovie.addSlice(ipad);
+			}
+			ImagePlus rawMoviePlus = new ImagePlus("Track "+i+" (raw)", rawMovie);
+			fs = new FileSaver(rawMoviePlus);
+			if (start==end) {
+				fs.saveAsTiff(tiffDir+dataID+"_"+i+"_raw.tiff");
+			} else {
+				fs.saveAsTiffStack(tiffDir+dataID+"_"+i+"_raw.tiff");
+			}
+			// get ddt movie
+			ImageStack ddtMovie = new ImageStack(width,height);
+			for (int j=start;j<=end;j++) {
+				TrackPoint tp = tr.getFramePoint(j);
+				ImageProcessor ipad;
+				if (tp.is2ndValid(0)) {
+					ImageProcessor ip = tr.getFramePoint(j).get2ndIm(0);
+					Rectangle rect = tr.getFramePoint(j).get2ndRect(0);
+					ipad = CVUtils.padAndCenter(new ImagePlus("",ip), width, height, rect.width/2, rect.height/2, Color.gray); // Java gray is (128,128,128)
+				} else {
+					// draw placeholder
+					ipad = new ByteProcessor(width,height);
+					ipad.setColor(Color.gray);
+					ipad.fill();
+				}
+				ddtMovie.addSlice(ipad);
+			}
+			ImagePlus ddtMoviePlus = new ImagePlus("Track "+i+" (ddt)", ddtMovie);
+			fs = new FileSaver(ddtMoviePlus);
+			if (start==end) {
+				fs.saveAsTiff(tiffDir+dataID+"_"+i+"_ddt.tiff");
+			} else {
+				fs.saveAsTiffStack(tiffDir+dataID+"_"+i+"_ddt.tiff");
+			}
+			
+		}
+			
+		System.out.println("...done saving track movies!");
+		
+		*/
+		
 	}
 	
 	public static void test_frameVSPointDdtScheme() {
