@@ -25,7 +25,9 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
-		test_getPaddedMovie();
+		test_isDebugWorking();
+		
+		//test_getPaddedMovie();
 		
 		//test_frameVSPointDdtScheme();
 		
@@ -44,6 +46,10 @@ public class TestRui {
 	}
 	
 	// write each test as a void method so that don't have to write a lot in main
+	
+	public static void test_isDebugWorking() {
+		System.out.println("Is debug working on feat-ddt-gray?");
+	}
 	
 	/**
 	 * For dft image registration tests in MATLAB
