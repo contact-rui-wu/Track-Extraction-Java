@@ -6,9 +6,9 @@ public class TestRui {
 
 	public static void main(String[] args) {
 		
-		test_isDebugWorking();
+		//test_isDebugWorking();
 		
-		//test_pipeline();
+		test_pipeline();
 
 	}
 	
