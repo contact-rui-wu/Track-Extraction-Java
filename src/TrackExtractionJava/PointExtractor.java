@@ -555,6 +555,7 @@ public class PointExtractor {
 							currentIm.setRoi(oldRoi);
 							iTPt.setImage(im, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
+							// NOTE: deprecated since frame size ddt calculation is too slow
 							if(ep.frameSizeDdt) {
 							// note: any error will be caught in ImTrackPoint.set2ndImAndRect() and validity will be set to false
 								//Rectangle ddtRect = (Rectangle)iTPt.rect.clone();
@@ -589,6 +590,7 @@ public class PointExtractor {
 							
 							mTPt.setImage(im2, ep.trackWindowWidth, ep.trackWindowHeight);
 							// add ddt point image
+							// NOTE: deprecated since frame size ddt calculation is too slow
 							if (ep.frameSizeDdt) {
 								mTPt.findAndStoreDdtIm(ddtIm,ddtRect);
 							}
@@ -748,7 +750,7 @@ public class PointExtractor {
 		for(int i=0; i<im1.getWidth(); i++) {
 			for(int j=0; j<im1.getHeight(); j++) {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
-				int ddt = (pixDiff/dt+256)/2; //TODO potential round-off error
+				int ddt = (pixDiff/dt+255)/2;
 				/*
 				if (pixDiff>0) {
 					ddtIm.getProcessor().setColor(new Color(ddt,0,0));
@@ -803,7 +805,7 @@ public class PointExtractor {
 		for(int i=0; i<im1.getWidth(); i++) {
 			for(int j=0; j<im1.getHeight(); j++) {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
-				int ddt = (pixDiff/dt+256)/2;
+				int ddt = (pixDiff/dt+255)/2;
 				/*
 				if (pixDiff>0) {
 					ddtPointIm.setColor(new Color(ddt,0,0));
