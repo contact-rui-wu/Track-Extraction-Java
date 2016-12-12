@@ -750,7 +750,7 @@ public class PointExtractor {
 		for(int i=0; i<im1.getWidth(); i++) {
 			for(int j=0; j<im1.getHeight(); j++) {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
-				int ddt = (pixDiff/dt+255)/2;
+				int ddt = (pixDiff/dt+256)/2;
 				/*
 				if (pixDiff>0) {
 					ddtIm.getProcessor().setColor(new Color(ddt,0,0));
@@ -805,7 +805,7 @@ public class PointExtractor {
 		for(int i=0; i<im1.getWidth(); i++) {
 			for(int j=0; j<im1.getHeight(); j++) {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
-				int ddt = (pixDiff/dt+255)/2;
+				int ddt = (pixDiff/dt+256)/2; // note: java default gray is 128
 				/*
 				if (pixDiff>0) {
 					ddtPointIm.setColor(new Color(ddt,0,0));

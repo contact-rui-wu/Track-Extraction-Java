@@ -27,11 +27,13 @@ public class TestRui {
 		// put the testing methods here
 		// uncomment when a test is ready to run
 		
+		test_pipeline();		
+		
+		//test_formatConversion();
+		
 		//test_checkIfDirExists();
 
 		//test_isDebugWorking();
-
-		test_pipeline();
 
 		// test_frameVSPointDdtScheme();
 
@@ -53,25 +55,6 @@ public class TestRui {
 	// write each test as a void method so that don't have to write a lot in
 	// main
 
-	public static void test_checkIfDirExists() {
-		//String srcDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/sampleLongExp_copy";
-		String srcDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/sampleShortExp_copy";
-		if (!Files.isDirectory(Paths.get(srcDir))) {
-			try {
-				Files.createDirectory(Paths.get(srcDir));
-				System.out.println("Successfully created directory!");
-			} catch (Exception e) {
-				System.out.println("Failed to create directory!");
-			}
-		} else {
-			System.out.println("Directory already exists!");
-		}
-	}
-	
-	public static void test_isDebugWorking() {
-		System.out.println("Is debug working on feat-ddt-gray?");
-	}
-
 	public static void test_pipeline() {
 		// set timer
 		TicToc timer = new TicToc();
@@ -86,8 +69,8 @@ public class TestRui {
 		// prepare params
 		boolean saveMovies = true;
 		int minTrackLength = 9990;
-		int first = 10001;
-		int last = 20000;
+		int first = 1;
+		int last = 10000;
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
 		prParams.showMagEx = false;
@@ -105,8 +88,8 @@ public class TestRui {
 		fitParams.storeEnergies = false;
 		// prepare data paths
 		//String dataID = "Berlin@Berlin_N_Bl_B0to255s13_120Hz_50uW_S1-3_T120_ramp_201612071816";
-		String dataID = "sampleLongExp_copy";
-		//String dataID = "sampleShortExp_copy";
+		//String dataID = "sampleLongExp_copy";
+		String dataID = "sampleShortExp_copy";
 		String mmfDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/";
 		String mmfPath = mmfDir + dataID + ".mmf";
 		String tifDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/"+dataID+"/";
@@ -124,45 +107,14 @@ public class TestRui {
 		ep.extrParams = extrParams;
 		ep.run(mmfPath);
 
-		///////////////////////////////////////////
-		// show raw and ddt movies for one track //
-		///////////////////////////////////////////
-		
-		// fixed buttons in experiment frame, no need to do this here anymore
-
-		/*
-		 * // full length track chosen: 0 Track tr = ep.ex.getTrack(0);
-		 * System.out.println("Chosen track length: "+tr.getNumPoints()); int
-		 * width = ep.extrParams.trackWindowWidth; int height =
-		 * ep.extrParams.trackWindowHeight;
-		 * 
-		 * // get raw movie ImageStack rawMovie = new ImageStack(width,height);
-		 * for (int i=1;i<=tr.getNumPoints();i++) { ImageProcessor ip =
-		 * tr.getFramePoint(i).getRawIm(); Rectangle rect =
-		 * tr.getFramePoint(i).rect; ImageProcessor ipad =
-		 * CVUtils.padAndCenter(new ImagePlus("",ip), width, height,
-		 * rect.width/2, rect.height/2); rawMovie.addSlice(ipad); } ImagePlus
-		 * rawMoviePlus = new ImagePlus("raw movie", rawMovie);
-		 * rawMoviePlus.show();
-		 * 
-		 * // get ddt movie ImageStack ddtMovie = new ImageStack(width,height);
-		 * for (int i=1;i<=tr.getNumPoints();i++) { TrackPoint tp =
-		 * tr.getFramePoint(i); ImageProcessor ipad; if (tp.is2ndValid(0)) {
-		 * ImageProcessor ip = tr.getFramePoint(i).get2ndIm(0); Rectangle rect =
-		 * tr.getFramePoint(i).get2ndRect(0); ipad = CVUtils.padAndCenter(new
-		 * ImagePlus("",ip), width, height, rect.width/2, rect.height/2,
-		 * Color.gray); // Java gray is (128,128,128) } else { // draw
-		 * placeholder ipad = new ByteProcessor(width,height);
-		 * ipad.setColor(Color.gray); ipad.fill(); } ddtMovie.addSlice(ipad); }
-		 * ImagePlus ddtMoviePlus = new ImagePlus("ddt movie", ddtMovie);
-		 * ddtMoviePlus.show();
-		 */
-
 		/////////////////////////////////////
 		// save raw and ddt movies to disk //
 		/////////////////////////////////////
 
 		if (saveMovies == true) {
+			
+			// in case of repeated trackID across subsets
+			dataID = dataID+"_"+(char)((int)Math.floor(first/10000)+97);
 
 			// ij.io.FileSaver overwrites by default
 
@@ -190,14 +142,14 @@ public class TestRui {
 						ImageProcessor rawIm = tp.getRawIm();
 						Rectangle rawRect = tp.rect;
 						ImageProcessor rawPad = CVUtils.padAndCenter(new ImagePlus("", rawIm), width, height,
-								rawRect.width / 2, rawRect.height / 2);
+								rawRect.width/2, rawRect.height/2);
 						// get padded ddtIm
 						ImageProcessor ddtPad;
 						if (tp.is2ndValid(0)) {
 							ImageProcessor ddtIm = tp.get2ndIm(0);
 							Rectangle ddtRect = tp.get2ndRect(0);
-							ddtPad = CVUtils.padAndCenter(new ImagePlus("", ddtIm), width, height, ddtRect.width / 2,
-									ddtRect.height / 2, Color.gray);
+							ddtPad = CVUtils.padAndCenter(new ImagePlus("", ddtIm), width, height, ddtRect.width/2,
+									ddtRect.height/2, Color.gray);
 						} else {
 							// draw placeholder
 							ddtPad = new ByteProcessor(width, height);
@@ -213,50 +165,47 @@ public class TestRui {
 					ImagePlus stitchedPlus = new ImagePlus("Track " + i + " (raw+ddt)", stitchedMovie);
 					fs = new FileSaver(stitchedPlus);
 					if (start == end) {
-						fs.saveAsTiff(tifDir + dataID + "a_" + i + "_raw+ddt.tiff");
+						fs.saveAsTiff(tifDir + dataID + "_" + i + "_raw+ddt.tiff");
 					} else {
-						fs.saveAsTiffStack(tifDir + dataID + "a_" + i + "_raw+ddt.tiff");
+						fs.saveAsTiffStack(tifDir + dataID + "_" + i + "_raw+ddt.tiff");
 					}
-					/*
-					 * // get raw movie ImageStack rawMovie = new
-					 * ImageStack(width, height); for (int j = start; j <= end;
-					 * j++) { ImageProcessor ip =
-					 * tr.getFramePoint(j).getRawIm(); Rectangle rect =
-					 * tr.getFramePoint(j).rect; ImageProcessor ipad =
-					 * CVUtils.padAndCenter(new ImagePlus("", ip), width,
-					 * height, rect.width / 2, rect.height / 2);
-					 * rawMovie.addSlice(ipad); } ImagePlus rawMoviePlus = new
-					 * ImagePlus("Track " + i + " (raw)", rawMovie); fs = new
-					 * FileSaver(rawMoviePlus); if (start == end) {
-					 * fs.saveAsTiff(tiffDir + dataID + "_" + i + "_raw.tiff");
-					 * } else { fs.saveAsTiffStack(tiffDir + dataID + "_" + i +
-					 * "_raw.tiff"); } // get ddt movie ImageStack ddtMovie =
-					 * new ImageStack(width, height); for (int j = start; j <=
-					 * end; j++) { TrackPoint tp = tr.getFramePoint(j);
-					 * ImageProcessor ipad; if (tp.is2ndValid(0)) {
-					 * ImageProcessor ip = tr.getFramePoint(j).get2ndIm(0);
-					 * Rectangle rect = tr.getFramePoint(j).get2ndRect(0); ipad
-					 * = CVUtils.padAndCenter(new ImagePlus("", ip), width,
-					 * height, rect.width / 2, rect.height / 2, Color.gray); //
-					 * Java gray is // (128,128,128) } else { // draw
-					 * placeholder ipad = new ByteProcessor(width, height);
-					 * ipad.setColor(Color.gray); ipad.fill(); }
-					 * ddtMovie.addSlice(ipad); } ImagePlus ddtMoviePlus = new
-					 * ImagePlus("Track " + i + " (ddt)", ddtMovie); fs = new
-					 * FileSaver(ddtMoviePlus); if (start == end) {
-					 * fs.saveAsTiff(tiffDir + dataID + "_" + i + "_ddt.tiff");
-					 * } else { fs.saveAsTiffStack(tiffDir + dataID + "_" + i +
-					 * "_ddt.tiff"); }
-					 */
 				}
 			}
 
 			System.out.println("...done saving track movies!");
 		}
+		
+		ij.quit();
 
 		// stop timer:
 		System.out.println("pipeline time: " + timer.toc() / 1000 + "s");
 
+	}
+	
+	public static void test_formatConversion() {
+		double x = Math.floor(10001/10000);
+		int y = (int)Math.floor(10001/10000);
+		String z = String.valueOf((char)(y+97));
+		System.out.println(x+" "+y+" "+z);
+	}
+	
+	public static void test_checkIfDirExists() {
+		//String srcDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/sampleLongExp_copy";
+		String srcDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/sampleShortExp_copy";
+		if (!Files.isDirectory(Paths.get(srcDir))) {
+			try {
+				Files.createDirectory(Paths.get(srcDir));
+				System.out.println("Successfully created directory!");
+			} catch (Exception e) {
+				System.out.println("Failed to create directory!");
+			}
+		} else {
+			System.out.println("Directory already exists!");
+		}
+	}
+	
+	public static void test_isDebugWorking() {
+		System.out.println("Is debug working on feat-ddt-gray?");
 	}
 
 	public static void test_frameVSPointDdtScheme() {
