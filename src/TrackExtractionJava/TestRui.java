@@ -67,13 +67,13 @@ public class TestRui {
 		//////////////////////////////////////////
 
 		// prepare params
-		boolean saveMovies = true;
+		boolean saveMovies = false;
 		int minTrackLength = 9990;
 		int first = 1;
-		int last = 10000;
+		int last = 1000;
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
-		prParams.showMagEx = false;
+		prParams.showMagEx = true;
 		prParams.saveMagEx = false;
 		prParams.doFitting = false;
 		prParams.showFitEx = false;
@@ -89,17 +89,12 @@ public class TestRui {
 		// prepare data paths
 		//String dataID = "Berlin@Berlin_N_Bl_B0to255s13_120Hz_50uW_S1-3_T120_ramp_201612071816";
 		//String dataID = "sampleLongExp_copy";
-		String dataID = "sampleShortExp_copy";
-		String mmfDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/";
+		//String dataID = "sampleShortExp_copy";
+		//String mmfDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/";
+		String dataID = "sampleExp-copy";
+		String mmfDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\";
 		String mmfPath = mmfDir + dataID + ".mmf";
-		String tifDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/"+dataID+"/";
-		if (!Files.isDirectory(Paths.get(tifDir))) {
-			try {
-				Files.createDirectory(Paths.get(tifDir));
-			} catch (Exception e) {
-				System.out.println("Failed to create destination directory!");
-			}
-		}
+		
 		// extract tracks
 		Experiment_Processor ep = new Experiment_Processor();
 		ep.runningFromMain = true;
@@ -112,6 +107,15 @@ public class TestRui {
 		/////////////////////////////////////
 
 		if (saveMovies == true) {
+			
+			String tifDir = mmfDir + dataID + "/"; // TODO: use platform-independent file sep
+			if (!Files.isDirectory(Paths.get(tifDir))) {
+				try {
+					Files.createDirectory(Paths.get(tifDir));
+				} catch (Exception e) {
+					System.out.println("Failed to create destination directory!");
+				}
+			}
 			
 			// in case of repeated trackID across subsets
 			dataID = dataID+"_"+(char)((int)Math.floor(first/10000)+97);
