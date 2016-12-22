@@ -22,8 +22,10 @@ public class TestRui {
 		timer.tic();
 		// prepare file names
 		ImageJ ij = new ImageJ();
-		String dir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java";
-		String dataID = "sampleLongExp_copy";
+		//String dir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java";
+		//String dataID = "sampleLongExp_copy";
+		String dir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\";
+		String dataID = "sampleExp-copy";
 		String mmfName = dataID+".mmf";
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
@@ -37,8 +39,8 @@ public class TestRui {
 		prParams.saveSysOutToFile = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 		//extrParams.subset = true; // deprecated
-		//extrParams.startFrame = 1;
-		//extrParams.endFrame = 10000;
+		extrParams.startFrame = 1;
+		extrParams.endFrame = 1000;
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
 		// prepare processor
