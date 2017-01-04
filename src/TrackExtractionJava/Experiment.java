@@ -638,4 +638,12 @@ public class Experiment implements Serializable{
 		tracks.setElementAt(newTrack, ind);
 	}
 	
+	public double getMeanArea(){
+		double sum = 0;
+		ListIterator<Track> trIter = tracks.listIterator();
+		while (trIter.hasNext()){
+			sum += trIter.next().meanArea();
+		}
+		return ((double)sum)/tracks.size();
+	}
 }

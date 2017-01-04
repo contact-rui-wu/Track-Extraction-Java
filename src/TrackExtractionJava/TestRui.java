@@ -6,6 +6,7 @@ package TrackExtractionJava;
 
 import java.awt.Color;
 import java.awt.Rectangle;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Vector;
@@ -35,19 +36,19 @@ public class TestRui {
 
 		//test_isDebugWorking();
 
-		// test_frameVSPointDdtScheme();
+		//test_frameVSPointDdtScheme();
 
-		// test_frameSizeDdtMovie();
+		//test_frameSizeDdtMovie();
 
-		// test_vectorSizeAndCapacity(4);
+		//test_vectorSizeAndCapacity(4);
 
-		// test_extraction(0); //0 - rect MMF; 1 - square MMF
+		//test_extraction(0); //0 - rect MMF; 1 - square MMF
 
-		// test_loadPrejav();
+		//test_loadPrejav();
 
-		// test_loadJav();
+		//test_loadJav();
 
-		// test_viewSampleExp(2); //rect MMF, 0 - Natalie's sample (doesn't work
+		//test_viewSampleExp(2); //rect MMF, 0 - Natalie's sample (doesn't work
 		// anymore because no secondary fields); 1 - prejav; 2 - jav
 
 	}
@@ -67,13 +68,13 @@ public class TestRui {
 		//////////////////////////////////////////
 
 		// prepare params
-		boolean saveMovies = false;
-		int minTrackLength = 9990;
+		boolean saveMovies = true;
+		int minTrackLength = 999;
 		int first = 1;
 		int last = 1000;
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
-		prParams.showMagEx = true;
+		prParams.showMagEx = false;
 		prParams.saveMagEx = false;
 		prParams.doFitting = false;
 		prParams.showFitEx = false;
@@ -86,13 +87,17 @@ public class TestRui {
 		extrParams.frameSizeDdt = false;
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
+		
 		// prepare data paths
+		// on linux:
 		//String dataID = "Berlin@Berlin_N_Bl_B0to255s13_120Hz_50uW_S1-3_T120_ramp_201612071816";
 		//String dataID = "sampleLongExp_copy";
 		//String dataID = "sampleShortExp_copy";
 		//String mmfDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/";
+		// on windows:
 		String dataID = "sampleExp-copy";
 		String mmfDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\";
+		// then
 		String mmfPath = mmfDir + dataID + ".mmf";
 		
 		// extract tracks
@@ -101,6 +106,12 @@ public class TestRui {
 		ep.prParams = prParams;
 		ep.extrParams = extrParams;
 		ep.run(mmfPath);
+		
+		// tmp: check if can get experiment mean area
+		//System.out.println("Mean area: "+ep.ex.getMeanArea());
+		// for now, just use 110 as standard mean area
+		double area = 110;
+		// TODO absorb this into one of the parameters
 
 		/////////////////////////////////////
 		// save raw and ddt movies to disk //
@@ -108,7 +119,7 @@ public class TestRui {
 
 		if (saveMovies == true) {
 			
-			String tifDir = mmfDir + dataID + "/"; // TODO: use platform-independent file sep
+			String tifDir = mmfDir + dataID + File.separator;
 			if (!Files.isDirectory(Paths.get(tifDir))) {
 				try {
 					Files.createDirectory(Paths.get(tifDir));
@@ -118,9 +129,9 @@ public class TestRui {
 			}
 			
 			// in case of repeated trackID across subsets
-			dataID = dataID+"_"+(char)((int)Math.floor(first/10000)+97);
+			//dataID = dataID+"_"+(char)((int)Math.floor(first/10000)+97);
 
-			// ij.io.FileSaver overwrites by default
+			// note: ij.io.FileSaver overwrites by default
 
 			System.out.println("Saving raw+ddt stitched track movies as .tiff files...");
 			System.out.println("Minimum track length: " + minTrackLength);
@@ -138,22 +149,24 @@ public class TestRui {
 				int start = tr.getStart().getFrameNum();
 				int end = tr.getEnd().getFrameNum();
 				if (end - start >= minTrackLength-1) { // keep only long tracks
+					// determine scaleFac for whole track
+					double scaleFac = Math.sqrt(area/tr.meanArea());
 					// get stitched movie
 					ImageStack stitchedMovie = new ImageStack(width * 2, height);
 					for (int j = start; j <= end; j++) {
 						TrackPoint tp = tr.getFramePoint(j);
-						// get padded rawIm
+						// get scaled-then-padded rawIm
 						ImageProcessor rawIm = tp.getRawIm();
 						Rectangle rawRect = tp.rect;
-						ImageProcessor rawPad = CVUtils.padAndCenter(new ImagePlus("", rawIm), width, height,
-								rawRect.width/2, rawRect.height/2);
-						// get padded ddtIm
+						ImageProcessor rawPad = CVUtils.padAndCenter(new ImagePlus("", rawIm.resize((int)(rawRect.width*scaleFac))), width, height,
+								(int)(rawRect.width*scaleFac/2), (int)(rawRect.height*scaleFac/2));
+						// get scaled-then-padded ddtIm
 						ImageProcessor ddtPad;
 						if (tp.is2ndValid(0)) {
 							ImageProcessor ddtIm = tp.get2ndIm(0);
 							Rectangle ddtRect = tp.get2ndRect(0);
-							ddtPad = CVUtils.padAndCenter(new ImagePlus("", ddtIm), width, height, ddtRect.width/2,
-									ddtRect.height/2, Color.gray);
+							ddtPad = CVUtils.padAndCenter(new ImagePlus("", ddtIm.resize((int)(ddtRect.width*scaleFac))), width, height, (int)(ddtRect.width*scaleFac/2),
+									(int)(ddtRect.height*scaleFac/2), Color.gray);
 						} else {
 							// draw placeholder
 							ddtPad = new ByteProcessor(width, height);
