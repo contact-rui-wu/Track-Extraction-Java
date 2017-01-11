@@ -69,9 +69,10 @@ public class TestRui {
 
 		// prepare params
 		boolean saveMovies = true;
-		int minTrackLength = 999;
-		int first = 1;
-		int last = 1000;
+		int minTrackLength = 4999;
+		int subsetLength = 10000;
+		int first = 10001;
+		int last = first+subsetLength-1;
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
 		prParams.showMagEx = false;
@@ -95,7 +96,7 @@ public class TestRui {
 		//String dataID = "sampleShortExp_copy";
 		//String mmfDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/";
 		// on windows:
-		String dataID = "sampleExp-copy";
+		String dataID = "sampleLongExp-copy";
 		String mmfDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\";
 		// then
 		String mmfPath = mmfDir + dataID + ".mmf";
@@ -129,7 +130,9 @@ public class TestRui {
 			}
 			
 			// in case of repeated trackID across subsets
-			//dataID = dataID+"_"+(char)((int)Math.floor(first/10000)+97);
+			if (ep.extrParams.subset) {
+				dataID = dataID+"_"+(char)((int)Math.floor(first/subsetLength)+97);
+			}
 
 			// note: ij.io.FileSaver overwrites by default
 
@@ -179,12 +182,12 @@ public class TestRui {
 						ip.insert(ddtPad, width, 0);
 						stitchedMovie.addSlice(ip);
 					}
-					ImagePlus stitchedPlus = new ImagePlus("Track " + i + " (raw+ddt)", stitchedMovie);
+					ImagePlus stitchedPlus = new ImagePlus("Track " + i, stitchedMovie);
 					fs = new FileSaver(stitchedPlus);
 					if (start == end) {
-						fs.saveAsTiff(tifDir + dataID + "_" + i + "_raw+ddt.tiff");
+						fs.saveAsTiff(tifDir + dataID + "_" + i + ".tif");
 					} else {
-						fs.saveAsTiffStack(tifDir + dataID + "_" + i + "_raw+ddt.tiff");
+						fs.saveAsTiffStack(tifDir + dataID + "_" + i + ".tif");
 					}
 				}
 			}
