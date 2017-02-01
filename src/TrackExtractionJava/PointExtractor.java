@@ -3,6 +3,7 @@ package TrackExtractionJava;
 import ij.*;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
+import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 
 import java.awt.Rectangle;
@@ -592,10 +593,39 @@ public class PointExtractor {
 		return analysisRect;
 	}
 	
-	// TODO Rui: write calcDdtIm(im1,im2,ddtRect,dt)
-	// - default: ddtRect = whole im size
-	public ImagePlus calcDdtIm(ImagePlus im1, ImagePlus im2, Rectangle ddtRect, Integer dt) {
-		return new ImagePlus(); // placeholder
+	/**
+	 * Calculates time derivative between 2 given images
+	 * @return ddt image with same dimension as the given images
+	 */
+	public ImagePlus calcDdtIm(ImageProcessor im1, ImageProcessor im2, Integer dt) {
+		assert(im1.getWidth()==im2.getWidth() && im1.getHeight()==im2.getHeight());
+		Rectangle ddtRect = new Rectangle(0,0,im1.getWidth(),im1.getHeight());
+		return calcDdtIm(im1,im2,ddtRect,dt);
+	}
+	// note: this is probably never used
+	
+	/**
+	 * Calculates time derivative between 2 given images within a specified rectangle
+	 * @return ddt image with dimension specified by ddtRect
+	 */
+	public ImagePlus calcDdtIm(ImageProcessor im1, ImageProcessor im2, Rectangle ddtRect, Integer dt) {
+		// crop images
+		im1 = CVUtils.cropByRect(im1, ddtRect);
+		im2 = CVUtils.cropByRect(im2, ddtRect);
+		
+		// prepare empty ddtIm
+		ImageProcessor ddtIm = new ByteProcessor(ddtRect.width,ddtRect.height);
+		
+		// subtract each pixel
+		for (int i=0; i<ddtRect.width; i++) {
+			for (int j=0; j<ddtRect.height; j++) {
+				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
+				int ddt = pixDiff/dt+128;
+				ddtIm.set(i,j,ddt);
+			}
+		}
+		
+		return new ImagePlus(null,ddtIm);
 	}
 	
 	// TODO Rui: write setDdtIm4Pts()

@@ -288,13 +288,24 @@ public class CVUtils {
 		return measInt;
 	}
 	
+	public static ImageProcessor padAndCenter(ImageProcessor image, int newWidth, int newHeight, int centerX, int centerY) {
+		return padAndCenter(new ImagePlus(null,image),newWidth,newHeight,centerX,centerY,Color.black);
+	}
+	
+	public static ImageProcessor padAndCenter(ImageProcessor image, int newWidth, int newHeight, int centerX, int centerY, Color padColor){	
+		return padAndCenter(new ImagePlus("foobar", image), newWidth, newHeight, centerX, centerY, padColor);
+	}
 	
 	public static ImageProcessor padAndCenter(ImagePlus image, int newWidth, int newHeight, int centerX, int centerY){
-		
+		return padAndCenter(image,newWidth,newHeight,centerX,centerY,Color.black);
+	}
+	
+	public static ImageProcessor padAndCenter(ImagePlus image, int newWidth, int newHeight, int centerX, int centerY, Color padColor) {
 		int type = image.getBufferedImage().getType();
 		BufferedImage newIm = new BufferedImage(newWidth, newHeight, type);
 		Graphics g = newIm.getGraphics();
-		g.setColor(Color.black);
+//		g.setColor(Color.black);
+		g.setColor(padColor);
 		g.fillRect(0,0,newWidth,newHeight);
 		int offsetX = (newWidth/2)-centerX;
 		int offsetY = (newHeight/2)-centerY;
@@ -303,11 +314,6 @@ public class CVUtils {
 		ImagePlus retIm = new ImagePlus("Padded "+image.getTitle(), newIm);
 		
 		return retIm.getProcessor();
-	}
-	public static ImageProcessor padAndCenter(ImageProcessor image, int newWidth, int newHeight, int centerX, int centerY){
-		
-		return (padAndCenter(new ImagePlus("foobar", image), newWidth, newHeight, centerX, centerY));
-		
 	}
 	
 	//TODO 
@@ -470,4 +476,13 @@ public class CVUtils {
 		ImagePlus result = new ImagePlus("masked", rIm);
 		return result;
 	}
+	
+	public static ImageProcessor cropByRect(ImageProcessor im, Rectangle cropRect) {
+		Rectangle oldRoi = im.getRoi();
+		im.setRoi(cropRect);
+		ImageProcessor croppedIm = im.crop(); // note: crop creates new processor
+		im.setRoi(oldRoi);
+		return croppedIm;
+	}
+	
 }
