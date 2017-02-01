@@ -226,7 +226,6 @@ public class TrackPoint implements Serializable {
 		trPtIm.drawDot((int)x - newCornerX, (int)y - newCornerY);
 //		trPtIm.drawRect(rect.x, rect.y, rect.width, rect.height);
 		return trPtIm;
-		
 	}
 	
 	public ImageProcessor getRawIm(){

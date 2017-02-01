@@ -13,7 +13,7 @@ import java.awt.Rectangle;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.PrintWriter;
-
+import java.util.HashMap;
 
 public class ImTrackPoint extends TrackPoint{
 	
@@ -21,11 +21,14 @@ public class ImTrackPoint extends TrackPoint{
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	transient protected ImageProcessor im;
-	protected ImageProcessor imDeriv;
+	//transient protected ImageProcessor im;
+	protected ImageProcessor im; // transient seems unnecessary
+	protected ImageProcessor imDeriv; // TODO Rui: get rid of old imDeriv dependencies
 	protected byte[] serializableIm;
 	protected int imOriginX;
 	protected int imOriginY;
+	// TODO Rui: new image storage structure
+	protected HashMap<String,ImageProcessor> images;
 	
 	private int trackWindowWidth;
 	protected int getTrackWindowWidth() {
@@ -64,6 +67,16 @@ public class ImTrackPoint extends TrackPoint{
 	public ImTrackPoint(TrackPoint point, ImagePlus frameIm){
 		super(point);
 		findAndStoreIm(frameIm);
+	}
+	
+	// TODO Rui: write setImageNew(ImageProcessor im, String imType)
+	public void setImageNew(ImageProcessor im, String imType) {
+		
+	}
+	
+	// TODO Rui: wirte getImage(String imType)
+	public ImageProcessor getImage(String imType) {
+		return new ImagePlus().getProcessor(); // placeholder
 	}
 	
 	public void setImage (ImageProcessor im, int dispWidth, int dispHeight){
@@ -232,6 +245,12 @@ public class ImTrackPoint extends TrackPoint{
 		im = im2.getProcessor();		
 	}
 	
+	// TODO Rui: (not now) write to/loadFrom/sizeOnDiskNew methods for ImTrackPoint
+	
+	public int toDiskNew(DataOutputStream dos, PrintWriter pw) {
+		return 0; // placeholder
+	}
+	
 	public int toDisk(DataOutputStream dos, PrintWriter pw){
 		
 		//Write all TrackPoint data
@@ -272,6 +291,10 @@ public class ImTrackPoint extends TrackPoint{
 		return 0;
 	}
 	
+	public int sizeOnDiskNew(){
+		return 0; // placeholder
+	}
+	
 	public int sizeOnDisk(){
 		
 		int size = super.sizeOnDisk();
@@ -290,6 +313,10 @@ public class ImTrackPoint extends TrackPoint{
 		} else {
 			return null;
 		}
+	}
+	
+	protected int loadFromDiskNew(DataInputStream dis, Track t, PrintWriter pw) {
+		return 0; // placeholder
 	}
 	
 	protected int loadFromDisk(DataInputStream dis, Track t, PrintWriter pw){

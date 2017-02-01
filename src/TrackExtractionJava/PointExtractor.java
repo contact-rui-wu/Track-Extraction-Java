@@ -93,9 +93,17 @@ public class PointExtractor {
 	 */
 	ImagePlus currentIm;
 	/**
-	 * Thresholded image
+	 * Thresholded current image
 	 */
 	ImagePlus threshIm;
+	/**
+	 * Previous frame image used for ddt calculation
+	 */
+	ImagePlus prevIm;
+	/**
+	 * Next frame image used for ddt calculation
+	 */
+	ImagePlus nextIm;
 	
 	/**
 	 * The resultsTable made by finding particles in the currentIm
@@ -187,7 +195,7 @@ public class PointExtractor {
 	 */
 	public int extractFramePoints(int frameNum) {
 		
-		if(loadFrame(frameNum)>0){
+		if(loadFrameNew(frameNum)>0){
 			comm.message("Frame "+frameNum+" was NOT successfully loaded in Point Extractor", VerbLevel.verb_debug);
 			return 1; 
 		}
@@ -197,6 +205,79 @@ public class PointExtractor {
 		return 0;
 	}
 	
+	/**
+	 * Loads the frame into the currentIm, backSubIm, ForegroundIm, and threshIm images, and loads the proper backgroundIm; if doing ddt calculation, also loads prevIm and nextIm
+	 * @param frameNum Index of the frame to be loaded
+	 * @return status, 0 means all is good, otherwise error
+	 */
+	public int loadFrameNew(int frameNum) {
+		
+		if (ep.doDdt) { // with ddt calculation
+			// set currentFrameNum, make sure it's not out of range
+			currentFrameNum = frameNum;
+			if (currentFrameNum>endFrameNum) {
+				comm.message("Attempt to load frame "+currentFrameNum+" but the stack ends at frame "+endFrameNum,VerbLevel.verb_error);
+				return 1;
+			}
+			// note: endFrameNum is set by extr params
+			
+			// load current/prev/nextIm
+			if (fl.lastFrameLoaded==frameNum && currentIm!=null && nextIm!=null) { // if only need to reset pointers
+				comm.message("Frame "+frameNum+" already in FrameLoader as old nextIm, resetting pointers for prevIm and currentIm only", VerbLevel.verb_debug);
+				prevIm = (ImagePlus)currentIm.clone();
+				currentIm = (ImagePlus)nextIm.clone();
+				// load new nextIm
+				if (fl.getFrame(frameNum+increment,fnm,normFactor)!=0) {
+					comm.message("FrameLoader returned error when loading nextIm for frame "+frameNum,VerbLevel.verb_debug);
+					nextIm = null;
+				} else {
+					nextIm = new ImagePlus(null,fl.returnIm);
+				}
+			} else { // if need to load all 3 new images
+				// load currentIm
+				if (fl.getFrame(frameNum,fnm,normFactor)!=0) {
+					comm.message("FrameLoader returned error when loading currentIm for frame "+frameNum,VerbLevel.verb_error);
+					return 2;
+				} else {
+					currentIm = new ImagePlus(null,fl.returnIm);
+				}
+				// load prevIm
+				if (fl.getFrame(frameNum-increment,fnm,normFactor)!=0) {
+					comm.message("FrameLoader returned error when loading prevIm for frame "+frameNum,VerbLevel.verb_debug);
+					prevIm = null;
+				} else {
+					prevIm = new ImagePlus(null,fl.returnIm);
+				}
+				// load nextIm
+				if (fl.getFrame(frameNum+increment,fnm,normFactor)!=0) {
+					comm.message("FrameLoader returned error when loading nextIm for frame "+frameNum,VerbLevel.verb_debug);
+					nextIm = null;
+				} else {
+					nextIm = new ImagePlus(null,fl.returnIm);
+				}
+			}
+			
+			// make sure currentIm exists and do threshold
+			assert (currentIm.getImage()!=null); // see if this works
+			comm.message("Thresholding image to zero...", VerbLevel.verb_debug);
+			defaultThresh();
+			comm.message("...finished thresholding image to zero", VerbLevel.verb_debug);
+			
+			// check if prev/nextIm exist
+			if (prevIm==null && nextIm==null) {
+				comm.message("Error in ddt calculation: neither prevIm nor nextIm is loaded for frame "+frameNum, VerbLevel.verb_error);
+				return 3;
+			} else if (prevIm==null && nextIm!=null) {
+				comm.message("prevIm for frame "+frameNum+" not available, calculating ddt using forward method", VerbLevel.verb_verbose);
+			} else if (prevIm!=null && nextIm==null) {
+				comm.message("nextIm for frame "+frameNum+" not available, calculating ddt using backward method", VerbLevel.verb_verbose);				
+			}
+			
+			return 0;
+		} else { // no ddt calculation
+			return loadFrame(frameNum);
+		}
+	}
 	
 	/**
 	 * Loads the frame into the currentIm, backSubIm, ForegroundIm, and threshIm images, and loads the proper backgroundIm 
@@ -226,6 +307,7 @@ public class PointExtractor {
 			return 2;
 		} else {
 			if (comm!=null) comm.message("No error from frame loader when loading frame "+frameNum+" in pe.loadFrame", VerbLevel.verb_debug);
+			//currentIm = null; // trying to make sure GC gets the old im; didn't work this way
 			currentIm = new ImagePlus("Frame "+frameNum,fl.returnIm);
 		}
 		assert (currentIm!=null);
@@ -269,7 +351,7 @@ public class PointExtractor {
 	public void extractPoints(int frameNum, int thresh) {
 		
 //		if (currentFrameNum!= frameNum){
-			loadFrame(frameNum);
+			loadFrameNew(frameNum);
 //		}
 		if (thresh!=ep.globalThreshValue){
 			if (comm!=null) comm.message("Rethresholding to "+thresh, VerbLevel.verb_message);
@@ -287,6 +369,11 @@ public class PointExtractor {
 	    
 	    String s = "Frame "+currentFrameNum+": Extracted "+extractedPoints.size()+" new points";
 	    if (comm!=null) comm.message(s, VerbLevel.verb_message);
+	    
+	    // TODO Rui: calc and set ddtIm for all extracted points
+	    // - calc method and set4allPts methods here
+	    setDdtIm4Pts();
+	    // - set4OnePt method is in the ImTrackPoint class
 	    
 	}
 	
@@ -505,6 +592,16 @@ public class PointExtractor {
 		return analysisRect;
 	}
 	
+	// TODO Rui: write calcDdtIm(im1,im2,ddtRect,dt)
+	// - default: ddtRect = whole im size
+	public ImagePlus calcDdtIm(ImagePlus im1, ImagePlus im2, Rectangle ddtRect, Integer dt) {
+		return new ImagePlus(); // placeholder
+	}
+	
+	// TODO Rui: write setDdtIm4Pts()
+	public void setDdtIm4Pts() {
+		
+	}
 	
 }
 

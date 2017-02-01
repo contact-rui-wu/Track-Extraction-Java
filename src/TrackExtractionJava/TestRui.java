@@ -23,44 +23,40 @@ public class TestRui {
 		ImageJ ij = new ImageJ();
 		
 		// prepare file paths
-		//String dir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java";
-		//String dataID = "sampleLongExp_copy";
-		//String dir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\";
-		//String dataID = "sampleExp-copy";
-		//String mmfName = dataID+".mmf";
+		// syntax: *Name - file name; *Dir - folder; *Path - folder+name
 		String exID = "sampleExp-copy";
 		String srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\"; // on windows
 		String srcPath = srcDir+exID+".mmf";
-		String dstDir = srcDir+exID+"_master"+File.separator; // add branch label
-		//String dstPath = dstDir+exID;
+		String dstDir = srcDir+exID+"_feat-ddt-new"+File.separator; // add branch label
+//		String dstPath = dstDir+exID;
 		
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
 		prParams.showMagEx = true;
-		prParams.saveMagEx = true;
+		prParams.saveMagEx = false;
 		prParams.doFitting = false;
 		prParams.showFitEx = false;
 		prParams.saveFitEx = false;
 		prParams.saveErrors = false;
 		prParams.saveSysOutToFile = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
-		//extrParams.subset = true; // deprecated
-		//extrParams.startFrame = 1; // default=1
-		//extrParams.endFrame = 10000; // default=Integer.MAX_VALUE
+//		extrParams.subset = true; // deprecated
+//		extrParams.startFrame = 23842-1000; // default=1
+		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
+//		extrParams.doDdt = false; // default=true
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
 		
 		// prepare processor
 		Experiment_Processor ep = new Experiment_Processor();
-		//ep.runningFromMain = true; // deprecated
+//		ep.runningFromMain = true; // deprecated
 		ep.prParams = prParams;
 		ep.extrParams = extrParams;
 		ep.fitParams = fitParams;
+//		ep.setVerbosity(VerbLevel.verb_debug); // default: verb_warning
 		
 		// run extraction pipeline
-		// syntax: run(String srcFileName, String dstDir, String dstName)
-		//ep.run(dir+"/"+mmfName,dir,dir+"/"+dataID);
 		ep.run(srcPath,dstDir,exID);
 		
 		// stop timer
