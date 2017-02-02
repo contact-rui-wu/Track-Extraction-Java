@@ -243,6 +243,14 @@ public class TrackPoint implements Serializable {
 		return getIm();
 	}
 	
+	public void setImNew(ImageProcessor im, int imType) {
+		// do nothing
+	}
+	
+	public ImageProcessor getImNew(int imType) {
+		return null; // do nothing
+	}
+	
 	protected void setNumMatches(int num){
 		numMatches = num;
 	}

@@ -371,10 +371,10 @@ public class PointExtractor {
 	    String s = "Frame "+currentFrameNum+": Extracted "+extractedPoints.size()+" new points";
 	    if (comm!=null) comm.message(s, VerbLevel.verb_message);
 	    
-	    // TODO Rui: calc and set ddtIm for all extracted points
-	    // - calc method and set4allPts methods here
-	    setDdtIm4Pts();
-	    // - set4OnePt method is in the ImTrackPoint class
+	    // set ddtIm for all points extracted in this frame
+	    if (ep.doDdt) {
+	    	setDdtIm4Pts();
+	    }
 	    
 	}
 	
@@ -597,7 +597,7 @@ public class PointExtractor {
 	 * Calculates time derivative between 2 given images
 	 * @return ddt image with same dimension as the given images
 	 */
-	public ImagePlus calcDdtIm(ImageProcessor im1, ImageProcessor im2, Integer dt) {
+	public ImageProcessor calcDdtIm(ImageProcessor im1, ImageProcessor im2, Integer dt) {
 		assert(im1.getWidth()==im2.getWidth() && im1.getHeight()==im2.getHeight());
 		Rectangle ddtRect = new Rectangle(0,0,im1.getWidth(),im1.getHeight());
 		return calcDdtIm(im1,im2,ddtRect,dt);
@@ -608,7 +608,7 @@ public class PointExtractor {
 	 * Calculates time derivative between 2 given images within a specified rectangle
 	 * @return ddt image with dimension specified by ddtRect
 	 */
-	public ImagePlus calcDdtIm(ImageProcessor im1, ImageProcessor im2, Rectangle ddtRect, Integer dt) {
+	public ImageProcessor calcDdtIm(ImageProcessor im1, ImageProcessor im2, Rectangle ddtRect, Integer dt) {
 		// crop images
 		im1 = CVUtils.cropByRect(im1, ddtRect);
 		im2 = CVUtils.cropByRect(im2, ddtRect);
@@ -625,12 +625,33 @@ public class PointExtractor {
 			}
 		}
 		
-		return new ImagePlus(null,ddtIm);
+		return ddtIm;
 	}
 	
-	// TODO Rui: write setDdtIm4Pts()
+	/**
+	 * Calculate and set point-sized ddtIm for all points extracted in the current frame
+	 */
 	public void setDdtIm4Pts() {
-		
+		for (int i=0; i<extractedPoints.size(); i++) {
+			TrackPoint pt = extractedPoints.get(i);
+			Rectangle ddtRect = (Rectangle)pt.rect.clone();
+			ddtRect.grow(3,3); // 3px buffer; set as extr param in the future?
+			try {
+				ImageProcessor ddtPtIm = new ByteProcessor(ddtRect.width,ddtRect.height);
+				if (prevIm==null && nextIm!=null) { // first frame in stack, forward method
+					ddtPtIm = calcDdtIm(currentIm.getProcessor(),nextIm.getProcessor(),ddtRect,increment);
+				} else if (prevIm!=null && nextIm==null) { // last frame in stack, backward method
+					ddtPtIm = calcDdtIm(prevIm.getProcessor(),currentIm.getProcessor(),ddtRect,increment);
+				} else if (prevIm!=null && nextIm!=null) { // frame in the middle, central method
+					ddtPtIm = calcDdtIm(prevIm.getProcessor(),nextIm.getProcessor(),ddtRect,increment*2);
+				}
+				pt.setImNew(ddtPtIm, 1);
+			} catch (Exception e) {
+				System.out.println("Track "+pt.track.getTrackID()+" has no valid ddtIm at frame "+pt.getFrameNum());
+				comm.message("Track "+pt.track.getTrackID()+" has no valid ddtIm at frame "+pt.getFrameNum(), VerbLevel.verb_message);
+				pt.setImNew(null, 1);
+			}
+		}
 	}
 	
 }

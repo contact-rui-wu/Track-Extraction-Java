@@ -44,7 +44,7 @@ public class TestRui {
 //		extrParams.subset = true; // deprecated
 //		extrParams.startFrame = 23842-1000; // default=1
 		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
-		extrParams.doDdt = false; // default=true
+//		extrParams.doDdt = false; // default=true
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
 		
@@ -64,7 +64,7 @@ public class TestRui {
 	}
 
 	public static void test_isDebugWorking() {
-		System.out.println("Is debug working on master?");
+		System.out.println("Is debug working on feat-ddt-new?");
 	}
 
 }

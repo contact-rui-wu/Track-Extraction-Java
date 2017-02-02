@@ -534,7 +534,11 @@ public class Experiment_Processor implements PlugIn{
 		
 		//IJ.showMessage("trackbuilder made");
 		try {
-			log("Extracting tracks", true);
+			if (extrParams.doDdt) {
+				log("Extracting tracks with ddt calculation", true);
+			} else {
+				log("Extracting tracks without ddt calculation", true);
+			}
 			//Extract the tracks
 			tb.run();
 			log("Converting Extracted Tracks to Experiment");

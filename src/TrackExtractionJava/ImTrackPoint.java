@@ -22,13 +22,12 @@ public class ImTrackPoint extends TrackPoint{
 	 */
 	private static final long serialVersionUID = 1L;
 	//transient protected ImageProcessor im;
-	protected ImageProcessor im; // transient seems unnecessary
+	protected ImageProcessor im; // transient seems unnecessary?
+	protected ImageProcessor ddtIm;
 	protected ImageProcessor imDeriv; // TODO Rui: get rid of old imDeriv dependencies
 	protected byte[] serializableIm;
 	protected int imOriginX;
 	protected int imOriginY;
-	// TODO Rui: new image storage structure
-	protected HashMap<String,ImageProcessor> images;
 	
 	private int trackWindowWidth;
 	protected int getTrackWindowWidth() {
@@ -69,14 +68,39 @@ public class ImTrackPoint extends TrackPoint{
 		findAndStoreIm(frameIm);
 	}
 	
-	// TODO Rui: write setImageNew(ImageProcessor im, String imType)
-	public void setImageNew(ImageProcessor im, String imType) {
-		
+	/**
+	 * Set image to ImTrackPoint
+	 * @param im true-size (not enlarged or padded) image to be set
+	 * @param imType 0: rawIm; 1: ddtIm
+	 */
+	public void setImNew(ImageProcessor im, int imType) {
+		switch (imType) {
+		case 0:
+			this.im = im;
+			break;
+		case 1:
+			this.ddtIm = im;
+		}
 	}
 	
-	// TODO Rui: wirte getImage(String imType)
-	public ImageProcessor getImage(String imType) {
-		return new ImagePlus().getProcessor(); // placeholder
+	/**
+	 * Get true-size (not enlarged or padded) image from ImTrackPoint
+	 * @param imType 0: rawIm; 1: ddtIm
+	 * @return ImageProcessor containing the corresponding image
+	 */
+	public ImageProcessor getImNew(int imType) {
+		try {
+			switch (imType) {
+			case 0:
+				return im;
+			case 1:
+				return ddtIm;
+			default:
+				return null;
+			}
+		} catch (NullPointerException e) {
+			return null;
+		}
 	}
 	
 	public void setImage (ImageProcessor im, int dispWidth, int dispHeight){
