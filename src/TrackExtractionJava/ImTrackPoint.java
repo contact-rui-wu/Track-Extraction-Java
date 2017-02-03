@@ -89,7 +89,7 @@ public class ImTrackPoint extends TrackPoint{
 	 * @return ImageProcessor containing the corresponding image
 	 */
 	public ImageProcessor getImNew(int imType) {
-		try {
+//		try {
 			switch (imType) {
 			case 0:
 				return im;
@@ -98,9 +98,33 @@ public class ImTrackPoint extends TrackPoint{
 			default:
 				return null;
 			}
-		} catch (NullPointerException e) {
-			return null;
-		}
+//		} catch (NullPointerException e) {
+//			return null;
+//		}
+	}
+	
+	/**
+	 * Get padded (not enlarged) image from ImTrackPoint
+	 * @param imType 0: rawIm; 1: ddtIm
+	 * @return ImageProcessor containing the corresponding padded image
+	 */
+	public ImageProcessor getPadImNew(int imType) {
+//		try {
+			imOriginX = (int)x-(trackWindowWidth/2)-1;
+			imOriginY = (int)y-(trackWindowHeight/2)-1;
+			switch (imType) {
+			case 0:
+				return CVUtils.padAndCenter(new ImagePlus(null, im), trackWindowWidth, trackWindowHeight, (int)x-rect.x, (int)y-rect.y);
+			case 1:
+				Rectangle ddtRect = (Rectangle)rect.clone();
+				ddtRect.grow(3,3);
+				return CVUtils.padAndCenter(new ImagePlus(null, ddtIm), trackWindowWidth, trackWindowHeight, (int)x-ddtRect.x, (int)y-ddtRect.y, Color.gray);
+			default:
+				return null;
+			}
+//		} catch (NullPointerException e) {
+//			return null;
+//		}
 	}
 	
 	public void setImage (ImageProcessor im, int dispWidth, int dispHeight){

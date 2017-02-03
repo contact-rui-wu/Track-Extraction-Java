@@ -604,6 +604,8 @@ public class PointExtractor {
 	}
 	// note: this is probably never used
 	
+	// TODO Rui: wrapping of the two calcDdtIm() methods probably should be other way around
+	
 	/**
 	 * Calculates time derivative between 2 given images within a specified rectangle
 	 * @return ddt image with dimension specified by ddtRect
@@ -647,7 +649,7 @@ public class PointExtractor {
 				}
 				pt.setImNew(ddtPtIm, 1);
 			} catch (Exception e) {
-				System.out.println("Track "+pt.track.getTrackID()+" has no valid ddtIm at frame "+pt.getFrameNum());
+//				System.out.println("Track "+pt.track.getTrackID()+" has no valid ddtIm at frame "+pt.getFrameNum());
 				comm.message("Track "+pt.track.getTrackID()+" has no valid ddtIm at frame "+pt.getFrameNum(), VerbLevel.verb_message);
 				pt.setImNew(null, 1);
 			}

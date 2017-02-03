@@ -311,6 +311,7 @@ class TrackPanel extends JPanel {
 	MaggotDisplayParameters mdp;
 	
 	JButton playButton;
+	JButton playDdtButton;
 	JButton saveToExButton;
 	JButton saveToCSVButton;
 	JButton fitButton;
@@ -344,6 +345,15 @@ class TrackPanel extends JPanel {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				playCurrentTrack();
+			}
+		});
+		
+		playDdtButton = new JButton("Play ddt Movie");
+		playDdtButton.setSize(100, 40);
+		playDdtButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				playCurrentDdtTrack();
 			}
 		});
 		
@@ -390,6 +400,7 @@ class TrackPanel extends JPanel {
 		//Build and add the play button 
 		buttonPanel = new JPanel();
 		buttonPanel.add(playButton);
+		buttonPanel.add(playDdtButton);
 		buttonPanel.add(saveToCSVButton);
 		buttonPanel.add(saveToExButton);
 		buttonPanel.add(fitButton);
@@ -426,6 +437,25 @@ class TrackPanel extends JPanel {
 			new TextWindow("PlayMovie Error", "Could not play track "+track.getTrackID()+" movie\n"+sw.toString()+"\n", 500, 500);
 		}
 	}
+	
+	// TODO Rui: write playCurrentDdtTrack()
+	public void playCurrentDdtTrack(){
+		try{
+			if (track!=null){
+				// for now, do nothing
+//				TrackMovieVirtualStack vs = track.getVirtualMovieStack(mdp);
+//				vs.getImagePlus().show();
+//				ef.addMovie(vs);
+				System.out.println("PlayDdtButton is working!");
+			}
+		} catch(Exception e){
+			StringWriter sw = new StringWriter();
+			PrintWriter prw = new PrintWriter(sw);
+			e.printStackTrace(prw);
+			new TextWindow("PlayDdtMovie Error", "Could not play track "+track.getTrackID()+" movie\n"+sw.toString()+"\n", 500, 500);
+		}
+	}
+	
 	public void fitCurrentTrack(){
 		try{
 			if (track!=null){

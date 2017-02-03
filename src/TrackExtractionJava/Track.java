@@ -557,13 +557,13 @@ public class Track implements Serializable{
 	public TrackMovieVirtualStack getVirtualMovieStack (MaggotDisplayParameters mdp) {
 		return getVirtualMovieStack(mdp, false);
 	}
+	
 	public TrackMovieVirtualStack getVirtualMovieStack (MaggotDisplayParameters mdp, boolean showFitHistory){
 		if (mdp ==null) {
 			mdp = new MaggotDisplayParameters();
 		}
 		updateTrackImageSize(true);
 		return new TrackMovieVirtualStack(this, mdp, showFitHistory);
-		
 	}
 	
 	public ImagePlus getMovieStack(int labelInd, MaggotDisplayParameters mdp, boolean showMovie){

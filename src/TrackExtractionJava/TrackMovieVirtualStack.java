@@ -63,12 +63,13 @@ public class TrackMovieVirtualStack extends VirtualStack {
 		Forces = forces;
 		updateImage();
 	}
+	
 	public void updateImage() {
 		if (imp == null) { return;}
 		imp.setProcessor(getProcessor(imp.getCurrentSlice()));
 		imp.updateAndDraw(); //updateAndRepaintWindow is another option if this doesn't work
-
 	}
+	
 	public boolean windowClosed() {
 		return (imp == null || imp.getWindow() == null);
 	}
@@ -82,15 +83,15 @@ public class TrackMovieVirtualStack extends VirtualStack {
 		}
 		Forces = new SimpleExtractionParameters().getFittingParameters().getForces(0);
 	}
-	
-	
+		
 	public TrackMovieVirtualStack(Track tr, MaggotDisplayParameters mdp, boolean showFitHistory) {
 		this (tr, mdp, showFitHistory, tr.getPoint(0).getIm(mdp).getWidth(), tr.getPoint(0).getIm(mdp).getHeight(), tr.getPoint(0).getIm(mdp).getColorModel(), tr.exp.getFileName());
-		
 	}
+	
 	public TrackMovieVirtualStack(Track tr, MaggotDisplayParameters mdp) {
 		this(tr, mdp, false);
 	}
+	
 	public TrackMovieVirtualStack(Track tr) {
 		this(tr, new MaggotDisplayParameters());
 	}
