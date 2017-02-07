@@ -32,6 +32,7 @@ public class ExtractionParameters implements Serializable{
 	static final int DERIV_SYMMETRIC = 3;
 	// TODO Rui: get rid of DERIV_ dependencies
 	public boolean doDdt = true; // not sure if should be in processing params instead
+	public int ddtBuffer = 0;
 
 	//public boolean subset = false;
 	public int startFrame = 1;

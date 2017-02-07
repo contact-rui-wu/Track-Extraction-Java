@@ -5,8 +5,11 @@ import ij.ImageJ;
 import ij.ImageStack;
 import ij.ImagePlus;
 import ij.io.FileSaver;
+import ij.process.ByteProcessor;
 //import ij.process.ImageProcessor;
 
+import java.awt.Color;
+import java.awt.Rectangle;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -18,10 +21,17 @@ public class TestRui {
 		
 		test_pipeline();
 		
-		//test_isDebugWorking();
+//		test_relativeRect();
+		
+//		test_rawRect2ddtRect();
+		
+//		test_integerRange();
+		
+//		test_isDebugWorking();
 
 	}
 	
+	@SuppressWarnings("unused")
 	public static void test_pipeline() {
 		// set timer
 		TicToc timer = new TicToc();
@@ -51,8 +61,9 @@ public class TestRui {
 		ExtractionParameters extrParams = new ExtractionParameters();
 //		extrParams.subset = true; // deprecated
 //		extrParams.startFrame = 23842-1000; // default=1
-		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
+		extrParams.endFrame = 10000; // default=Integer.MAX_VALUE
 //		extrParams.doDdt = false; // default=true
+		extrParams.ddtBuffer = 1; // default=0
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
 		
@@ -62,23 +73,91 @@ public class TestRui {
 		ep.prParams = prParams;
 		ep.extrParams = extrParams;
 		ep.fitParams = fitParams;
-//		ep.setVerbosity(VerbLevel.verb_debug); // default: verb_warning
+		ep.setVerbosity(VerbLevel.verb_error); // default: verb_warning
 		
 		// run extraction pipeline
 		ep.run(srcPath,dstDir,exID);
 		
-		// secondary tests:
-//		test_playDdtMovie(ep.ex.getTrack(10));
+		/////////////////////
+		// secondary tests //
+		/////////////////////
+		
+		// play raw and ddt movies for one track
+		test_playMovie(ep.ex.getTrack(1),0,extrParams.ddtBuffer);
+		test_playMovie(ep.ex.getTrack(1),1,extrParams.ddtBuffer);
+		
+		// save true-size, not-padded ddtIms for one track
 //		String s = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\ddt-artifacts\\sampleExp_copy_track10_ddt\\";
 //		test_saveDdtIms(ep.ex.getTrack(10),s);
-		String s = dstDir+exID+"_raw+ddtIms.bin";
-		test_saveIms2Bin(ep.ex,s); // only works when extrParams.doDdt=true (default);
 		
-		// stop timer
+		// save all padded raw+ddtIms for this experiment to a .bin file
+//		String s = dstDir+exID+"_raw+ddtIms_20000-frames.bin";
+//		test_saveIms2Bin(ep.ex,s); // only works when extrParams.doDdt=true (default);
+		
+		// stop timer and beep
 		System.out.println("Pipeline time: "+timer.toc()/1000+"s");
+		IJ.beep();
 	}
 	
-	public static void test_saveIms2Bin(Experiment ex, String dstPath) {
+	public static void test_relativeRect() {
+		Rectangle oldRect = new Rectangle(1143,1128,26,17); //xRange:1143-1169, yRange:1128-1145
+		System.out.println("oldrect: "+oldRect.toString());
+		Rectangle newRect = new Rectangle(1155,1130,14,10); //xRange:1155-1168, yRange:1130-1140
+		System.out.println("newrect: "+newRect.toString());
+		// check if out of bound
+		System.out.println("oldRect contains newRect: "+Boolean.toString(oldRect.contains(newRect)));
+		// calculate relRect pivot
+		int relX = newRect.x-oldRect.x;
+		int relY = newRect.y-oldRect.y;
+		Rectangle relRect = new Rectangle(relX,relY,newRect.width,newRect.height);
+		System.out.println("relRect: "+relRect.toString());
+		// outcode doesn't work
+//		System.out.println("coordinates ("+newRect.x+","+newRect.y+") is outcode "+oldRect.outcode((double)newRect.x,(double)newRect.y));
+	}
+	
+	public static void test_rawRect2ddtRect() {
+		// get rawRect
+		Rectangle rawRect = new Rectangle(3,3,17,12);
+		System.out.println("rawRect: "+rawRect.toString());
+		// grow ddtRect
+		Rectangle ddtRect = (Rectangle)rawRect.clone();
+		ddtRect.grow(3, 3);
+		System.out.println("ddtRect: "+ddtRect.toString());
+		// get back from ddtRect
+		int x = ddtRect.x+3;
+		int y = ddtRect.y+3;
+		int w = ddtRect.width-6;
+		int h = ddtRect.height-6;
+		System.out.println("shrink it back: [x=" + x + ",y=" + y + ",width=" + w + ",height=" + h + "]");
+	}
+	
+	public static void test_integerRange() {
+		// java byte range:
+		System.out.println("java byte range: "+Byte.MIN_VALUE+" to "+Byte.MAX_VALUE);
+		// true ddt range: calculation is done in int
+		int lIn = Byte.MIN_VALUE-Byte.MAX_VALUE;
+		int mIn = Byte.MIN_VALUE-Byte.MIN_VALUE;
+		int hIn = Byte.MAX_VALUE-Byte.MIN_VALUE;
+		System.out.println("true ddt range: "+lIn+" ("+mIn+") "+hIn);
+		// old method: +128 then (byte)
+		/*
+		int lOut = lIn+128;
+		int mOut = mIn+128;
+		int hOut = hIn+128;
+		System.out.println("old method range (int): "+lOut+" ("+mOut+") "+hOut);
+		System.out.println("old method range (byte): "+(byte)lOut+" ("+(byte)mOut+") "+(byte)hOut);
+		*/
+		// new method: (*In+255)/2 then (byte)
+		int lOutNew = (lIn+255)/2;
+		int mOutNew = (mIn+255)/2;
+		int hOutNew = (hIn+255)/2;
+		System.out.println("new method range (int): "+lOutNew+" ("+mOutNew+") "+hOutNew);
+		System.out.println("new method range (byte): "+(byte)lOutNew+" ("+(byte)mOutNew+") "+(byte)hOutNew);
+		int upper = (byte)hOutNew&0xff;
+		System.out.println("upper bound retrieved by getPixel(): "+upper);
+	}
+	
+	public static void test_saveIms2Bin(Experiment ex, String dstPath, int buffer) {
 		try {
 			File f = new File(dstPath);
 			DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
@@ -94,7 +173,7 @@ public class TestRui {
 			IJ.showStatus("Saving raw+ddt images");
 			
 			// write number of tracks
-//			System.out.println("...writing number of trakcs ("+ex.getNumTracks()+")");
+//			System.out.println("...writing number of tracks ("+ex.getNumTracks()+")");
 			dos.writeInt(ex.getNumTracks());
 			
 			// write each track
@@ -117,7 +196,7 @@ public class TestRui {
 					if (itp.im!=null) {
 						for (int m=0;m<30;m++) {
 							for (int n=0;n<30;n++) {
-								dos.writeByte(itp.getPadImNew(0).getPixel(m, n));
+								dos.writeByte(itp.getPadImNew(0,buffer).getPixel(m, n));
 							}
 						}
 					} else {
@@ -129,7 +208,7 @@ public class TestRui {
 					if (itp.ddtIm!=null) {
 						for (int p=0;p<30;p++) {
 							for (int q=0;q<30;q++) {
-								dos.writeByte(itp.getPadImNew(1).getPixel(p, q));
+								dos.writeByte(itp.getPadImNew(1,buffer).getPixel(p, q));
 							}
 						}
 					} else {
@@ -161,18 +240,41 @@ public class TestRui {
 		}
 	}
 	
-	public static void test_playDdtMovie(Track tr) {
+	public static void test_playMovie(Track tr, int imType, int buffer) {
+		String imTypeName;
+		Color padColor;
+		switch (imType) {
+		case 0:
+			imTypeName = "raw";
+			padColor = Color.black;
+			break;
+		case 1:
+			imTypeName = "ddt";
+			padColor = new Color(127,127,127);
+			break;
+		default:
+			imTypeName = "?";
+			padColor = Color.white;;
+		}
 		ImTrackPoint itp = (ImTrackPoint)tr.getStart();
 		int w = itp.getTrackWindowWidth();
 		int h = itp.getTrackWindowHeight();
 		int nPts = tr.getNumPoints();
-		ImageStack ddtStack = new ImageStack(w,h,nPts);
+		ImageStack movieStack = new ImageStack(w,h,nPts);
 		for (int i=0;i<nPts;i++) {
 			itp = (ImTrackPoint)tr.getPoint(i);
-			ddtStack.setProcessor(itp.getPadImNew(1), i+1);
+			try {
+				movieStack.setProcessor(itp.getPadImNew(imType,buffer), i+1);
+			} catch (Exception e) {
+				System.out.println("TrackPoint "+itp.getPointID()+" has no valid "+imTypeName+" image for frame "+itp.getFrameNum()+", drawing placeholder");
+				ByteProcessor placeholder = new ByteProcessor(w,h);
+				placeholder.setColor(padColor);
+				placeholder.fill();
+				movieStack.setProcessor(placeholder, i+1);
+			}
 		}
-		ImagePlus ddtPlus = new ImagePlus("Track "+tr.getTrackID()+" ddt movie: frame "+tr.getStart().getFrameNum()+"-"+tr.getEnd().getFrameNum(),ddtStack);
-		ddtPlus.show();
+		ImagePlus moviePlus = new ImagePlus("Track "+tr.getTrackID()+" "+imTypeName+" movie: frame "+tr.getStart().getFrameNum()+"-"+tr.getEnd().getFrameNum(),movieStack);
+		moviePlus.show();
 	}
 
 	public static void test_isDebugWorking() {

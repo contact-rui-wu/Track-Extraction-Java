@@ -597,15 +597,15 @@ public class PointExtractor {
 	 * Calculates time derivative between 2 given images
 	 * @return ddt image with same dimension as the given images
 	 */
+	/*
 	public ImageProcessor calcDdtIm(ImageProcessor im1, ImageProcessor im2, Integer dt) {
 		assert(im1.getWidth()==im2.getWidth() && im1.getHeight()==im2.getHeight());
 		Rectangle ddtRect = new Rectangle(0,0,im1.getWidth(),im1.getHeight());
 		return calcDdtIm(im1,im2,ddtRect,dt);
 	}
-	// note: this is probably never used
-	
-	// TODO Rui: wrapping of the two calcDdtIm() methods probably should be other way around
-	
+	*/
+	// note: this is never used
+		
 	/**
 	 * Calculates time derivative between 2 given images within a specified rectangle
 	 * @return ddt image with dimension specified by ddtRect
@@ -622,10 +622,53 @@ public class PointExtractor {
 		for (int i=0; i<ddtRect.width; i++) {
 			for (int j=0; j<ddtRect.height; j++) {
 				int pixDiff = im2.getPixel(i,j)-im1.getPixel(i,j);
-				int ddt = pixDiff/dt+128;
-				ddtIm.set(i,j,ddt);
+//				int ddt = pixDiff/dt+128;
+				int ddt = (pixDiff/dt+255)/2;
+				ddtIm.putPixel(i,j,ddt);
 			}
 		}
+		
+		// deal with edge artifact
+		// identify rawRect corners
+		/*
+		int w = ddtRect.width;
+		int h = ddtRect.height;
+		ddtIm.putPixel(3, 3, 110); // top left
+		ddtIm.putPixel(w-4, h-4, 110); // bottom right
+		ddtIm.putPixel(3, h-4, 110); // bottom left
+		ddtIm.putPixel(w-4, 3, 110); // top right
+		*/
+		// horizontal
+		/*
+		for (int x=3;x<ddtIm.getWidth()-6;x++) {
+			// see if can locate edge at all
+			ddtIm.putPixel(x, 0, 100);
+			ddtIm.putPixel(x, ddtIm.getHeight()-1, 100);
+			
+			// top
+			if (ddtIm.getPixel(x,3)!=127 && ddtIm.getPixel(x,4)==127) {
+				ddtIm.putPixel(x,3,127);
+			}
+			// bottom
+			if (ddtIm.getPixel(x,ddtIm.getHeight()-6)!=127 && ddtIm.getPixel(x,ddtIm.getHeight()-7)==127) {
+				ddtIm.putPixel(x,ddtIm.getHeight()-6,127);
+			}
+			
+		}
+		*/
+		// vertical
+		/*
+		for (int y=0;y<ddtIm.getHeight();y++) {
+			// left
+			if (ddtIm.getPixel(0,y)!=128 && ddtIm.getPixel(1,y)==128) {
+				ddtIm.set(0,y,128);
+			}
+			// right
+			if (ddtIm.getPixel(ddtIm.getWidth()-1,y)!=128 && ddtIm.getPixel(ddtIm.getWidth()-2,y)==128) {
+				ddtIm.set(ddtIm.getWidth()-1,y,128);
+			}
+		}
+		*/
 		
 		return ddtIm;
 	}
@@ -637,7 +680,8 @@ public class PointExtractor {
 		for (int i=0; i<extractedPoints.size(); i++) {
 			TrackPoint pt = extractedPoints.get(i);
 			Rectangle ddtRect = (Rectangle)pt.rect.clone();
-			ddtRect.grow(3,3); // 3px buffer; set as extr param in the future?
+			int buffer = ep.ddtBuffer;
+			ddtRect.grow(buffer,buffer);
 			try {
 				ImageProcessor ddtPtIm = new ByteProcessor(ddtRect.width,ddtRect.height);
 				if (prevIm==null && nextIm!=null) { // first frame in stack, forward method

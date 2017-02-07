@@ -477,6 +477,25 @@ public class CVUtils {
 		return result;
 	}
 	
+	/**
+	 * CAUTION: only works w/o ddt buffer
+	 * TODO Rui: finish writing CVUtils.maskDdtIm()
+	 */
+	public static ImagePlus maskDdtIm(ImagePlus im, ImagePlus mask) {
+		ImageProcessor ip = im.getProcessor();
+		ImageProcessor ipM = mask.getProcessor();
+		ImageProcessor rIm = new ByteProcessor(im.getWidth(), im.getHeight());
+		
+		for (int w=0; w<rIm.getWidth(); w++){
+			for (int h=0; h<rIm.getHeight(); h++){
+				rIm.set(w, h, (ipM.get(w,h)>0)? ip.get(w,h):127); 
+			}
+		}
+		
+		ImagePlus result = new ImagePlus("masked", rIm);
+		return result;
+	}
+	
 	public static ImageProcessor cropByRect(ImageProcessor im, Rectangle cropRect) {
 		Rectangle oldRoi = im.getRoi();
 		im.setRoi(cropRect);

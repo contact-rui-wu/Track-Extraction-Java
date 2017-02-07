@@ -14,6 +14,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Vector;
 
+//import com.sun.javafx.geom.Rectangle;
+import java.awt.Rectangle;
+
 public class DistanceMapSplitter {
 	
 	
@@ -122,6 +125,30 @@ public class DistanceMapSplitter {
 				
 				//Add point to return list
 				if (newPt.size()==1){
+					// TODO Rui: deal with ddtIm in point splitting
+					// option A) use the same mask for ddtIm (should only work w/o buffer)
+					/*
+					ImageProcessor maskedDdtIm = CVUtils.maskDdtIm(new ImagePlus("",itp.ddtIm), newMasks.get(k)).getProcessor();
+					int newW = newPt.firstElement().rect.width;
+					int newH = newPt.firstElement().rect.height;
+					int relX = newPt.firstElement().rect.x-itp.rect.x;
+					int relY = newPt.firstElement().rect.y-itp.rect.y;
+					*/
+					// option B) use no mask
+					ImageProcessor maskedDdtIm = itp.ddtIm;
+					int buffer = ep.ddtBuffer;
+					Rectangle oldDdtRect = (Rectangle)itp.rect.clone();
+					oldDdtRect.grow(buffer,buffer);
+					Rectangle newDdtRect = newPt.firstElement().rect;
+					newDdtRect.grow(buffer, buffer);
+					int newW = newDdtRect.width;
+					int newH = newDdtRect.height;
+					int relX = newDdtRect.x-oldDdtRect.x;
+					int relY = newDdtRect.y-oldDdtRect.y;
+					// set newDdtIm for this point
+					Rectangle relRect = new Rectangle(relX,relY,newW,newH);
+					maskedDdtIm = CVUtils.cropByRect(maskedDdtIm, relRect);
+					newPt.firstElement().setImNew(maskedDdtIm, 1);
 					spPts.add(newPt.firstElement());
 				} else {
 					if (debug>1) System.out.println("Error splitting point "+itp.pointID+": masked im has multiple points ");
