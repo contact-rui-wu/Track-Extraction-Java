@@ -1032,7 +1032,8 @@ public class Track implements Serializable{
 		String lb = "\n";
 		htInfo = "Mean HT-dist = " + getMeanHTdist() + lb;
 		htInfo += "Max Excursion = " + maxExcursion() + lb;
-		htInfo += "Fraction HT Valid = " + getFractionHTValid() + lb + lb;
+		htInfo += "Fraction HT Valid = " + getFractionHTValid() + lb;
+		htInfo += "Mean Area = " + meanArea() + lb + lb;
 		
 		if (decimate && points.size() > maxLength) {
 			Vector<TrackPoint> pv = new Vector<TrackPoint> (maxLength);

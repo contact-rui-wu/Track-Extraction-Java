@@ -103,30 +103,58 @@ public class ImTrackPoint extends TrackPoint{
 //		}
 	}
 	
+	/*
 	public ImageProcessor getPadImNew(int imType) {
 		int buffer = 0;
 		return getPadImNew(imType,buffer);
 	}
+	*/
+	
+	public ImageProcessor getPadImNew(int imType) {
+		return getPadImNew(imType,1);
+	}
 	
 	/**
-	 * Get padded (not enlarged) image from ImTrackPoint
+	 * Get scaled and padded image from ImTrackPoint
 	 * @param imType 0: rawIm; 1: ddtIm
 	 * @return ImageProcessor containing the corresponding padded image
 	 */
-	public ImageProcessor getPadImNew(int imType, int buffer) {
+	public ImageProcessor getPadImNew(int imType, double scaleFac) {
 //		try {
 			imOriginX = (int)x-(trackWindowWidth/2)-1;
 			imOriginY = (int)y-(trackWindowHeight/2)-1;
+			int newWidth;
+			int newHeight;
+			ImageProcessor srcIm;
+			Color padColor;
 			switch (imType) {
 			case 0:
-				return CVUtils.padAndCenter(new ImagePlus(null, im), trackWindowWidth, trackWindowHeight, (int)x-rect.x, (int)y-rect.y);
+//				int newRawW = (int)(im.getWidth()*scaleFac);
+//				int newRawH = (int)(im.getHeight()*scaleFac);
+//				return CVUtils.padAndCenter(new ImagePlus(null, im.resize(newRawW,newRawH)), trackWindowWidth, trackWindowHeight, newRawW/2, newRawH/2);
+				newWidth = (int)(im.getWidth()*scaleFac);
+				newHeight = (int)(im.getHeight()*scaleFac);
+				im.setInterpolationMethod(ImageProcessor.BILINEAR);
+				srcIm = im.resize(newWidth);
+				padColor = Color.black;
+				break;
 			case 1:
-				Rectangle ddtRect = (Rectangle)rect.clone();
-				ddtRect.grow(buffer,buffer);
-				return CVUtils.padAndCenter(new ImagePlus(null, ddtIm), trackWindowWidth, trackWindowHeight, (int)x-ddtRect.x, (int)y-ddtRect.y, new Color(127,127,127));
+//				Rectangle ddtRect = (Rectangle)rect.clone();
+//				ddtRect.grow(buffer,buffer);
+//				int newDdtW = (int)(ddtIm.getWidth()*scaleFac);
+//				int newDdtH = (int)(ddtIm.getHeight()*scaleFac);
+//				return CVUtils.padAndCenter(new ImagePlus(null, ddtIm.resize(newDdtW,newDdtH)), trackWindowWidth, trackWindowHeight, newDdtW/2, newDdtH/2, new Color(127,127,127));
+				newWidth = (int)(ddtIm.getWidth()*scaleFac);
+				newHeight = (int)(ddtIm.getHeight()*scaleFac);
+				ddtIm.setInterpolationMethod(ImageProcessor.BILINEAR);
+				srcIm = ddtIm.resize(newWidth);
+				padColor = new Color(127,127,127);
+				break;
 			default:
 				return null;
 			}
+			
+			return CVUtils.padAndCenter(srcIm, trackWindowWidth, trackWindowHeight, newWidth/2, newHeight/2, padColor);
 //		} catch (NullPointerException e) {
 //			return null;
 //		}

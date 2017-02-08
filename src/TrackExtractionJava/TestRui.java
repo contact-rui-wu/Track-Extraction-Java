@@ -27,6 +27,8 @@ public class TestRui {
 		
 //		test_integerRange();
 		
+//		test_consoleOutput();
+		
 //		test_isDebugWorking();
 
 	}
@@ -61,7 +63,7 @@ public class TestRui {
 		ExtractionParameters extrParams = new ExtractionParameters();
 //		extrParams.subset = true; // deprecated
 //		extrParams.startFrame = 23842-1000; // default=1
-		extrParams.endFrame = 10000; // default=Integer.MAX_VALUE
+		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
 //		extrParams.doDdt = false; // default=true
 		extrParams.ddtBuffer = 1; // default=0
 		FittingParameters fitParams = new FittingParameters();
@@ -82,9 +84,14 @@ public class TestRui {
 		// secondary tests //
 		/////////////////////
 		
+		// check scaling
+//		test_playMovie(ep.ex.getTrack(1),0); // meanArea=81
+//		test_playMovie(ep.ex.getTrack(2),0); // meanArea=100
+//		test_playMovie(ep.ex.getTrack(11),0); // meanArea=120
+		
 		// play raw and ddt movies for one track
-		test_playMovie(ep.ex.getTrack(1),0,extrParams.ddtBuffer);
-		test_playMovie(ep.ex.getTrack(1),1,extrParams.ddtBuffer);
+//		test_playMovie(ep.ex.getTrack(10),0);
+//		test_playMovie(ep.ex.getTrack(10),1);
 		
 		// save true-size, not-padded ddtIms for one track
 //		String s = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\ddt-artifacts\\sampleExp_copy_track10_ddt\\";
@@ -157,7 +164,10 @@ public class TestRui {
 		System.out.println("upper bound retrieved by getPixel(): "+upper);
 	}
 	
-	public static void test_saveIms2Bin(Experiment ex, String dstPath, int buffer) {
+	/**
+	 * Larva area scaled to 110
+	 */
+	public static void test_saveIms2Bin(Experiment ex, String dstPath) {
 		try {
 			File f = new File(dstPath);
 			DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
@@ -179,6 +189,7 @@ public class TestRui {
 			// write each track
 			for (int i=0;i<ex.getNumTracks();i++) {
 				Track tr = ex.getTrackFromInd(i);
+				double scaleFac = Math.sqrt(100/tr.meanArea());
 				// write track number
 //				System.out.println("...writing track # "+i+" ("+tr.getNumPoints()+" points)");
 				IJ.showStatus("Writing track # "+i+" ("+tr.getNumPoints()+" points)");
@@ -196,7 +207,7 @@ public class TestRui {
 					if (itp.im!=null) {
 						for (int m=0;m<30;m++) {
 							for (int n=0;n<30;n++) {
-								dos.writeByte(itp.getPadImNew(0,buffer).getPixel(m, n));
+								dos.writeByte(itp.getPadImNew(0,scaleFac).getPixel(m, n));
 							}
 						}
 					} else {
@@ -208,7 +219,7 @@ public class TestRui {
 					if (itp.ddtIm!=null) {
 						for (int p=0;p<30;p++) {
 							for (int q=0;q<30;q++) {
-								dos.writeByte(itp.getPadImNew(1,buffer).getPixel(p, q));
+								dos.writeByte(itp.getPadImNew(1,scaleFac).getPixel(p, q));
 							}
 						}
 					} else {
@@ -230,6 +241,9 @@ public class TestRui {
 		}
 	}
 	
+	/**
+	 * Larva area not scaled
+	 */
 	public static void test_saveDdtIms(Track tr, String dstDir) {
 		int nPts = tr.getNumPoints();
 		FileSaver fs;
@@ -240,7 +254,13 @@ public class TestRui {
 		}
 	}
 	
-	public static void test_playMovie(Track tr, int imType, int buffer) {
+	/**
+	 * Larva area scaled
+	 */
+	public static void test_playMovie(Track tr, int imType) {
+//		double scaleFac = Math.sqrt(100/tr.meanArea());
+		double scaleFac = 1;
+		System.out.println("Scaling larva area in track "+tr.getTrackID()+" by "+String.format("%.2f",scaleFac));
 		String imTypeName;
 		Color padColor;
 		switch (imType) {
@@ -264,7 +284,7 @@ public class TestRui {
 		for (int i=0;i<nPts;i++) {
 			itp = (ImTrackPoint)tr.getPoint(i);
 			try {
-				movieStack.setProcessor(itp.getPadImNew(imType,buffer), i+1);
+				movieStack.setProcessor(itp.getPadImNew(imType,scaleFac), i+1);
 			} catch (Exception e) {
 				System.out.println("TrackPoint "+itp.getPointID()+" has no valid "+imTypeName+" image for frame "+itp.getFrameNum()+", drawing placeholder");
 				ByteProcessor placeholder = new ByteProcessor(w,h);
@@ -275,6 +295,11 @@ public class TestRui {
 		}
 		ImagePlus moviePlus = new ImagePlus("Track "+tr.getTrackID()+" "+imTypeName+" movie: frame "+tr.getStart().getFrameNum()+"-"+tr.getEnd().getFrameNum(),movieStack);
 		moviePlus.show();
+	}
+	
+	public static void test_consoleOutput() {
+		double x = 1.29867;
+		System.out.println("testing double format: "+String.format("%.2f",x));
 	}
 
 	public static void test_isDebugWorking() {
