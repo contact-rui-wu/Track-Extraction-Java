@@ -68,11 +68,13 @@ public class TestRui {
 		//////////////////////////////////////////
 
 		// prepare params
+		/*
 		boolean saveMovies = true;
 		int minTrackLength = 4999;
 		int subsetLength = 10000;
-		int first = 10001;
+		int first = 1;
 		int last = first+subsetLength-1;
+		*/
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
 		prParams.showMagEx = false;
@@ -83,8 +85,10 @@ public class TestRui {
 		prParams.saveErrors = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 		extrParams.subset = true; // note: deprecated in master branch
-		extrParams.startFrame = first;
-		extrParams.endFrame = last;
+//		extrParams.startFrame = first;
+//		extrParams.endFrame = last;
+		extrParams.startFrame = 1;
+		extrParams.endFrame = 2000;
 		extrParams.frameSizeDdt = false;
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
@@ -96,18 +100,25 @@ public class TestRui {
 		//String dataID = "sampleShortExp_copy";
 		//String mmfDir = "/home/data/rw1679/Documents/Gershow_lab_local/pipeline/Java/";
 		// on windows:
-		String dataID = "sampleLongExp-copy";
+		String dataID = "sampleExp-copy";
 		String mmfDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\";
 		// then
 		String mmfPath = mmfDir + dataID + ".mmf";
+		String dstDir = mmfDir+dataID+"_feat-ddt"+File.separator; // add branch label
+		String[] args = new String[2];
+		args[0] = mmfPath;
+		args[1] = dstDir;
+		if (!(new File(dstDir).exists())) {
+			new File(dstDir).mkdirs();
+		}
 		
 		// extract tracks
 		Experiment_Processor ep = new Experiment_Processor();
 		ep.runningFromMain = true;
 		ep.prParams = prParams;
 		ep.extrParams = extrParams;
-		ep.run(mmfPath);
-		
+		ep.run(args);
+		/*
 		// tmp: check if can get experiment mean area
 		//System.out.println("Mean area: "+ep.ex.getMeanArea());
 		// for now, just use 110 as standard mean area
@@ -197,8 +208,10 @@ public class TestRui {
 		
 		ij.quit();
 
+		*/
 		// stop timer:
 		System.out.println("pipeline time: " + timer.toc() / 1000 + "s");
+		IJ.beep();
 
 	}
 	

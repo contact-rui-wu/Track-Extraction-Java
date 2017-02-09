@@ -97,10 +97,10 @@ public class ProcessingParameters {
 	
 	
 	public String[] setLogPath(String srcDir, String dstDir){
-		String[] logPathParts = {srcDir, "ProcessingLog.txt"};
+		String[] logPathParts = {dstDir, "ProcessingLog.txt"};
 		if (logPathParts[0]==null || logPathParts[0].equals("")){
-			if (dstDir!=null){
-				logPathParts[0] = dstDir;
+			if (srcDir!=null){
+				logPathParts[0] = srcDir;
 			} 
 		}
 		return logPathParts;
