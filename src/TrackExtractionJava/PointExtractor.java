@@ -6,6 +6,7 @@ import ij.measure.ResultsTable;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 
+import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.Vector;
 
@@ -694,8 +695,12 @@ public class PointExtractor {
 				pt.setImNew(ddtPtIm, 1);
 			} catch (Exception e) {
 //				System.out.println("Track "+pt.track.getTrackID()+" has no valid ddtIm at frame "+pt.getFrameNum());
-				comm.message("Track "+pt.track.getTrackID()+" has no valid ddtIm at frame "+pt.getFrameNum(), VerbLevel.verb_message);
-				pt.setImNew(null, 1);
+				comm.message("Track "+pt.track.getTrackID()+" has no valid ddtIm at frame "+pt.getFrameNum()+", drawing blank image", VerbLevel.verb_message);
+//				pt.setImNew(null, 1);
+				ByteProcessor placeholder = new ByteProcessor(ddtRect.width,ddtRect.height);
+				placeholder.setColor(new Color(127,127,127));
+				placeholder.fill();
+				pt.setImNew(placeholder,1);
 			}
 		}
 	}

@@ -326,10 +326,45 @@ public class ImTrackPoint extends TrackPoint{
 		im = im2.getProcessor();		
 	}
 	
-	// TODO Rui: (not now) write to/loadFrom/sizeOnDiskNew methods for ImTrackPoint
+	// TODO Rui: write to/loadFrom/sizeOnDiskNew methods for ImTrackPoint
 	
-	public int toDiskNew(DataOutputStream dos, PrintWriter pw) {
-		return 0; // placeholder
+	public int toDisk(DataOutputStream dos, PrintWriter pw, boolean ddt) {
+
+		if (!ddt) {
+			return toDisk(dos, pw);
+		} else {
+			super.toDisk(dos, pw);
+			// write images
+			try {
+				// write raw image
+				dos.writeByte(im.getWidth());
+				dos.writeByte(im.getHeight());
+				for (int i = 0; i < im.getWidth(); i++) {
+					for (int j = 0; j < im.getHeight(); j++) {
+						dos.writeByte(im.getPixel(i, j));
+					}
+				}
+				// write ddt image
+				if (ddtIm == null) {
+					dos.writeByte(0);
+					dos.writeByte(0);
+				} else {
+					dos.writeByte(ddtIm.getWidth());
+					dos.writeByte(ddtIm.getHeight());
+					for (int p = 0; p < ddtIm.getWidth(); p++) {
+						for (int q = 0; q < ddtIm.getHeight(); q++) {
+							dos.writeByte(ddtIm.getPixel(p, q));
+						}
+					}
+				}
+			} catch (Exception e) {
+				if (pw != null)
+					pw.println("Error writing ImTrackPoint image for point " + pointID + "; aborting save");
+				return 1;
+			}
+
+			return 0;
+		}
 	}
 	
 	public int toDisk(DataOutputStream dos, PrintWriter pw){
@@ -339,13 +374,27 @@ public class ImTrackPoint extends TrackPoint{
 		
 		//Image offset, width, and height already written in TrackPoint
 		
-		//Write image
+		//Write images
 		try {
+			// write raw image
 			dos.writeByte(im.getWidth());
 			dos.writeByte(im.getHeight());
 			for (int j=0; j<im.getWidth(); j++){
 				for (int k=0; k<im.getHeight(); k++){
 					dos.writeByte(im.getPixel(j,k));
+				}
+			}
+			// write ddt image if exists
+			if (ddtIm==null) {
+				dos.writeByte(0);
+				dos.writeByte(0);
+			} else {
+				dos.writeByte(ddtIm.getWidth());
+				dos.writeByte(ddtIm.getHeight());
+				for (int p = 0; p < ddtIm.getWidth(); p++) {
+					for (int q = 0; q < ddtIm.getHeight(); q++) {
+						dos.writeByte(ddtIm.getPixel(p, q));
+					}
 				}
 			}
 			
@@ -372,15 +421,15 @@ public class ImTrackPoint extends TrackPoint{
 		return 0;
 	}
 	
-	public int sizeOnDiskNew(){
-		return 0; // placeholder
-	}
-	
 	public int sizeOnDisk(){
 		
 		int size = super.sizeOnDisk();
 		size += 2;//Im width, height
 		size += im.getWidth()*im.getHeight();//pixels
+		if (ddtIm!=null) {
+			size += 2; // ddtIm width, height (both=0 if ddtIm=null)
+			size += ddtIm.getWidth()*ddtIm.getHeight();
+		}
 		
 		return size;
 	}
@@ -394,10 +443,6 @@ public class ImTrackPoint extends TrackPoint{
 		} else {
 			return null;
 		}
-	}
-	
-	protected int loadFromDiskNew(DataInputStream dis, Track t, PrintWriter pw) {
-		return 0; // placeholder
 	}
 	
 	protected int loadFromDisk(DataInputStream dis, Track t, PrintWriter pw){
@@ -419,7 +464,7 @@ public class ImTrackPoint extends TrackPoint{
 			trackWindowWidth = ep.trackWindowWidth;
 			trackWindowHeight = ep.trackWindowHeight;
 			
-			//Get image data
+			//Get rawIm data
 			int w = dis.readByte();
 			int h = dis.readByte();
 			byte[] pix = new byte[w*h];
@@ -431,6 +476,19 @@ public class ImTrackPoint extends TrackPoint{
 			ImagePlus imp = new ImagePlus("new",new ByteProcessor(w, h, pix));
 
 			im = imp.getProcessor();
+			
+			// get ddtIm data
+			if (ep.doDdt) {
+				int ww = dis.readByte();
+				int hh = dis.readByte();
+				byte[] ddtPix = new byte[ww*hh];
+				for (int i=0;i<ww;i++) {
+					for (int j=0;j<hh;j++) {
+						ddtPix[j*ww+i] = dis.readByte();
+					}
+				}
+				ddtIm = new ByteProcessor(ww,hh,ddtPix);
+			}
 			
 			//Get imderiv data	
 //			w = dis.readByte();

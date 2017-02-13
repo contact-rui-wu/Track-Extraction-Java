@@ -48,7 +48,7 @@ public class TestRui {
 		String srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\"; // on windows
 		String srcPath = srcDir+exID+".mmf";
 		String dstDir = srcDir+exID+"_feat-ddt-new"+File.separator; // add branch label
-//		String dstPath = dstDir+exID;
+//		String srcPath = dstDir+exID+".prejav";
 		
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
@@ -63,9 +63,9 @@ public class TestRui {
 		ExtractionParameters extrParams = new ExtractionParameters();
 //		extrParams.subset = true; // deprecated
 //		extrParams.startFrame = 23842-1000; // default=1
-		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
-//		extrParams.doDdt = false; // default=true
-		extrParams.ddtBuffer = 1; // default=0
+		extrParams.endFrame = 5000; // default=Integer.MAX_VALUE
+		extrParams.doDdt = false; // default=true
+//		extrParams.ddtBuffer = 0; // default=0
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
 		
@@ -84,6 +84,16 @@ public class TestRui {
 		// secondary tests //
 		/////////////////////
 		
+		// image normalization diagnosis
+//		test_playMovie(ep.ex.getTrack(7),0);
+//		test_playMovie(ep.ex.getTrack(7),1);
+//		test_playMovie(ep.ex.getTrack(13),0);
+//		test_playMovie(ep.ex.getTrack(13),1);
+//		test_playMovie(ep.ex.getTrack(18),0);
+//		test_playMovie(ep.ex.getTrack(18),1);
+//		test_playMovie(ep.ex.getTrack(21),0);
+//		test_playMovie(ep.ex.getTrack(21),1);
+		
 		// check scaling
 //		test_playMovie(ep.ex.getTrack(1),0); // meanArea=81
 //		test_playMovie(ep.ex.getTrack(2),0); // meanArea=100
@@ -98,7 +108,7 @@ public class TestRui {
 //		test_saveDdtIms(ep.ex.getTrack(10),s);
 		
 		// save all padded raw+ddtIms for this experiment to a .bin file
-//		String s = dstDir+exID+"_raw+ddtIms_20000-frames.bin";
+//		String s = dstDir+exID+"_raw+ddtIms_full-length.bin";
 //		test_saveIms2Bin(ep.ex,s); // only works when extrParams.doDdt=true (default);
 		
 		// stop timer and beep
@@ -224,7 +234,7 @@ public class TestRui {
 						}
 					} else {
 						for (int r=0;r<900;r++) {
-							dos.writeByte(128); // draw gray placeholder for null ddtIm
+							dos.writeByte(127); // draw gray placeholder for null ddtIm
 						}
 					}
 				}
@@ -258,8 +268,8 @@ public class TestRui {
 	 * Larva area scaled
 	 */
 	public static void test_playMovie(Track tr, int imType) {
-//		double scaleFac = Math.sqrt(100/tr.meanArea());
-		double scaleFac = 1;
+		double scaleFac = Math.sqrt(100/tr.meanArea());
+//		double scaleFac = 1;
 		System.out.println("Scaling larva area in track "+tr.getTrackID()+" by "+String.format("%.2f",scaleFac));
 		String imTypeName;
 		Color padColor;
@@ -291,6 +301,7 @@ public class TestRui {
 				placeholder.setColor(padColor);
 				placeholder.fill();
 				movieStack.setProcessor(placeholder, i+1);
+				// warning: this shouldn't happen at all if doDdt=true; setDdtIm4Pts() already draws placeholder
 			}
 		}
 		ImagePlus moviePlus = new ImagePlus("Track "+tr.getTrackID()+" "+imTypeName+" movie: frame "+tr.getStart().getFrameNum()+"-"+tr.getEnd().getFrameNum(),movieStack);
