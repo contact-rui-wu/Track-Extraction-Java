@@ -59,14 +59,19 @@ public class Experiment implements Serializable{
 	 */
 	public Experiment(){}
 	
+	public Experiment(String filename) {
+		new Experiment(filename, new ExtractionParameters());
+	}
+	
 	/**
 	 * Constructs an experiment from a file
 	 * @param filename The name of a file created by Experiment.toDisk() (e.g. *.jav, *.prejav)
 	 */
-	public Experiment(String filename){
+	public Experiment(String filename, ExtractionParameters extrParams){
 		try {
 			fname = filename;
-			ep = new ExtractionParameters();
+//			ep = new ExtractionParameters();
+			ep = extrParams;
 			DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(filename))));
 			loadFromDisk(dis, null);
 		} catch (Exception e){

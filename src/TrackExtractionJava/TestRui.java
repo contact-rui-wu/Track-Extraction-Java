@@ -19,7 +19,9 @@ public class TestRui {
 
 	public static void main(String[] args) {
 		
-		test_pipeline();
+//		test_pipeline();
+		
+		test_viewExperiment();
 		
 //		test_relativeRect();
 		
@@ -48,23 +50,22 @@ public class TestRui {
 		String srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\"; // on windows
 		String srcPath = srcDir+exID+".mmf";
 		String dstDir = srcDir+exID+"_feat-ddt-new"+File.separator; // add branch label
-//		String srcPath = dstDir+exID+".prejav";
 		
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
 		prParams.showMagEx = false;
-		prParams.saveMagEx = false;
-		prParams.doFitting = false;
+		prParams.saveMagEx = true;
+		prParams.doFitting = true;
 		prParams.showFitEx = false;
-		prParams.saveFitEx = false;
+		prParams.saveFitEx = true;
 		prParams.saveErrors = false;
 		prParams.saveSysOutToFile = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 //		extrParams.subset = true; // deprecated
 //		extrParams.startFrame = 23842-1000; // default=1
-		extrParams.endFrame = 5000; // default=Integer.MAX_VALUE
-		extrParams.doDdt = false; // default=true
+		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
+//		extrParams.doDdt = false; // default=true
 //		extrParams.ddtBuffer = 0; // default=0
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
@@ -114,6 +115,34 @@ public class TestRui {
 		// stop timer and beep
 		System.out.println("Pipeline time: "+timer.toc()/1000+"s");
 		IJ.beep();
+	}
+	
+	@SuppressWarnings("unused")
+	public static void test_viewExperiment() {
+		String srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\"; // on windows
+		String exID = "sampleExp-copy";
+		// on master:
+//		String srcPath = srcDir+exID+"_master"+File.separator+exID+".prejav";
+//		String srcPath = srcDir+exID+"_master"+File.separator+exID+".jav";
+		// on feat-ddt-new:
+//		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".prejav";
+		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".jav";
+		
+		ExtractionParameters extrParams = new ExtractionParameters();
+//		extrParams.doDdt = false; // default=true
+		Experiment ex = new Experiment(srcPath, extrParams);
+		
+		// show experiment/track should only work when doDdt matches in pipeline and above
+		// show entire experiment:
+		ExperimentFrame exFrame = new ExperimentFrame(ex);
+		exFrame.run(null);
+		// show just one track:
+//		/*
+		ImageJ ij = new ImageJ();
+		test_playMovie(ex.getTrackFromInd(10),0);
+		test_playMovie(ex.getTrackFromInd(10),1);
+//		*/
+		
 	}
 	
 	public static void test_relativeRect() {

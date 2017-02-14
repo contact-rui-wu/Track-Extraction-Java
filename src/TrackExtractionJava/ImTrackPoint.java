@@ -268,6 +268,9 @@ public class ImTrackPoint extends TrackPoint{
 		
 	}
 	
+	/**
+	 * ATTENTION: old method before ddt calculation is implemented; raw here is vs. enlarged and padded, not vs. ddt
+	 */
 	public ImageProcessor getRawIm(){
 		return im;
 	}
@@ -328,6 +331,9 @@ public class ImTrackPoint extends TrackPoint{
 	
 	// TODO Rui: write to/loadFrom/sizeOnDiskNew methods for ImTrackPoint
 	
+	/**
+	 * not used; ddt condition is replaced by ddtIm==/!=null in {@link #toDisk(DataOutputStream,PrintWriter) toDisk}
+	 */
 	public int toDisk(DataOutputStream dos, PrintWriter pw, boolean ddt) {
 
 		if (!ddt) {

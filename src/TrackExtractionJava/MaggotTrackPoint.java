@@ -943,6 +943,7 @@ public class MaggotTrackPoint extends ImTrackPoint {
 		btp.segStart = segStart;
 		//ImTrackPoint fields
 		btp.im = im;
+		btp.ddtIm = ddtIm;
 		btp.serializableIm = serializableIm;
 		btp.imOriginX = imOriginX;
 		btp.imOriginY = imOriginY;
