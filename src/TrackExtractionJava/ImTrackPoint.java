@@ -432,8 +432,8 @@ public class ImTrackPoint extends TrackPoint{
 		int size = super.sizeOnDisk();
 		size += 2;//Im width, height
 		size += im.getWidth()*im.getHeight();//pixels
+		size += 2; // ddtIm width, height (both=0 if ddtIm=null)
 		if (ddtIm!=null) {
-			size += 2; // ddtIm width, height (both=0 if ddtIm=null)
 			size += ddtIm.getWidth()*ddtIm.getHeight();
 		}
 		
@@ -484,16 +484,16 @@ public class ImTrackPoint extends TrackPoint{
 			im = imp.getProcessor();
 			
 			// get ddtIm data
-			if (ep.doDdt) {
-				int ww = dis.readByte();
-				int hh = dis.readByte();
-				byte[] ddtPix = new byte[ww*hh];
-				for (int i=0;i<ww;i++) {
-					for (int j=0;j<hh;j++) {
-						ddtPix[j*ww+i] = dis.readByte();
+			int ddtW = dis.readByte();
+			int ddtH = dis.readByte();
+			if (ddtW!=0 & ddtH!=0) {
+				byte[] ddtPix = new byte[ddtW*ddtH];
+				for (int i=0;i<ddtW;i++) {
+					for (int j=0;j<ddtH;j++) {
+						ddtPix[j*ddtW+i] = dis.readByte();
 					}
 				}
-				ddtIm = new ByteProcessor(ww,hh,ddtPix);
+				ddtIm = new ByteProcessor(ddtW,ddtH,ddtPix);
 			}
 			
 			//Get imderiv data	

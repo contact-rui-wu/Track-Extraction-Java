@@ -125,12 +125,13 @@ public class TestRui {
 //		String srcPath = srcDir+exID+"_master"+File.separator+exID+".prejav";
 //		String srcPath = srcDir+exID+"_master"+File.separator+exID+".jav";
 		// on feat-ddt-new:
-//		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".prejav";
-		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".jav";
+		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".prejav";
+//		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".jav";
 		
-		ExtractionParameters extrParams = new ExtractionParameters();
+//		ExtractionParameters extrParams = new ExtractionParameters();
 //		extrParams.doDdt = false; // default=true
-		Experiment ex = new Experiment(srcPath, extrParams);
+//		Experiment ex = new Experiment(srcPath, extrParams);
+		Experiment ex = new Experiment(srcPath);
 		
 		// show experiment/track should only work when doDdt matches in pipeline and above
 		// show entire experiment:
@@ -139,8 +140,8 @@ public class TestRui {
 		// show just one track:
 //		/*
 		ImageJ ij = new ImageJ();
-		test_playMovie(ex.getTrackFromInd(10),0);
-		test_playMovie(ex.getTrackFromInd(10),1);
+//		test_playMovie(ex.getTrackFromInd(5),0);
+//		test_playMovie(ex.getTrackFromInd(5),1);
 //		*/
 		
 	}
@@ -204,7 +205,7 @@ public class TestRui {
 	}
 	
 	/**
-	 * Larva area scaled to 110
+	 * Larva area scaled
 	 */
 	public static void test_saveIms2Bin(Experiment ex, String dstPath) {
 		try {
@@ -294,7 +295,7 @@ public class TestRui {
 	}
 	
 	/**
-	 * Larva area scaled
+	 * Larva area scaled; interestingly, this affects play movie button
 	 */
 	public static void test_playMovie(Track tr, int imType) {
 		double scaleFac = Math.sqrt(100/tr.meanArea());
