@@ -14,6 +14,7 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.Arrays;
 
 public class TestRui {
 
@@ -121,16 +122,13 @@ public class TestRui {
 	public static void test_viewExperiment() {
 		String srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\"; // on windows
 		String exID = "sampleExp-copy";
-		// on master:
+		// on master: different data structure versions, doesn't work
 //		String srcPath = srcDir+exID+"_master"+File.separator+exID+".prejav";
-//		String srcPath = srcDir+exID+"_master"+File.separator+exID+".jav";
+		String srcPath = srcDir+exID+"_master"+File.separator+exID+".jav";
 		// on feat-ddt-new:
-		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".prejav";
+//		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".prejav";
 //		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".jav";
 		
-//		ExtractionParameters extrParams = new ExtractionParameters();
-//		extrParams.doDdt = false; // default=true
-//		Experiment ex = new Experiment(srcPath, extrParams);
 		Experiment ex = new Experiment(srcPath);
 		
 		// show experiment/track should only work when doDdt matches in pipeline and above
@@ -140,8 +138,8 @@ public class TestRui {
 		// show just one track:
 //		/*
 		ImageJ ij = new ImageJ();
-//		test_playMovie(ex.getTrackFromInd(5),0);
-//		test_playMovie(ex.getTrackFromInd(5),1);
+		test_playMovie(ex.getTrackFromInd(5),0);
+		test_playMovie(ex.getTrackFromInd(5),1);
 //		*/
 		
 	}
@@ -324,7 +322,8 @@ public class TestRui {
 		for (int i=0;i<nPts;i++) {
 			itp = (ImTrackPoint)tr.getPoint(i);
 			try {
-				movieStack.setProcessor(itp.getPadImNew(imType,scaleFac), i+1);
+				movieStack.setProcessor(itp.getPadImNew(imType,scaleFac), i+1); // imagej index starts at 1
+//				movieStack.setProcessor(itp.getIm(), i+1);
 			} catch (Exception e) {
 				System.out.println("TrackPoint "+itp.getPointID()+" has no valid "+imTypeName+" image for frame "+itp.getFrameNum()+", drawing placeholder");
 				ByteProcessor placeholder = new ByteProcessor(w,h);
@@ -339,8 +338,9 @@ public class TestRui {
 	}
 	
 	public static void test_consoleOutput() {
-		double x = 1.29867;
-		System.out.println("testing double format: "+String.format("%.2f",x));
+		byte[] x = new byte[] {0,0,0,0};
+		String s = Arrays.toString(x);
+		System.out.println("data version: "+x[0]+x[1]+x[2]+x[3]);
 	}
 
 	public static void test_isDebugWorking() {

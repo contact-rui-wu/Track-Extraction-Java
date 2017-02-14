@@ -19,6 +19,8 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.ListIterator;
 import java.util.Vector;
 
@@ -33,6 +35,12 @@ public class Experiment implements Serializable{
 	 * Serialization ID
 	 */
 	private static final long serialVersionUID = 1L;
+	
+	/**
+	 * Indicating data structure version;
+	 * 0001 = after implementing (optional) ddt calculation
+	 */
+	private byte[] dataVer;
 	
 	/**
 	 * Name of the original file? or the .ser file? 
@@ -107,6 +115,15 @@ public class Experiment implements Serializable{
 	private void init(String fname, ExtractionParameters ep, Vector<Track> tracks) {
 		this.fname = fname;
 		this.ep = ep;
+		// check data version
+//		Class<?> c = ep.getClass();
+		try {
+			Field f = ep.getClass().getField("doDdt");
+			this.dataVer = new byte[] {0,0,0,1};
+		} catch (Exception e) {
+			message("ATTENTION: initializing experiment as an older data version",VerbLevel.verb_warning);
+			this.dataVer = null;
+		}
 		this.tracks = tracks;
 	}
 	
@@ -182,11 +199,22 @@ public class Experiment implements Serializable{
 		
 		if (tracks.size()==0){
 			message ("No tracks in experiment; save aborted", VerbLevel.verb_error);
-			return 4;
+			return 5;
 		}
 		
 		message("Saving experiment to disk...", VerbLevel.verb_message);
 		
+		// write data version
+		try {
+			String s = "("+dataVer[0]+dataVer[1]+dataVer[2]+dataVer[3]+")";
+//			message("Writing data version "+s, VerbLevel.verb_verbose);
+			System.out.println("Writing data version "+s);
+			dos.write(dataVer);
+		} catch (Exception e) {
+//			message("...Error writing data version; save aborted", VerbLevel.verb_error);
+			System.out.println("...Error writing data version; save aborted");
+			return 4;
+		}
 		
 		//Write the Experiment Type
 		try {
@@ -439,7 +467,7 @@ public class Experiment implements Serializable{
 		
 		return -1;
 	}
-	
+		
 	public static int getPointType(String fname){
 		
 		try {
@@ -502,8 +530,22 @@ public class Experiment implements Serializable{
 	
 	
 	private void loadFromDisk(DataInputStream dis, PrintWriter pw){
-		int progress = -2;
+		int progress = -3;
 		try{
+			// debug: see if can rewind
+//			System.out.println("input stream mark support: "+dis.markSupported());
+			dis.mark(Integer.MAX_VALUE); // TODO Rui: not sure if this is smart
+			
+			// read data version
+			byte[] dv = new byte[4];
+			int dvdigits = dis.read(dv);
+			if (Arrays.equals(dv, new byte[] {0,0,0,1})) {
+				dataVer = dv;
+			} else {
+				System.out.println("ATTENTION: loading an older experiment without version tag");
+				dis.reset();
+			}
+			progress++;//=-2
 			
 			//Read the Experiment Type
 			int tpType = dis.readInt();
@@ -633,6 +675,9 @@ public class Experiment implements Serializable{
 		return new ImagePlus("Diagnostic Image", dIm);
 	}
 	
+	public byte[] getDataVer() {
+		return dataVer;
+	}
 	
 	public int getTypeCode(){
 		int trackType = -1;

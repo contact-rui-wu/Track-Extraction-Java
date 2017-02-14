@@ -14,6 +14,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.PrintWriter;
 //import java.util.HashMap;
+import java.lang.reflect.Field;
 
 public class ImTrackPoint extends TrackPoint{
 	
@@ -280,11 +281,9 @@ public class ImTrackPoint extends TrackPoint{
 		imOriginX = (int)x-(trackWindowWidth/2)-1;
 		imOriginY = (int)y-(trackWindowHeight/2)-1;
 		return CVUtils.padAndCenter(new ImagePlus("Point "+pointID, im), trackWindowWidth, trackWindowHeight, (int)x-rect.x, (int)y-rect.y);
-		 
 	}
 	
 	public void drawPoint(ColorProcessor backIm, Color c){
-		
 		for (int xc=0; xc<im.getWidth(); xc++){
 			for (int yc=0; yc<im.getHeight(); yc++){
 				int val = im.getPixel(xc, yc);
@@ -328,9 +327,7 @@ public class ImTrackPoint extends TrackPoint{
 		ImagePlus im2 = op.deserialize(serializableIm);
 		im = im2.getProcessor();		
 	}
-	
-	// TODO Rui: write to/loadFrom/sizeOnDiskNew methods for ImTrackPoint
-	
+		
 	/**
 	 * not used; ddt condition is replaced by ddtIm==/!=null in {@link #toDisk(DataOutputStream,PrintWriter) toDisk}
 	 */
@@ -464,7 +461,7 @@ public class ImTrackPoint extends TrackPoint{
 			if (t.exp==null){
 				ep=new ExtractionParameters();
 			} else{
-				ep =t.exp.getEP();
+				ep=t.exp.getEP();
 			}
 				
 			trackWindowWidth = ep.trackWindowWidth;
@@ -484,16 +481,31 @@ public class ImTrackPoint extends TrackPoint{
 			im = imp.getProcessor();
 			
 			// get ddtIm data
-			int ddtW = dis.readByte();
-			int ddtH = dis.readByte();
-			if (ddtW!=0 & ddtH!=0) {
-				byte[] ddtPix = new byte[ddtW*ddtH];
-				for (int i=0;i<ddtW;i++) {
-					for (int j=0;j<ddtH;j++) {
-						ddtPix[j*ddtW+i] = dis.readByte();
-					}
+			boolean isNewVer;
+			try {
+//				Field f = t.exp.getClass().getDeclaredField("dataVer");
+				byte[] b = t.exp.getDataVer();
+				if (b!=null) {
+					isNewVer = true;
+				} else {
+					isNewVer = false;
 				}
-				ddtIm = new ByteProcessor(ddtW,ddtH,ddtPix);
+			} catch (Exception e) {
+				// failed to call ex.getDataVer, data is first ver, do not read ddtW/H
+				isNewVer = false;
+			}
+			if (isNewVer) {
+				int ddtW = dis.readByte();
+				int ddtH = dis.readByte();
+				if (ddtW != 0 & ddtH != 0) {
+					byte[] ddtPix = new byte[ddtW * ddtH];
+					for (int i = 0; i < ddtW; i++) {
+						for (int j = 0; j < ddtH; j++) {
+							ddtPix[j * ddtW + i] = dis.readByte();
+						}
+					}
+					ddtIm = new ByteProcessor(ddtW, ddtH, ddtPix);
+				}
 			}
 			
 			//Get imderiv data	

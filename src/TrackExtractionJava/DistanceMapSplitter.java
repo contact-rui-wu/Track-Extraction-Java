@@ -125,7 +125,7 @@ public class DistanceMapSplitter {
 				
 				//Add point to return list
 				if (newPt.size()==1){
-					// TODO Rui: deal with ddtIm in point splitting
+					// TODO Rui: split ddtIm using rawIm masks
 					// option A) use the same mask for ddtIm (should only work w/o buffer)
 					/*
 					ImageProcessor maskedDdtIm = CVUtils.maskDdtIm(new ImagePlus("",itp.ddtIm), newMasks.get(k)).getProcessor();
