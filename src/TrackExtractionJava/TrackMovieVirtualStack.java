@@ -9,9 +9,9 @@ import ij.process.ImageProcessor;
 
 public class TrackMovieVirtualStack extends VirtualStack {
 
-	private Track tr;
+	protected Track tr;
 	private MaggotDisplayParameters mdp;
-	private Vector<BackboneTrackPoint> btps;
+	protected Vector<BackboneTrackPoint> btps;
 	private Vector<Force> Forces;
 	
 	
@@ -21,7 +21,7 @@ public class TrackMovieVirtualStack extends VirtualStack {
 	//private int imWidth;
 	//private int imHeight;
 	private ImagePlus imp = null;
-	private boolean showFitHistory = false;
+	protected boolean showFitHistory = false;
 	
 	public TrackMovieVirtualStack(Track tr, MaggotDisplayParameters mdp, boolean showFitHistory, int width, int height, ColorModel cm, String path) {
 		super(width, height, cm, path);

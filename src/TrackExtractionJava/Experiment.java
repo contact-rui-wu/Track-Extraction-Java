@@ -538,7 +538,8 @@ public class Experiment implements Serializable{
 			
 			// read data version
 			byte[] dv = new byte[4];
-			int dvdigits = dis.read(dv);
+//			assert(dis.read(dv)==3);
+			int dvdigit = dis.read(dv);
 			if (Arrays.equals(dv, new byte[] {0,0,0,1})) {
 				dataVer = dv;
 			} else {

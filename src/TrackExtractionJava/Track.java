@@ -566,6 +566,11 @@ public class Track implements Serializable{
 		return new TrackMovieVirtualStack(this, mdp, showFitHistory);
 	}
 	
+	public TrackDdtVirtualStack getVirtualDdtStack() {
+		updateTrackImageSize(true);
+		return new TrackDdtVirtualStack(this);
+	}
+	
 	public ImagePlus getMovieStack(int labelInd, MaggotDisplayParameters mdp, boolean showMovie){
 		if (tb!=null){
 			tb.comm.message("This track has "+points.size()+"points", VerbLevel.verb_message);

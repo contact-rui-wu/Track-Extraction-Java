@@ -442,11 +442,10 @@ class TrackPanel extends JPanel {
 	public void playCurrentDdtTrack(){
 		try{
 			if (track!=null){
-				// for now, do nothing
 //				TrackMovieVirtualStack vs = track.getVirtualMovieStack(mdp);
-//				vs.getImagePlus().show();
-//				ef.addMovie(vs);
-				System.out.println("PlayDdtButton is working!");
+				TrackDdtVirtualStack vs = track.getVirtualDdtStack();
+				vs.getImagePlus().show();
+				ef.addMovie(vs);
 			}
 		} catch(Exception e){
 			StringWriter sw = new StringWriter();

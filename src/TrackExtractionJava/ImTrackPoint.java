@@ -14,7 +14,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.PrintWriter;
 //import java.util.HashMap;
-import java.lang.reflect.Field;
+//import java.lang.reflect.Field;
 
 public class ImTrackPoint extends TrackPoint{
 	
@@ -115,12 +115,16 @@ public class ImTrackPoint extends TrackPoint{
 		return getPadImNew(imType,1);
 	}
 	
+	public ImageProcessor getPadImNew(int imType, double scaleFac) {
+		return getPadImNew(imType,scaleFac,1);
+	}
+	
 	/**
 	 * Get scaled and padded image from ImTrackPoint
 	 * @param imType 0: rawIm; 1: ddtIm
 	 * @return ImageProcessor containing the corresponding padded image
 	 */
-	public ImageProcessor getPadImNew(int imType, double scaleFac) {
+	public ImageProcessor getPadImNew(int imType, double scaleFac, int zoomFac) {
 //		try {
 			imOriginX = (int)x-(trackWindowWidth/2)-1;
 			imOriginY = (int)y-(trackWindowHeight/2)-1;
@@ -155,7 +159,8 @@ public class ImTrackPoint extends TrackPoint{
 				return null;
 			}
 			
-			return CVUtils.padAndCenter(srcIm, trackWindowWidth, trackWindowHeight, newWidth/2, newHeight/2, padColor);
+			ImageProcessor retIm = CVUtils.padAndCenter(srcIm, trackWindowWidth, trackWindowHeight, newWidth/2, newHeight/2, padColor);
+			return retIm.resize(trackWindowWidth*zoomFac);
 //		} catch (NullPointerException e) {
 //			return null;
 //		}

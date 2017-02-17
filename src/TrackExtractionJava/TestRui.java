@@ -20,9 +20,9 @@ public class TestRui {
 
 	public static void main(String[] args) {
 		
-//		test_pipeline();
+		test_pipeline();
 		
-		test_viewExperiment();
+//		test_viewExperiment();
 		
 //		test_relativeRect();
 		
@@ -51,6 +51,7 @@ public class TestRui {
 		String srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\"; // on windows
 		String srcPath = srcDir+exID+".mmf";
 		String dstDir = srcDir+exID+"_feat-ddt-new"+File.separator; // add branch label
+//		String srcPath = dstDir+exID+".prejav";
 		
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
@@ -58,22 +59,20 @@ public class TestRui {
 		prParams.showMagEx = false;
 		prParams.saveMagEx = true;
 		prParams.doFitting = true;
-		prParams.showFitEx = false;
+		prParams.showFitEx = true;
 		prParams.saveFitEx = true;
 		prParams.saveErrors = false;
 		prParams.saveSysOutToFile = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
-//		extrParams.subset = true; // deprecated
 //		extrParams.startFrame = 23842-1000; // default=1
 		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
-//		extrParams.doDdt = false; // default=true
+		extrParams.doDdt = false; // default=true
 //		extrParams.ddtBuffer = 0; // default=0
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
 		
 		// prepare processor
 		Experiment_Processor ep = new Experiment_Processor();
-//		ep.runningFromMain = true; // deprecated
 		ep.prParams = prParams;
 		ep.extrParams = extrParams;
 		ep.fitParams = fitParams;
@@ -118,15 +117,15 @@ public class TestRui {
 		IJ.beep();
 	}
 	
-	@SuppressWarnings("unused")
+//	@SuppressWarnings("unused")
 	public static void test_viewExperiment() {
 		String srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\"; // on windows
 		String exID = "sampleExp-copy";
 		// on master: different data structure versions, doesn't work
 //		String srcPath = srcDir+exID+"_master"+File.separator+exID+".prejav";
-		String srcPath = srcDir+exID+"_master"+File.separator+exID+".jav";
+//		String srcPath = srcDir+exID+"_master"+File.separator+exID+".jav";
 		// on feat-ddt-new:
-//		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".prejav";
+		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".prejav";
 //		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".jav";
 		
 		Experiment ex = new Experiment(srcPath);
@@ -136,11 +135,11 @@ public class TestRui {
 		ExperimentFrame exFrame = new ExperimentFrame(ex);
 		exFrame.run(null);
 		// show just one track:
-//		/*
+		/*
 		ImageJ ij = new ImageJ();
 		test_playMovie(ex.getTrackFromInd(5),0);
 		test_playMovie(ex.getTrackFromInd(5),1);
-//		*/
+		*/
 		
 	}
 	

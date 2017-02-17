@@ -251,6 +251,10 @@ public class TrackPoint implements Serializable {
 		return null; // do nothing
 	}
 	
+	public ImageProcessor getPadImNew(int imType, double scaleFac, int zoomFac) {
+		return null; // do nothing
+	}
+	
 	protected void setNumMatches(int num){
 		numMatches = num;
 	}
