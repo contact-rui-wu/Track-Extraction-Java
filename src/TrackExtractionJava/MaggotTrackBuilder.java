@@ -34,9 +34,9 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		removeDeadMaggots();
 		comm.message("MTB: dead maggots pruned", VerbLevel.verb_message);
 		orientMaggots();
-		if (ep.calcDerivs){
-			calcImDerivs();
-		}
+//		if (ep.calcDerivs){
+//			calcImDerivs();
+//		}
 	}
 	
 	/**
@@ -435,7 +435,7 @@ public class MaggotTrackBuilder extends TrackBuilder {
 		}
 	}
 	
-	
+	@Deprecated
 	protected void calcImDerivs(){
 		for (Track t : finishedTracks){
 			

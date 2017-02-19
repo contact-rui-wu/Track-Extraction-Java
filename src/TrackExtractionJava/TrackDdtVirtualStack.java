@@ -23,6 +23,7 @@ public class TrackDdtVirtualStack extends TrackMovieVirtualStack {
 	
 	public ImagePlus getImagePlus () {
 		if (null == ddtimp){
+			Track tr = super.getTrack();
 			ddtimp = new ImagePlus("Track "+tr.getTrackID()+": frames "+tr.points.firstElement().frameNum+"-"+tr.points.lastElement().frameNum,this);
 		}
 		return ddtimp;
@@ -70,9 +71,10 @@ public class TrackDdtVirtualStack extends TrackMovieVirtualStack {
 
 	public ImageProcessor getProcessor (int frameNumber) {
 		
-		int history = -1;
+//		int history = -1;
+		Track tr = super.getTrack();
 		if (super.showFitHistory) {
-			history = ((int) (frameNumber/tr.getNumPoints()));
+//			history = ((int) (frameNumber/tr.getNumPoints()));
 			frameNumber =  frameNumber - tr.getNumPoints()*((int) (frameNumber/tr.getNumPoints()));
 		}
 		int zoomFac = super.getMaggotDisplayParameters().getExpandFac();

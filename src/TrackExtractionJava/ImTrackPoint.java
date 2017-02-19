@@ -25,7 +25,8 @@ public class ImTrackPoint extends TrackPoint{
 	//transient protected ImageProcessor im;
 	protected ImageProcessor im; // transient seems unnecessary?
 	protected ImageProcessor ddtIm;
-	protected ImageProcessor imDeriv; // TODO Rui: get rid of old imDeriv dependencies
+	@Deprecated
+	protected ImageProcessor imDeriv;
 	protected byte[] serializableIm;
 	protected int imOriginX;
 	protected int imOriginY;
@@ -172,6 +173,7 @@ public class ImTrackPoint extends TrackPoint{
 		trackWindowHeight = dispHeight;
 	}
 	
+	@Deprecated
 	public void calcImDeriv(ImTrackPoint prevITP, ImTrackPoint nextITP, int derivMethod){
 		
 		Rectangle newRect;
@@ -236,6 +238,7 @@ public class ImTrackPoint extends TrackPoint{
 		
 		
 	}
+	
 	
 	public ImTrackPoint getPrev(){
 		return (ImTrackPoint)prev;
@@ -336,6 +339,7 @@ public class ImTrackPoint extends TrackPoint{
 	/**
 	 * not used; ddt condition is replaced by ddtIm==/!=null in {@link #toDisk(DataOutputStream,PrintWriter) toDisk}
 	 */
+	/*
 	public int toDisk(DataOutputStream dos, PrintWriter pw, boolean ddt) {
 
 		if (!ddt) {
@@ -374,6 +378,7 @@ public class ImTrackPoint extends TrackPoint{
 			return 0;
 		}
 	}
+	*/
 	
 	public int toDisk(DataOutputStream dos, PrintWriter pw){
 		
@@ -405,22 +410,6 @@ public class ImTrackPoint extends TrackPoint{
 					}
 				}
 			}
-			
-//			if (imDeriv==null){
-//				dos.writeByte(0);
-//				dos.writeByte(0);
-//			} else {
-//				dos.writeByte(imDeriv.getWidth());
-//				dos.writeByte(imDeriv.getHeight());
-//				for (int j=0; j<imDeriv.getWidth(); j++){
-//					for (int k=0; k<imDeriv.getHeight(); k++){
-//						dos.writeByte(((ColorProcessor)imDeriv).getColor(j, k).getRed()-128);
-//						dos.writeByte(((ColorProcessor)imDeriv).getColor(j, k).getGreen()-128);
-//						//Blue is empty
-//					}
-//				}
-//			}
-			
 		} catch (Exception e) {
 			if (pw!=null) pw.println("Error writing ImTrackPoint image for point "+pointID+"; aborting save");
 			return 1;
@@ -513,23 +502,6 @@ public class ImTrackPoint extends TrackPoint{
 				}
 			}
 			
-			//Get imderiv data	
-//			w = dis.readByte();
-//			h = dis.readByte();
-//			imDeriv = new ColorProcessor(w, h);
-//			for (int x=0; x<w; x++){
-//				for(int y=0; y<h; y++){
-//					int [] colors = new int[2];
-//					for (int cc=0; cc<2; cc++){
-//						colors[cc] = (int)dis.readByte()+128;
-//					}
-//					imDeriv.setColor(new Color(colors[0], colors[1], 0));
-//					imDeriv.drawPixel(x, y);
-//				}
-//			}
-			
-			
-			
 		} catch (Exception e) {
 			e.printStackTrace(pw);
 			if (pw!=null) pw.println("Error loading ImTrackPoint Info");
@@ -557,8 +529,6 @@ public class ImTrackPoint extends TrackPoint{
 		}
         
 	}
-	
-	
 
 	public int getPointType(){
 		return ImTrackPoint.pointType;

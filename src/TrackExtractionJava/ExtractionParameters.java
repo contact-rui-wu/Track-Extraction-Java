@@ -27,11 +27,13 @@ public class ExtractionParameters implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	@Deprecated
 	static final int DERIV_FORWARD = 1;
+	@Deprecated
 	static final int DERIV_BACKWARD = 2;
+	@Deprecated
 	static final int DERIV_SYMMETRIC = 3;
-	// TODO Rui: get rid of DERIV_ dependencies
-	public boolean doDdt = true; // not sure if should be in processing params instead
+	public boolean doDdt = true;
 	public int ddtBuffer = 0;
 
 	//public boolean subset = false;
@@ -192,8 +194,11 @@ public class ExtractionParameters implements Serializable{
      */
     int trackPointType = 2;
     
+    @Deprecated
     boolean calcDerivs = false;
+    @Deprecated
     int imDerivType = DERIV_SYMMETRIC;
+    @Deprecated
     int imDerivWidth = 1;
     
     extrPanel epPanel;

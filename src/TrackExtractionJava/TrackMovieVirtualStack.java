@@ -9,9 +9,9 @@ import ij.process.ImageProcessor;
 
 public class TrackMovieVirtualStack extends VirtualStack {
 
-	protected Track tr;
+	private Track tr;
 	private MaggotDisplayParameters mdp;
-	protected Vector<BackboneTrackPoint> btps;
+	private Vector<BackboneTrackPoint> btps;
 	private Vector<Force> Forces;
 	
 	
@@ -175,6 +175,14 @@ public class TrackMovieVirtualStack extends VirtualStack {
 		
 		String label = "Pt# " + n + "/" + tr.getNumPoints() + tp.infoSpill();
 		return label;
+	}
+	
+	public Track getTrack() {
+		return tr;
+	}
+	
+	public Vector<BackboneTrackPoint> getPts() {
+		return btps;
 	}
 	
 	

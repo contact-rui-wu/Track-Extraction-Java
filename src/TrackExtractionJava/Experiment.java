@@ -534,11 +534,11 @@ public class Experiment implements Serializable{
 		try{
 			// debug: see if can rewind
 //			System.out.println("input stream mark support: "+dis.markSupported());
-			dis.mark(Integer.MAX_VALUE); // TODO Rui: not sure if this is smart
+			dis.mark(Integer.MAX_VALUE); // not sure if this is smart
 			
 			// read data version
 			byte[] dv = new byte[4];
-//			assert(dis.read(dv)==3);
+//			assert(dis.read(dv)==4);
 			int dvdigit = dis.read(dv);
 			if (Arrays.equals(dv, new byte[] {0,0,0,1})) {
 				dataVer = dv;

@@ -14,7 +14,7 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.Arrays;
+//import java.util.Arrays;
 
 public class TestRui {
 
@@ -36,7 +36,7 @@ public class TestRui {
 
 	}
 	
-	@SuppressWarnings("unused")
+//	@SuppressWarnings("unused")
 	public static void test_pipeline() {
 		// set timer
 		TicToc timer = new TicToc();
@@ -59,14 +59,14 @@ public class TestRui {
 		prParams.showMagEx = false;
 		prParams.saveMagEx = true;
 		prParams.doFitting = true;
-		prParams.showFitEx = true;
+		prParams.showFitEx = false;
 		prParams.saveFitEx = true;
 		prParams.saveErrors = false;
 		prParams.saveSysOutToFile = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 //		extrParams.startFrame = 23842-1000; // default=1
 		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
-		extrParams.doDdt = false; // default=true
+//		extrParams.doDdt = false; // default=true
 //		extrParams.ddtBuffer = 0; // default=0
 		FittingParameters fitParams = new FittingParameters();
 		fitParams.storeEnergies = false;
@@ -115,6 +115,7 @@ public class TestRui {
 		// stop timer and beep
 		System.out.println("Pipeline time: "+timer.toc()/1000+"s");
 		IJ.beep();
+		ij.quit();
 	}
 	
 //	@SuppressWarnings("unused")
@@ -338,7 +339,7 @@ public class TestRui {
 	
 	public static void test_consoleOutput() {
 		byte[] x = new byte[] {0,0,0,0};
-		String s = Arrays.toString(x);
+//		String s = Arrays.toString(x);
 		System.out.println("data version: "+x[0]+x[1]+x[2]+x[3]);
 	}
 

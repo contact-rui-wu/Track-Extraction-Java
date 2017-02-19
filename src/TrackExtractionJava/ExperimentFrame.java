@@ -438,11 +438,9 @@ class TrackPanel extends JPanel {
 		}
 	}
 	
-	// TODO Rui: write playCurrentDdtTrack()
 	public void playCurrentDdtTrack(){
 		try{
 			if (track!=null){
-//				TrackMovieVirtualStack vs = track.getVirtualMovieStack(mdp);
 				TrackDdtVirtualStack vs = track.getVirtualDdtStack();
 				vs.getImagePlus().show();
 				ef.addMovie(vs);
