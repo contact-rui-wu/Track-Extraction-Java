@@ -20,7 +20,7 @@ import javax.swing.JFrame;
 
 
 
-
+@SuppressWarnings("deprecation")
 public class Test {//extends JFrame
 
 	

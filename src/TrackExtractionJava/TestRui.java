@@ -57,15 +57,15 @@ public class TestRui {
 		ProcessingParameters prParams = new ProcessingParameters();
 		prParams.diagnosticIm = false;
 		prParams.showMagEx = false;
-		prParams.saveMagEx = true;
-		prParams.doFitting = true;
+		prParams.saveMagEx = false;
+		prParams.doFitting = false;
 		prParams.showFitEx = false;
-		prParams.saveFitEx = true;
+		prParams.saveFitEx = false;
 		prParams.saveErrors = false;
 		prParams.saveSysOutToFile = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 //		extrParams.startFrame = 23842-1000; // default=1
-		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
+//		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
 //		extrParams.doDdt = false; // default=true
 //		extrParams.ddtBuffer = 0; // default=0
 		FittingParameters fitParams = new FittingParameters();
@@ -85,24 +85,9 @@ public class TestRui {
 		// secondary tests //
 		/////////////////////
 		
-		// image normalization diagnosis
-//		test_playMovie(ep.ex.getTrack(7),0);
-//		test_playMovie(ep.ex.getTrack(7),1);
-//		test_playMovie(ep.ex.getTrack(13),0);
-//		test_playMovie(ep.ex.getTrack(13),1);
-//		test_playMovie(ep.ex.getTrack(18),0);
-//		test_playMovie(ep.ex.getTrack(18),1);
-//		test_playMovie(ep.ex.getTrack(21),0);
-//		test_playMovie(ep.ex.getTrack(21),1);
-		
-		// check scaling
-//		test_playMovie(ep.ex.getTrack(1),0); // meanArea=81
-//		test_playMovie(ep.ex.getTrack(2),0); // meanArea=100
-//		test_playMovie(ep.ex.getTrack(11),0); // meanArea=120
-		
-		// play raw and ddt movies for one track
-//		test_playMovie(ep.ex.getTrack(10),0);
-//		test_playMovie(ep.ex.getTrack(10),1);
+		// save all track movies to a sub dir
+		String movieDstDir = dstDir+"track-movies"+File.separator;
+		test_saveTrackIms(ep.ex,movieDstDir,6000); // 5min long track at 20fps
 		
 		// save true-size, not-padded ddtIms for one track
 //		String s = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\ddt-artifacts\\sampleExp_copy_track10_ddt\\";
@@ -118,7 +103,43 @@ public class TestRui {
 		ij.quit();
 	}
 	
-//	@SuppressWarnings("unused")
+	public static void test_saveTrackIms(Experiment ex, String dstDir, int minTrackLength) {
+		System.out.println("Saving track images to "+dstDir);
+		// if dstDir exists, wipe content if not empty; make dir if doesn't exist
+		File d = new File(dstDir);
+		if (d.isDirectory()) {
+			if (d.list().length>0) {
+				for (File f: d.listFiles()) {
+					f.delete();
+				}
+			}
+		} else {
+			d.mkdir();
+		}
+		int nTracks = ex.getNumTracks();
+		ImagePlus rawMovie;
+		ImagePlus ddtMovie;
+		int nSaved = 0;
+		for (int i=0;i<nTracks;i++) {
+			Track tr = ex.getTrackFromInd(i);
+			if (tr.getNumPoints()>=minTrackLength) {
+				try {
+					System.out.println("Saving images for track "+tr.getTrackID()+" (index: "+i+", "+tr.getNumPoints()+" points)...");
+					rawMovie = test_getTrackMovie(tr,0);
+					IJ.saveAsTiff(rawMovie,dstDir+"track_"+tr.getTrackID()+"_raw.tif");
+					ddtMovie = test_getTrackMovie(tr,1);
+					IJ.saveAsTiff(ddtMovie,dstDir+"track_"+tr.getTrackID()+"_ddt.tif");
+					nSaved++;
+				} catch (Exception e) {
+					System.out.println("Error saving images for track "+tr.getTrackID()+"!");
+				}
+			}
+		}
+		IJ.showStatus("Done saving track images!");
+		System.out.println("Saved "+nSaved+" tracks");
+	}
+	
+	//	@SuppressWarnings("unused")
 	public static void test_viewExperiment() {
 		String srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\"; // on windows
 		String exID = "sampleExp-copy";
@@ -291,14 +312,14 @@ public class TestRui {
 			fs.saveAsTiff(dstDir+File.separator+i+".tif");
 		}
 	}
-	
+
 	/**
 	 * Larva area scaled; interestingly, this affects play movie button
 	 */
-	public static void test_playMovie(Track tr, int imType) {
+	public static ImagePlus test_getTrackMovie(Track tr, int imType) {
 		double scaleFac = Math.sqrt(100/tr.meanArea());
 //		double scaleFac = 1;
-		System.out.println("Scaling larva area in track "+tr.getTrackID()+" by "+String.format("%.2f",scaleFac));
+//		System.out.println("Scaling larva area in track "+tr.getTrackID()+" by "+String.format("%.2f",scaleFac));
 		String imTypeName;
 		Color padColor;
 		switch (imType) {
@@ -334,7 +355,8 @@ public class TestRui {
 			}
 		}
 		ImagePlus moviePlus = new ImagePlus("Track "+tr.getTrackID()+" "+imTypeName+" movie: frame "+tr.getStart().getFrameNum()+"-"+tr.getEnd().getFrameNum(),movieStack);
-		moviePlus.show();
+//		moviePlus.show();
+		return moviePlus;
 	}
 	
 	public static void test_consoleOutput() {
