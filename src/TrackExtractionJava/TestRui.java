@@ -17,12 +17,26 @@ import java.io.FileOutputStream;
 //import java.util.Arrays;
 
 public class TestRui {
+	
+	private static String OS = null;
+	private static String getOSName() {
+		if (OS==null) {
+			OS = System.getProperty("os.name");
+		}
+		return OS;
+	}
+	private static boolean isWindows() {
+		return getOSName().startsWith("Windows");
+	}
+	private static boolean isLinux() {
+		return getOSName().startsWith("Linux");
+	}
 
 	public static void main(String[] args) {
 		
-		test_pipeline();
+//		test_pipeline();
 		
-//		test_viewExperiment();
+		test_viewExperiment();
 		
 //		test_relativeRect();
 		
@@ -48,24 +62,28 @@ public class TestRui {
 		// prepare file paths
 		// syntax: *Name - file name; *Dir - folder; *Path - folder+name
 		String exID = "sampleExp-copy";
-		String srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\"; // on windows
-		String srcPath = srcDir+exID+".mmf";
-		String dstDir = srcDir+exID+"_feat-ddt-new"+File.separator; // add branch label
-//		String srcPath = dstDir+exID+".prejav";
-		
+		String srcDir = "";
+		if (isWindows()) {
+			srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\";
+		} else if (isLinux()) {
+			srcDir = "/home/data/rw1679/Documents/gershow-lab-local/data/java-pipeline/";
+		}
+		String srcPath = srcDir + exID + ".mmf";
+		String dstDir = srcDir + exID + "_feat-ddt-new" + File.separator; // add branch label
+
 		// set parameters
 		ProcessingParameters prParams = new ProcessingParameters();
-		prParams.diagnosticIm = false;
+		prParams.diagnosticIm = true;
 		prParams.showMagEx = false;
-		prParams.saveMagEx = false;
-		prParams.doFitting = false;
-		prParams.showFitEx = false;
-		prParams.saveFitEx = false;
+		prParams.saveMagEx = true;
+		prParams.doFitting = true;
+		prParams.showFitEx = true;
+		prParams.saveFitEx = true;
 		prParams.saveErrors = false;
 		prParams.saveSysOutToFile = false;
 		ExtractionParameters extrParams = new ExtractionParameters();
 //		extrParams.startFrame = 23842-1000; // default=1
-//		extrParams.endFrame = 1000; // default=Integer.MAX_VALUE
+//		extrParams.endFrame = 10000; // default=Integer.MAX_VALUE
 //		extrParams.doDdt = false; // default=true
 //		extrParams.ddtBuffer = 0; // default=0
 		FittingParameters fitParams = new FittingParameters();
@@ -86,8 +104,8 @@ public class TestRui {
 		/////////////////////
 		
 		// save all track movies to a sub dir
-		String movieDstDir = dstDir+"track-movies"+File.separator;
-		test_saveTrackIms(ep.ex,movieDstDir,6000); // 5min long track at 20fps
+//		String movieDstDir = dstDir+"track-movies"+File.separator;
+//		test_saveTrackIms(ep.ex,movieDstDir,6000); // 5min long track at 20fps
 		
 		// save true-size, not-padded ddtIms for one track
 //		String s = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\ddt-artifacts\\sampleExp_copy_track10_ddt\\";
@@ -141,14 +159,36 @@ public class TestRui {
 	
 	//	@SuppressWarnings("unused")
 	public static void test_viewExperiment() {
+		/*
 		String srcDir = "D:\\Life Matters\\Research\\with Marc Gershow\\data\\code-test\\"; // on windows
 		String exID = "sampleExp-copy";
-		// on master: different data structure versions, doesn't work
+		// on master:
 //		String srcPath = srcDir+exID+"_master"+File.separator+exID+".prejav";
 //		String srcPath = srcDir+exID+"_master"+File.separator+exID+".jav";
 		// on feat-ddt-new:
 		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".prejav";
 //		String srcPath = srcDir+exID+"_feat-ddt-new"+File.separator+exID+".jav";
+		*/
+		
+		String srcDir = "";
+		if (isWindows()) {
+			System.out.println("Organize your windows data folder first!");
+		}
+		else if (isLinux()) {
+			srcDir = "/home/data/rw1679/Documents/gershow-lab-local/data/java2matlab/";
+		}
+		// magEx file names:
+//		String srcName = "sampleExp-copy_master_1000f.prejav";
+//		String srcName = "sampleExp-copy_feat-ddt-new_noddt_1000f.prejav";
+//		String srcName = "sampleExp-copy_feat-ddt-new_ddt_1000f.prejav";
+//		String srcName = "sampleExp-copy_feat-ddt-new_ddt_10000f.prejav";
+//		String srcName = "sampleExp-copy_feat-ddt-new_ddt_full-length.prejav";
+		// fitEx file names:
+//		String srcName = "sampleExp-copy_master_1000f.jav";
+//		String srcName = "sampleExp-copy_feat-ddt-new_noddt_1000f.jav";
+//		String srcName = "sampleExp-copy_feat-ddt-new_ddt_1000f.jav";
+		String srcName = "sampleExp-copy_feat-ddt-new_ddt_10000f.jav";
+		String srcPath = srcDir+srcName;
 		
 		Experiment ex = new Experiment(srcPath);
 		
